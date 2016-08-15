@@ -1,8 +1,8 @@
 import { connect } from 'react-redux'
 import App from './App'
 import {
-  saveAnswer, editAnswer, askQuestion, saveQuestion,
-  setBestAnswer, addAnswer
+  askQuestion, saveQuestion,
+  setBestAnswer, addAnswer, updateAnswer
 } from '../thunks'
 import * as SELECT from '../select'
 
@@ -10,10 +10,11 @@ import {updateActiveQuestion} from '../ui/ui-actions'
 
 function mapStateToProps(state) {
   const question = state.ui.question || ''
-  console.log('the question is ', state.ui.question)
   const answers = SELECT.rankedAnswers(state, question)
+  const questions = SELECT.questions(state).map(question => question.text).sort()
   return {
     answers,
+    questions,
     question
   }
 }
@@ -32,11 +33,11 @@ function mapDispatchToProps(dispatch) {
     onSaveQuestion: function(question) {
       dispatch(saveQuestion(question))
     },
-    onSaveAnswer: function(question, answer) {
-      dispatch(saveAnswer(question, answer))
-    },
     onAddAnswer: function(text) {
       dispatch(addAnswer(text))
+    },
+    onUpdateAnswer: function(aid, text) {
+      dispatch(updateAnswer(aid, text))
     }
   }
 }

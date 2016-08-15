@@ -2,25 +2,11 @@ import React, { Component } from 'react';
 import {openIt} from '../dal'
 
 const s1 = {padding:10}
+const s2 = {padding:10, border: 'grey 1px solid', backgroundColor:'beige', height:400, overflowY:'auto' }
 
 export default class App extends Component {
-  keydown(e) {
-    switch(e.keyCode) {
-      case 13:
-        this.props.onAsk(this.refs.fldQuestion.value)
-        return
-    }
-  }
   onQuestionChange(e) {
-    this.props.onQuestionChange(this.refs.fldQuestion.value)
-  }
-  onSaveAnswer(e) {
-    const question = this.refs.fldQuestion.value
-    const answer = this.refs.fldAnswer.value
-    this.props.onSaveAnswer(question, answer)
-  }
-  onAnswerChange(answerId, e) {
-    this.props.onEditAnswer({answerId, text:e.target.value})
+    this.props.onAsk(this.refs.fldQuestion.value)
   }
   onSaveQuestion(e) {
     const question = this.refs.fldQuestion.value
@@ -39,24 +25,36 @@ export default class App extends Component {
       this.refs.fldNewAnswer.value = ''
     }
   }
+  onUpdateAnswer(answerId, e) {
+    const newValue = e.target.value
+    this.props.onUpdateAnswer(answerId, newValue)
+}
   render() {
-    const {question, answers} = this.props
-    var fldAnswers = answers.map(a => <div key={a.id}>
-      <input type='text' value={a.text} onChange={this.onAnswerChange.bind(this, a.id)}></input>
-      <button onClick={this.onSetBest.bind(this, a.id)}>best</button>
-    </div>)
+    const {question, questions, answers} = this.props
+    const listItems = questions.map((q,i) => <option key={i}>{q}</option>)
+   
+    var fldAnswers = answers.map(a => {
+      return <div key={a.id}>
+        <textarea value={a.text} cols={60} onChange={this.onUpdateAnswer.bind(this, a.id)}></textarea>
+        <button onClick={this.onSetBest.bind(this, a.id)}>best</button>
+      </div>
+    })
     return (
       <div>
         <div style={s1}>
-          <input key='f1' ref='fldQuestion' type='text' onChange={this.onQuestionChange.bind(this)} onKeyDown={this.keydown.bind(this)}></input>
+          <datalist id='dl1'>
+            {listItems}
+          </datalist>
+          <input key='f1' ref='fldQuestion' list='dl1' type='text' onChange={this.onQuestionChange.bind(this)}></input>
           <button key='btnSaveQuestion' onClick={this.onSaveQuestion.bind(this)}>save</button>
         </div>
         <div style={s1}>
-          {fldAnswers}
-          <input ref='fldNewAnswer' type='text'></input>
-          <button onClick={this.onAddAnswer.bind(this)}>add answer</button>
+          <div style={s2}>{fldAnswers}</div>
+          <div style={s1}>
+            <textarea ref='fldNewAnswer' cols={60} ></textarea>
+            <button onClick={this.onAddAnswer.bind(this)}>add answer</button>
+          </div>
         </div>
-        <div style={s1}><button key='f3' onClick={this.onSaveAnswer.bind(this)}>Save Answer</button></div>
       </div>
     );
   }

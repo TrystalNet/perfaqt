@@ -19,7 +19,7 @@ function reducer(state={}, action) {
     scores   : SCORES(state.scores, action),
     ui       : UI(state.ui, action)
   }
-  console.log(action.type, newState)
+  console.log(action.type)
   return newState
 }
 

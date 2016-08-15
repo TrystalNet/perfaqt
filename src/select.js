@@ -5,6 +5,7 @@ export const scores = state => state.scores
 
 export const findQuestionByText = (state, text) => questions(state).find(Q => Q.text === text)
 export const findAnswerByText   = (state, text) => answers(state).find(A => A.text === text)
+export const getAnswerById = (state, id) => answers(state).find(A => A.id === id) 
 
 export function findScore(state, qid, aid) {
   return scores(state).find(score => score.qid === qid && score.aid === aid)

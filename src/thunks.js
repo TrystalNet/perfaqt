@@ -48,17 +48,14 @@ export function askQuestion(question) {
   }
 }
 
-export function editAnswer(answerId, text) {
+export function updateAnswer(answerId, text) {
   return function(dispatch, getState, extras) {
-    DAL.updateAnswer(answerId, text, function(result) { console.log('alrighty then')  }) 
-  }
-}
-
-export function saveAnswer(question, answer) {
-  return function(dispatch, getState, extras) {
-    DAL.saveAnswer(question, answer, function() {
-      console.log('answer has been added')
-    })
+    const state = getState()
+    const A = SELECT.getAnswerById(state, answerId)
+    if(!A) return
+    const updated = Object.assign({}, A, {text})
+    DAL.putAnswer(updated)
+    .then(dispatch(ANSWERS.updateAnswer(answerId, {text}))) 
   }
 }
 
@@ -79,7 +76,6 @@ export function addAnswer(text) {
 
 export function setBestAnswer(question, aid) {
   return function(dispatch, getState, extras) {
-    console.log('setting best answer, we think')
     const state = getState()
     const Q = SELECT.findQuestionByText(state, question)
     if(!Q) return // change this to create the question
@@ -103,16 +99,3 @@ export function setBestAnswer(question, aid) {
     }
   }  
 }
-    // get the current best score
-    // compute a rank for the new best score (old best + 1)
-    // see if the link exists
-    // if not created it with the new rank
-    // otherwise update it with the new rank
-
-// export function loadAnswers() {
-//   return function(dispatch, getState, extras) {
-//     // var answers = DAL.getAllAnswers()
-//     //console.log(answers)
-//     console.log('i want some answers')
-//   }
-// }

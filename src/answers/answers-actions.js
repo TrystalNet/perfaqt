@@ -1,3 +1,9 @@
+export function updateAnswer(aid, edits) {
+  return {
+    type: 'UPDATE_ANSWER',
+    payload: { aid, edits }
+  }
+}
 export function addAnswer(answer) {
   return {
     type: 'ADD_ANSWER',
