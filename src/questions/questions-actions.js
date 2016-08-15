@@ -4,3 +4,10 @@ export function loadQuestions(questions) {
     payload: { questions } 
   }
 }
+
+export function addQuestion(question) {
+  return {
+    type: 'ADD_QUESTION',
+    payload: { question }
+  }
+}

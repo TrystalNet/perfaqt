@@ -1,60 +1,32 @@
-const dbver = 14
-const dbname = 'pergle'
+const dbver = 15
+const dbname = 'perfaqt'
 var db
 
-function checkForIndex(txn, tableName, indexName, keyPath, isUnique) {
-  const store = txn.objectStore(tableName)
-  if(store.indexNames.length > 0) return
-  const options = isUnique ? { unique: true } : {}
-  store.createIndex(indexName, keyPath, options)
+function checkTable(db, tableName) {
+   if(db.objectStoreNames.contains(tableName)) return 
+   db.createObjectStore(tableName, { keyPath: 'id' })
 }
 
-function checkQuestionTable(db) {
-   const tableName = 'questions'
-   if(db.objectStoreNames.contains(tableName)) return 
-   const store = db.createObjectStore(tableName, { keyPath: 'id' })
-   store.createIndex('text', 'text', { unique: true })
- }
-function checkAnswerTable(db) {
-   const tableName = 'answers'
-   if(db.objectStoreNames.contains(tableName)) return
-   const store = db.createObjectStore(tableName, { keyPath: 'id' })
-   store.createIndex('text', 'text', { unique: true })
- }
-
-function checkXrefsTable(db) {
-    const tableName = 'xrefs'
-    if(db.objectStoreNames.contains(tableName)) return 
-    const store = db.createObjectStore(tableName)
-    store.createIndex('qid', 'qid', { unique: false })
-    store.createIndex('aid', 'aid', { unique: false })
- }
+const checkQuestionTable = db => checkTable(db, 'questions')
+const checkAnswerTable = db => checkTable(db, 'questions')
+const checkScoresTable = db => checkTable(db, 'questions')
 
 export function openIt(callback) {
-
   const openRequest = window.indexedDB.open(dbname, dbver)
-
   openRequest.onupgradeneeded = e => {
     var db = e.target.result
     var txn = e.target.transaction
-
-    checkQuestionTable(db)
-    checkAnswerTable(db)
-    checkXrefsTable(db)
-    
-    checkForIndex(txn, 'questions', 'text', 'text', true)
-    checkForIndex(txn, 'answers', 'text', 'text', true)
+    checkTable(db, 'questions')
+    checkTable(db, 'answers')
+    checkTable(db, 'scores')
   }
-
   openRequest.onsuccess = e => {
     db = e.target.result
     if(callback) callback()
   }
-
   openRequest.onerror = e => {
     console.log('we got an error from indexedDB', e.target.errorCode)
   }
-
 }
 
 
@@ -104,7 +76,7 @@ function getAll(TABLE, callback) {
 
 export const getAllAnswers = callback => getAll('answers', callback) 
 export const getAllQuestions = callback => getAll('questions', callback) 
-export const getAllXrefs = callback => getAll('xrefs', callback) 
+export const getAllScores = callback => getAll('scores', callback) 
 
 export function saveAnswer(question, answer, callback) {
   // console.log('answers.indexes are ', db.transaction(['answers'], 'readonly').indexNames)
@@ -137,11 +109,41 @@ export function updateAnswer(aid, text, callback) {
   // request.onsuccess = e => callback(e.target.result)
 }
 
-export function readQuestion(text, callback) {
-  var transaction = db.transaction(['questions'],'readonly');
-  var store = transaction.objectStore('questions');
-  var index = store.index('text')
-  var request = index.get(text);
-  request.onerror = e => console.log('dammit'); 
-  request.onsuccess = e => callback(e.target.result)
+function add(tablename, jsonObject) {
+  return new Promise((resolve, reject) => {
+    var transaction = db.transaction([tablename],'readwrite');
+    var store = transaction.objectStore(tablename);
+    var request = store.add(jsonObject)
+    request.onerror = e => reject(e) 
+    request.onsuccess = e => resolve(e.target.result)
+  })
+}
+
+export const addScore    = bo => add('scores', bo)
+export const addQuestion = bo => add('questions', bo)
+export const addAnswer   = bo => add('answers', bo)
+
+function put(tablename, jsonObject) {
+  return new Promise((resolve, reject) => {
+    var transaction = db.transaction([tablename],'readwrite');
+    var store = transaction.objectStore(tablename);
+    var request = store.put(jsonObject)
+    request.onerror = e => reject(e) 
+    request.onsuccess = e => resolve(e.target.result)
+  })
+}
+
+export const putScore    = bo => put('scores', bo)
+export const putQuestion = bo => put('questions', bo)
+export const putAnswer   = bo => put('answers', bo)
+
+export function readQuestion(text) {
+  return new Promise((resolve, reject) => {
+    var transaction = db.transaction(['questions'],'readonly');
+    var store = transaction.objectStore('questions');
+    var index = store.index('text')
+    var request = index.get(text);
+    request.onerror = e => reject(e)
+    request.onsuccess = e => resolve(e.target.result)
+  }) 
 }
