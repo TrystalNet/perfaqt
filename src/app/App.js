@@ -26,7 +26,6 @@ export default class App extends Component {
     }
   }
   onSave(e) {
-    console.log('requesting this.props.onSave()')
     this.props.onSave()
   }
   onUpdateAnswer(answerId, e) {

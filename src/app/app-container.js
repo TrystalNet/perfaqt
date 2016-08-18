@@ -23,7 +23,6 @@ function mapStateToProps(state) {
 function mapDispatchToProps(dispatch) {
   return {
     onSave: function() {
-      console.log('dispatching a save request')
       dispatch(save())
     },
     onAsk: function(question) {

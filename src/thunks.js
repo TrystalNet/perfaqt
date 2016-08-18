@@ -75,7 +75,6 @@ export function addAnswer(text) {
 }
 
 export function save() { 
-  console.log('saving')
   return function(dispatch, getState) {
     console.log('really saving')
     $.ajax({
@@ -84,7 +83,7 @@ export function save() {
       url: `/save`,
       data: JSON.stringify({hello:'world'})
     })
-    .done(result => console.log('save was ok'))
+    .done(result => console.log('save was ok, result was ', result))
     .fail((a, textStatus, errorThrown) => {
       alert('error occurred: ' + errorThrown)
     })
