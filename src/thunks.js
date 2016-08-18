@@ -1,3 +1,4 @@
+import $ from 'jquery'
 import * as DAL from './dal'
 import * as SELECT from './select'
 import * as ANSWERS from './answers/answers-actions'
@@ -72,6 +73,23 @@ export function addAnswer(text) {
     )
   }
 }
+
+export function save() { 
+  console.log('saving')
+  return function(dispatch, getState) {
+    console.log('really saving')
+    $.ajax({
+      type: 'PUT',
+      contentType: 'application/json',
+      url: `/save`,
+      data: JSON.stringify({hello:'world'})
+    })
+    .done(result => console.log('save was ok'))
+    .fail((a, textStatus, errorThrown) => {
+      alert('error occurred: ' + errorThrown)
+    })
+}}
+
 
 
 export function setBestAnswer(question, aid) {

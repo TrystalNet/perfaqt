@@ -25,6 +25,10 @@ export default class App extends Component {
       this.refs.fldNewAnswer.value = ''
     }
   }
+  onSave(e) {
+    console.log('requesting this.props.onSave()')
+    this.props.onSave()
+  }
   onUpdateAnswer(answerId, e) {
     const newValue = e.target.value
     this.props.onUpdateAnswer(answerId, newValue)
@@ -55,6 +59,7 @@ export default class App extends Component {
             <button onClick={this.onAddAnswer.bind(this)}>add answer</button>
           </div>
         </div>
+        <button onClick={this.onSave.bind(this)}>Save</button>
       </div>
     );
   }

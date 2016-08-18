@@ -2,7 +2,8 @@ import { connect } from 'react-redux'
 import App from './App'
 import {
   askQuestion, saveQuestion,
-  setBestAnswer, addAnswer, updateAnswer
+  setBestAnswer, addAnswer, updateAnswer,
+  save
 } from '../thunks'
 import * as SELECT from '../select'
 
@@ -21,6 +22,10 @@ function mapStateToProps(state) {
 
 function mapDispatchToProps(dispatch) {
   return {
+    onSave: function() {
+      console.log('dispatching a save request')
+      dispatch(save())
+    },
     onAsk: function(question) {
       dispatch(askQuestion(question))
     },
