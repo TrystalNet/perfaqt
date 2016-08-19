@@ -76,12 +76,18 @@ export function addAnswer(text) {
 
 export function save() { 
   return function(dispatch, getState) {
+    const state = getState()
+    const upload = {
+      answers  : state.answers,
+      questions: state.questions,
+      scores   : state.scores
+    }
     console.log('really saving')
     $.ajax({
       type: 'PUT',
       contentType: 'application/json',
       url: `/save`,
-      data: JSON.stringify({hello:'world'})
+      data: JSON.stringify(upload)
     })
     .done(result => console.log('save was ok, result was ', result))
     .fail((a, textStatus, errorThrown) => {
@@ -89,7 +95,22 @@ export function save() {
     })
 }}
 
-
+export function load() { 
+  return function(dispatch, getState) {
+    const state = getState()
+    console.log('really loading')
+    $.ajax({
+      type: 'GET',
+      contentType: 'application/json',
+      url: `/load`
+    })
+    .done(data => {
+      console.log('save was ok, the data we got back ', data)
+    })
+    .fail((a, textStatus, errorThrown) => {
+      alert('error occurred: ' + errorThrown)
+    })
+}}
 
 export function setBestAnswer(question, aid) {
   return function(dispatch, getState, extras) {

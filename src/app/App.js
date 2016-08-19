@@ -28,6 +28,9 @@ export default class App extends Component {
   onSave(e) {
     this.props.onSave()
   }
+  onSave(e) {
+    this.props.onLoad()
+  }
   onUpdateAnswer(answerId, e) {
     const newValue = e.target.value
     this.props.onUpdateAnswer(answerId, newValue)
@@ -59,6 +62,7 @@ export default class App extends Component {
           </div>
         </div>
         <button onClick={this.onSave.bind(this)}>Save</button>
+        <button onClick={this.onLoad.bind(this)}>Load</button>
       </div>
     );
   }

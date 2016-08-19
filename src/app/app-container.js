@@ -3,7 +3,7 @@ import App from './App'
 import {
   askQuestion, saveQuestion,
   setBestAnswer, addAnswer, updateAnswer,
-  save
+  save, load
 } from '../thunks'
 import * as SELECT from '../select'
 
@@ -24,6 +24,9 @@ function mapDispatchToProps(dispatch) {
   return {
     onSave: function() {
       dispatch(save())
+    },
+    onLoad: function() {
+      dispatch(load())
     },
     onAsk: function(question) {
       dispatch(askQuestion(question))
