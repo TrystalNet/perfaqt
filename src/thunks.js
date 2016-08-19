@@ -4,8 +4,8 @@ import * as SELECT from './select'
 import * as ANSWERS from './answers/answers-actions'
 import * as UI from './ui/ui-actions'
 
-import {loadQuestions, addQuestion} from './questions/questions-actions'
-import {loadScores, addScore, updateScore} from './scores/scores-actions'
+import {loadQuestions, addQuestion, mergeQuestions} from './questions/questions-actions'
+import {loadScores, addScore, updateScore, mergeScores} from './scores/scores-actions'
 
 function nextId(collection) {
   function getRandomIntInclusive(min, max) {
@@ -105,7 +105,9 @@ export function load() {
       url: `/load`
     })
     .done(data => {
-      console.log('save was ok, the data we got back ', data)
+      dispatch(ANSWERS.mergeAnswers(data.questions))
+      dispatch(mergeQuestions(data.questions))
+      dispatch(mergeScores(data.questions))
     })
     .fail((a, textStatus, errorThrown) => {
       alert('error occurred: ' + errorThrown)

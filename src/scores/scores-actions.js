@@ -5,6 +5,13 @@ export function loadScores(scores) {
   }
 }
 
+export function mergeScores(scores) {
+  return {
+    type: 'MERGE_SCORES',
+    payload: { scores } 
+  }
+}
+
 export function addScore(score) {
   return {
     type: 'ADD_SCORE',

@@ -16,3 +16,9 @@ export function loadAnswers(answers) {
     payload: { answers } 
   }
 }
+export function mergeAnswers(answers) {
+  return {
+    type: 'MERGE_ANSWERS',
+    payload: { answers } 
+  }
+}
