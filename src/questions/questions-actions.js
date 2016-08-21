@@ -4,15 +4,6 @@ export function loadQuestions(questions) {
     payload: { questions } 
   }
 }
-
-export function mergeQuestions(questions) {
-  return {
-    type: 'MERGE_QUESTIONS',
-    payload: { questions } 
-  }
-}
-
-
 export function addQuestion(question) {
   return {
     type: 'ADD_QUESTION',

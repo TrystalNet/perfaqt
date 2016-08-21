@@ -1,8 +1,40 @@
 import React, { Component } from 'react';
-import {openIt} from '../dal'
+import QuestionBar from './QuestionBar'
+import MenuBar from './MenuBar'
+import AnswersArea from './AnswersArea'
 
-const s1 = {padding:10}
-const s2 = {padding:10, border: 'grey 1px solid', backgroundColor:'beige', height:400, overflowY:'auto' }
+const COL0WIDTH = 130
+
+const s1 = {padding:10 }
+const s2 = {padding:10, border:'gray 1px solid', overflowY:'auto' }
+
+const styleQuestionBar = {
+  backgroundColor:'#f2f2f2', display:'flex', paddingTop:20, paddingBottom:20, borderBottom: 'lightgray 1px solid'
+}
+const stylePerfaqt = {
+  width:COL0WIDTH,
+  fontSize:35,
+  textAlign: 'center',
+  border:'lightgray 0px solid'
+}
+const styleToolbar = {
+  height:40,
+  borderBottom: 'lightgray 1px solid'
+}
+
+const styleQuestionField = {
+  fontSize:18,
+  paddingLeft:10,
+  flex:1
+}
+const styleKeepButton = {
+  marginRight:20
+}
+
+const styleQuestionOption = {
+  border: 'purple 3px solid',
+  backgroundColor:'orange'
+}
 
 export default class App extends Component {
   onQuestionChange(e) {
@@ -37,32 +69,19 @@ export default class App extends Component {
 }
   render() {
     const {question, questions, answers} = this.props
-    const listItems = questions.map((q,i) => <option key={i}>{q}</option>)
-   
+    const {onSave, onLoad, onAddFaqt, onAsk, onSaveQuestion, onSetBestAnswer, onAddAnswer, onUpdateAnswer} = this.props
     var fldAnswers = answers.map(a => {
       return <div key={a.id}>
         <textarea value={a.text} cols={60} onChange={this.onUpdateAnswer.bind(this, a.id)}></textarea>
         <button onClick={this.onSetBest.bind(this, a.id)}>best</button>
       </div>
     })
+
     return (
-      <div>
-        <div style={s1}>
-          <datalist id='dl1'>
-            {listItems}
-          </datalist>
-          <input key='f1' ref='fldQuestion' list='dl1' type='text' onChange={this.onQuestionChange.bind(this)}></input>
-          <button key='btnSaveQuestion' onClick={this.onSaveQuestion.bind(this)}>save</button>
-        </div>
-        <div style={s1}>
-          <div style={s2}>{fldAnswers}</div>
-          <div style={s1}>
-            <textarea ref='fldNewAnswer' cols={60} ></textarea>
-            <button onClick={this.onAddAnswer.bind(this)}>add answer</button>
-          </div>
-        </div>
-        <button onClick={this.onSave.bind(this)}>Save</button>
-        <button onClick={this.onLoad.bind(this)}>Load</button>
+      <div id='app'>
+        <QuestionBar {...{ question, questions, onAsk, onSaveQuestion }} />
+        <MenuBar {...{onSave, onLoad, onAddFaqt}}/>
+        <AnswersArea {...{question, answers, onSetBestAnswer, onAddAnswer, onUpdateAnswer}} />
       </div>
     );
   }

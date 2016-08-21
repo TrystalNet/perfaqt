@@ -1,13 +1,8 @@
 import { connect } from 'react-redux'
 import App from './App'
-import {
-  askQuestion, saveQuestion,
-  setBestAnswer, addAnswer, updateAnswer,
-  save, load
-} from '../thunks'
+import * as THUNK  from '../thunks'
 import * as SELECT from '../select'
-
-import {updateActiveQuestion} from '../ui/ui-actions'
+// import * as UI     from '../ui/ui-actions'
 
 function mapStateToProps(state) {
   const question = state.ui.question || ''
@@ -22,29 +17,17 @@ function mapStateToProps(state) {
 
 function mapDispatchToProps(dispatch) {
   return {
-    onSave: function() {
-      dispatch(save())
-    },
-    onLoad: function() {
-      dispatch(load())
-    },
-    onAsk: function(question) {
-      dispatch(askQuestion(question))
-    },
-    onSetBestAnswer: function(question, answerId) {
-      dispatch(setBestAnswer(question, answerId))
-    },
+    onAddFaqt:       () => dispatch(THUNK.addFaqt()),
+    onLoad:          () => dispatch(THUNK.load()),
+    onSave:          () => dispatch(THUNK.save()),
+    onAddAnswer:     text =>dispatch(THUNK.addAnswer(text)),
+    onAsk:           question => dispatch(THUNK.askQuestion(question)),
+    onSaveQuestion:  question => dispatch(THUNK.saveQuestion(question)),
+    onUpdateAnswer:  (aid, text) => dispatch(THUNK.updateAnswer(aid, text)),
+    onSetBestAnswer: (question, answerId) => dispatch(THUNK.setBestAnswer(question, answerId)),
+
     onQuestionChange: function(question)  {
       // dispatch(updateActiveQuestion(question))
-    },
-    onSaveQuestion: function(question) {
-      dispatch(saveQuestion(question))
-    },
-    onAddAnswer: function(text) {
-      dispatch(addAnswer(text))
-    },
-    onUpdateAnswer: function(aid, text) {
-      dispatch(updateAnswer(aid, text))
     }
   }
 }

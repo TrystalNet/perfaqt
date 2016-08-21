@@ -1,0 +1,29 @@
+html { height: 100% }
+body { height: 100%; margin:0; }
+
+#root {
+  height:100%;
+  display:flex;
+  flex-direction:column;
+}
+
+#app {
+  flex:1;
+  display:flex;
+  flex-direction:column;
+}
+
+#questionsContainer {
+  background-color: transparent;
+}
+
+#answersContainer {
+  background-color:transparent;
+  flex:1;
+  display:flex;
+  flex-direction:column;
+}
+
+#toolbar {
+  background-color:transparent;
+}

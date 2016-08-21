@@ -1,4 +1,5 @@
 import * as _ from 'lodash'
+console.log(_)
 export const answers = state => state.answers
 export const questions = state => state.questions 
 export const scores = state => state.scores
@@ -25,20 +26,33 @@ export function findBestScore(state, qid) {
 } 
 
 export function rankedAnswers(state, question) {
-  if(!question || !question.length) return []
-  const qrec = findQuestionByText(state, question)
-  if(!qrec) return answers(state)
+  // use lodash or es6 arr functions, not both
+  const ANSWERS = answers(state)
+  const AIDS = _.map(ANSWERS, 'id')
+  const SCORES = scores(state)
+  const AINDEX = _.keyBy(ANSWERS, 'id')
 
-  const A1 = _.filter(scores(state), score => score.qid === qrec.id)
-  const A2 = _.orderBy(A1, 'value', 'desc')
-  const A3 = _.map(A2, 'aid')
+  const qid = _.isEmpty(question) ? null : (findQuestionByText(state, question) || {id:null}).id
+  if(qid) {
+    const AIDS1 = _.chain(SCORES)
+      .filter(score => score.qid === qid)   // only scores tied to the question
+      .orderBy('value','desc')              // order by value desc
+      .map(score => score.aid)              // take just the answer id
+      .value()                              // return the aids
 
-  const B1 = _.map(answers(state), 'id')
-  const B2 = _.difference(B1,A3)
+    const AIDS2 = _.difference(AIDS,AIDS1)
 
-  const index = _.keyBy(answers(state), 'id')
-
-  const C1 = [...A3,...B2].map(aid => index[aid])
-
-  return C1
+    return [...AIDS1,...AIDS2].map(aid => AINDEX[aid])
+  }
+  else {
+    // step1,  start with answers that are not associated with any score
+    // step1a, put blank answers at the top
+    // step2,  eventually, order remaining answers by date desc
+    const AIDS2 = _.chain(SCORES).map('aid').uniq().value()  // scored answers
+    const AIDS1 = _.chain(AIDS)
+      .difference(AIDS2)                               // unscored answers
+      .sortBy(aid => AINDEX[aid].text.length)   // part0, no answers, part1, answers
+      .value()
+    return [...AIDS1,...AIDS2].map(aid => AINDEX[aid])
+  }
 }

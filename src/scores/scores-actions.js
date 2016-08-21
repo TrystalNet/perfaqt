@@ -4,21 +4,12 @@ export function loadScores(scores) {
     payload: { scores } 
   }
 }
-
-export function mergeScores(scores) {
-  return {
-    type: 'MERGE_SCORES',
-    payload: { scores } 
-  }
-}
-
 export function addScore(score) {
   return {
     type: 'ADD_SCORE',
     payload: { score }
   }
 }
-
 export function updateScore(id, edits) {
   return {
     type: 'UPDATE_SCORE',
