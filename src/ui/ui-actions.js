@@ -1,6 +1,14 @@
-export function updateActiveQuestion(question) {
+export function setAID(aid) {
   return {
-    type: 'UPDATE_ACTIVE_QUESTION',
+    type: 'UI',
+    uiType: 'SET_AID',
+    payload: {aid}
+  }
+}
+export function setQestion(question) {
+  return {
+    type: 'UI',
+    uiType: 'SET_QUESTION',
     payload: { question } 
   }
 }

@@ -15,15 +15,20 @@ export function saveQuestion(question) {
 }
 export function askQuestion(question) {
   return function(dispatch) {
-    dispatch(UI.updateActiveQuestion(question) )
+    dispatch(UI.setQestion(question) )
   }
 }
-export function updateAnswer(answerId, text) {
+export function activateAnswer(aid) {
+  return function(dispatch) {
+    dispatch(UI.setAID(aid))
+  }
+}
+export function updateAnswer(aid, text) {
   return function(dispatch, getState) {
     const state = getState()
-    const A = SELECT.getAnswerById(state, answerId)
+    const A = SELECT.getAnswerById(state, aid)
     if(!A) return
-    dispatch(ANSWERS.updateAnswer(answerId, {text}))
+    dispatch(ANSWERS.updateAnswer(aid, {text}))
   }
 }
 export function addAnswer(text) {
@@ -87,9 +92,10 @@ export function load() {
       alert('error occurred: ' + errorThrown)
     })
 }}
-export function setBestAnswer(question, aid) {
+export function setBestAnswer(aid) {
   return function(dispatch, getState, extras) {
     const state = getState()
+    const question = state.ui.question
     const Q = SELECT.findQuestionByText(state, question)
     if(!Q) {
       alert('save question first')

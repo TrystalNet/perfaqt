@@ -68,20 +68,17 @@ export default class App extends Component {
     this.props.onUpdateAnswer(answerId, newValue)
 }
   render() {
-    const {question, questions, answers} = this.props
-    const {onSave, onLoad, onAddFaqt, onAsk, onSaveQuestion, onSetBestAnswer, onAddAnswer, onUpdateAnswer} = this.props
-    var fldAnswers = answers.map(a => {
-      return <div key={a.id}>
-        <textarea value={a.text} cols={60} onChange={this.onUpdateAnswer.bind(this, a.id)}></textarea>
-        <button onClick={this.onSetBest.bind(this, a.id)}>best</button>
-      </div>
-    })
-
+    const {question, questions, answers, aid} = this.props
+    const {
+      onSave, onLoad, onAddFaqt, onAsk, 
+      onSaveQuestion, onSetBestAnswer, onAddAnswer, onUpdateAnswer,
+      onActivate
+    } = this.props
     return (
       <div id='app'>
         <QuestionBar {...{ question, questions, onAsk, onSaveQuestion }} />
         <MenuBar {...{onSave, onLoad, onAddFaqt}}/>
-        <AnswersArea {...{question, answers, onSetBestAnswer, onAddAnswer, onUpdateAnswer}} />
+        <AnswersArea {...{question, answers, aid, onSetBestAnswer, onAddAnswer, onUpdateAnswer, onActivate}} />
       </div>
     );
   }

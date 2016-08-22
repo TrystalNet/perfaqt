@@ -5,10 +5,12 @@ import * as SELECT from '../select'
 // import * as UI     from '../ui/ui-actions'
 
 function mapStateToProps(state) {
+  const aid = state.ui.aid
   const question = state.ui.question || ''
   const answers = SELECT.rankedAnswers(state, question)
   const questions = SELECT.questions(state).map(question => question.text).sort()
   return {
+    aid,
     answers,
     questions,
     question
@@ -24,8 +26,8 @@ function mapDispatchToProps(dispatch) {
     onAsk:           question => dispatch(THUNK.askQuestion(question)),
     onSaveQuestion:  question => dispatch(THUNK.saveQuestion(question)),
     onUpdateAnswer:  (aid, text) => dispatch(THUNK.updateAnswer(aid, text)),
-    onSetBestAnswer: (question, answerId) => dispatch(THUNK.setBestAnswer(question, answerId)),
-
+    onSetBestAnswer: aid => dispatch(THUNK.setBestAnswer(aid)),
+    onActivate     : aid => dispatch(THUNK.activateAnswer(aid)), 
     onQuestionChange: function(question)  {
       // dispatch(updateActiveQuestion(question))
     }
