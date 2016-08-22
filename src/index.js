@@ -19,7 +19,7 @@ function reducer(state={}, action) {
     scores   : SCORES(state.scores, action),
     ui       : UI(state.ui, action)
   }
-  console.log(action.type)
+  if(action.type !== 'UPDATE_ANSWER') console.log(action.type)
   return newState
 }
 

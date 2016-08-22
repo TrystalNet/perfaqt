@@ -1,6 +1,6 @@
 import React, { Component } from 'react';
 import {COL0WIDTH} from '../constants'
-import Answer from './Answer'
+import Answer from './answer-container'
 
 const s2 = { paddingTop: 10, width:600 }
 

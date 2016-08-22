@@ -13,45 +13,59 @@ const styleInactive = {
 }
 
 const styleTextareaActive = {
-  border: 'black 0px solid'
+  border: 'black 0px solid',
+  backgroundColor: 'beige',
+  fontSize:14
 }
 
-const Answer = ({id, text, isActive, onSetBest, onChange, onActivate, onDeactivate}) => {
-  let fldText
-  function onKeyDown(e) {
-    if(!isActive) return
+class Answer extends Component {
+  shouldComponentUpdate(nextProps) {
+    if(nextProps.text !== this.props.text) return true
+    if(nextProps.isActive !== this.props.isActive) return true
+    return false
+  }
+  onKeyDown(e) {
+    if(!this.props.isActive) return
     switch(e.keyCode) {
       case 27: break
       default: return
     }
-    onDeactivate()
+    this.props.onDeactivate()
   }
-  if(!isActive) {
-    const bits = text.split(/\r?\n/)
-    return (
-      <div style={styleContainerInactive}>
-        <div style={styleInactive} onClick={onActivate}>
-          {
-            bits.map((bit,index) => bit ? <div key={index}>{bit}</div> : <div>&nbsp;</div>)
-          }
+  onBlur(e) {
+    console.log('blur heard')
+    this.props.onDeactivate()
+  }
+  render() {
+    let fldText
+    const {id, text, isActive, onSetBest, onChange, onActivate, onDeactivate} = this.props
+    if(!isActive) {
+      const bits = text.split(/\r?\n/)
+      return (
+        <div style={styleContainerInactive}>
+          <div style={styleInactive} onClick={onActivate}>
+            {
+              bits.map((bit,index) => bit ? <div key={index}>{bit}</div> : <div key={index}>&nbsp;</div>)
+            }
+          </div>
+          <button onClick={onSetBest}>best</button>
         </div>
-        <button onClick={onSetBest}>best</button>
+      )
+    }
+    return (
+      <div>
+        <textarea
+          style={styleTextareaActive}
+          ref={node => {fldText=node}} 
+          value={text} 
+          cols={72} 
+          onKeyDown={this.onKeyDown.bind(this)}
+          onBlur={() => this.onBlur.bind(this)}
+          onChange={()=>onChange(fldText.value)}>
+        </textarea>
       </div>
     )
-  }
-  return (
-    <div>
-      <textarea
-        style={styleTextareaActive}
-        ref={node => {fldText=node}} 
-        value={text} 
-        cols={65} 
-        onKeyDown={onKeyDown}
-        onChange={()=>onChange(fldText.value)}>
-      </textarea>
-      <button key='burger' onClick={onSetBest}>best</button>
-    </div>
-  )
+  }  
 }
 
 export default Answer

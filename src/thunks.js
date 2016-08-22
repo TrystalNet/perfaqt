@@ -142,5 +142,6 @@ export function addFaqt() {
       }      
       dispatch(SCORES.addScore(score))
     }
-  }
+     dispatch(UI.setAID(aid))
+ }
 }
