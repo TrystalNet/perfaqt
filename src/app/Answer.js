@@ -32,7 +32,7 @@ const Answer = ({id, text, isActive, onSetBest, onChange, onActivate, onDeactiva
       <div style={styleContainerInactive}>
         <div style={styleInactive} onClick={onActivate}>
           {
-            bits.map(bit => bit ? <div>{bit}</div> : <div>&nbsp;</div>)
+            bits.map((bit,index) => bit ? <div key={index}>{bit}</div> : <div>&nbsp;</div>)
           }
         </div>
         <button onClick={onSetBest}>best</button>
@@ -41,7 +41,7 @@ const Answer = ({id, text, isActive, onSetBest, onChange, onActivate, onDeactiva
   }
   return (
     <div>
-      <textarea 
+      <textarea
         style={styleTextareaActive}
         ref={node => {fldText=node}} 
         value={text} 
@@ -49,7 +49,7 @@ const Answer = ({id, text, isActive, onSetBest, onChange, onActivate, onDeactiva
         onKeyDown={onKeyDown}
         onChange={()=>onChange(fldText.value)}>
       </textarea>
-      <button onClick={onSetBest}>best</button>
+      <button key='burger' onClick={onSetBest}>best</button>
     </div>
   )
 }
