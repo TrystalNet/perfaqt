@@ -15,7 +15,7 @@ export function saveQuestion(question) {
 }
 export function askQuestion(question) {
   return function(dispatch) {
-    dispatch(UI.setQestion(question) )
+    dispatch(UI.setQuestion(question) )
   }
 }
 export function activateAnswer(aid) {
@@ -29,6 +29,7 @@ export function updateAnswer(aid, text) {
     const A = SELECT.getAnswerById(state, aid)
     if(!A) return
     dispatch(ANSWERS.updateAnswer(aid, {text}))
+    if(!state.isDirty) dispatch(UI.setIsDirty(true))
   }
 }
 export function addAnswer(text) {
@@ -43,19 +44,20 @@ export function addAnswer(text) {
 export function save() { 
   return function(dispatch, getState) {
     const state = getState()
-    const upload = {
-      answers  : state.answers,
-      questions: state.questions,
-      scores   : state.scores
-    }
-    $.ajax({
-      type: 'PUT',
-      contentType: 'application/json',
-      url: `/save`,
-      data: JSON.stringify(upload)
-    })
-    .done(result => console.log('save was ok, result was ', result))
-    .fail((a, textStatus, errorThrown) => alert('error occurred: ' + errorThrown))
+    dispatch(UI.setIsDirty(false))
+    // const upload = {
+    //   answers  : state.answers,
+    //   questions: state.questions,
+    //   scores   : state.scores
+    // }
+    // $.ajax({
+    //   type: 'PUT',
+    //   contentType: 'application/json',
+    //   url: `/save`,
+    //   data: JSON.stringify(upload)
+    // })
+    // .done(result =>     dispatch(UI.setIsDirty(false)))
+    // .fail((a, textStatus, errorThrown) => alert('error occurred: ' + errorThrown))
 }}
 function buildFakeData(howMany=10) {
   const questions = []
@@ -76,21 +78,25 @@ function buildFakeData(howMany=10) {
 export function load() { 
   return function(dispatch, getState) {
     const state = getState()
-    console.log('really loading')
-    $.ajax({
-      type: 'GET',
-      contentType: 'application/json',
-      url: `/load`
-    })
-    .done(data => {
-      // data = buildFakeData(50)
-      dispatch(QUESTIONS.loadQuestions(data.questions))
-      dispatch(ANSWERS.loadAnswers(data.answers))
-      dispatch(SCORES.loadScores(data.scores))
-    })
-    .fail((a, textStatus, errorThrown) => {
-      alert('error occurred: ' + errorThrown)
-    })
+    const data = buildFakeData(50)
+    dispatch(QUESTIONS.loadQuestions(data.questions))
+    dispatch(ANSWERS.loadAnswers(data.answers))
+    dispatch(SCORES.loadScores(data.scores))
+    return
+    // $.ajax({
+    //   type: 'GET',
+    //   contentType: 'application/json',
+    //   url: `/load`
+    // })
+    // .done(data => {
+    //   data = buildFakeData(50)
+    //   dispatch(QUESTIONS.loadQuestions(data.questions))
+    //   dispatch(ANSWERS.loadAnswers(data.answers))
+    //   dispatch(SCORES.loadScores(data.scores))
+    // })
+    // .fail((a, textStatus, errorThrown) => {
+    //   alert('error occurred: ' + errorThrown)
+    // })
 }}
 export function setBestAnswer(aid) {
   return function(dispatch, getState, extras) {
@@ -113,6 +119,7 @@ export function setBestAnswer(aid) {
       const id = UNIQ.randomId(4)
       const score = { id, qid, aid, value }
       dispatch(SCORES.addScore(score))
+      if(!state.ui.isDirty) dispatch(UI.setIsDirty(true))
     }
   }  
 }

@@ -18,14 +18,16 @@ const styleRight = {
   textAlign:'right'
 }
 
-
 export default class MenuBar extends Component {
   render() {
-    const {onSave, onLoad, onAddFaqt} = this.props
+    const {onSave, onLoad, onAddFaqt, isDirty} = this.props
+    console.log('menubar:isDirty:',isDirty)
     return (
       <div id='toolbar' style={styleToolbar}>
         <div>
-          <button onClick={onSave}>Save</button>
+          {
+            isDirty ? <button onClick={onSave}>Save</button> : null
+          }
           <button onClick={onLoad}>Load</button>
         </div>
         <div style={styleRight}>

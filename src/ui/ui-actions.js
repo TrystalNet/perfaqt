@@ -5,10 +5,17 @@ export function setAID(aid) {
     payload: {aid}
   }
 }
-export function setQestion(question) {
+export function setQuestion(question) {
   return {
     type: 'UI',
     uiType: 'SET_QUESTION',
     payload: { question } 
+  }
+}
+export function setIsDirty(isDirty) {
+  return {
+    type: 'UI',
+    uiType: 'SET_ISDIRTY',
+    payload: { isDirty } 
   }
 }

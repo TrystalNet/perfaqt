@@ -9,11 +9,13 @@ function mapStateToProps(state) {
   const question = state.ui.question || ''
   const answers = SELECT.rankedAnswers(state, question)
   const questions = SELECT.questions(state).map(question => question.text).sort()
+  console.log('app-container', state.ui)
   return {
     aid,
     answers,
     questions,
-    question
+    question,
+    isDirty:state.ui.isDirty
   }
 }
 

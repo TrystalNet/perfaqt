@@ -68,16 +68,18 @@ export default class App extends Component {
     this.props.onUpdateAnswer(answerId, newValue)
 }
   render() {
-    const {question, questions, answers, aid} = this.props
+    const {question, questions, answers, aid, isDirty} = this.props
     const {
       onSave, onLoad, onAddFaqt, onAsk, 
       onSaveQuestion, onSetBestAnswer, onAddAnswer, onUpdateAnswer,
       onActivate
     } = this.props
+    console.log('APP.js:isDirty:',isDirty)
+
     return (
       <div id='app'>
         <QuestionBar {...{ question, questions, onAsk, onSaveQuestion }} />
-        <MenuBar {...{onSave, onLoad, onAddFaqt}}/>
+        <MenuBar {...{isDirty, onSave, onLoad, onAddFaqt}}/>
         <AnswersArea {...{question, answers, aid, onSetBestAnswer, onAddAnswer, onUpdateAnswer, onActivate}} />
       </div>
     );
