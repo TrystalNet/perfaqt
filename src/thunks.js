@@ -91,7 +91,6 @@ export function load() {
       url: `/load`
     })
     .done(data => {
-      data = buildFakeData(50)
       dispatch(QUESTIONS.loadQuestions(data.questions))
       dispatch(ANSWERS.loadAnswers(data.answers))
       dispatch(SCORES.loadScores(data.scores))
