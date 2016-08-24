@@ -61,7 +61,10 @@ function buildFakeData(howMany=10) {
 export function save() { 
   return function(dispatch, getState) {
     const state = getState()
-    // dispatch(UI.setIsDirty(false))
+    if(state.ui.isDEVL) {
+      dispatch(UI.setIsDirty(false))
+      return
+    }
     const upload = {
       answers  : state.answers,
       questions: state.questions,
@@ -81,17 +84,16 @@ export function save() {
 export function load() { 
   return function(dispatch, getState) {
     const state = getState()
-    // const data = buildFakeData(50)
-    // dispatch(QUESTIONS.loadQuestions(data.questions))
-    // dispatch(ANSWERS.loadAnswers(data.answers))
-    // dispatch(SCORES.loadScores(data.scores))
-    // return
     $.ajax({
       type: 'GET',
       contentType: 'application/json',
       url: `/load`
     })
     .done(data => {
+      if(typeof data === 'string') {
+        data = buildFakeData(50)
+        dispatch(UI.setIsDEVL(true))
+      }
       dispatch(QUESTIONS.loadQuestions(data.questions))
       dispatch(ANSWERS.loadAnswers(data.answers))
       dispatch(SCORES.loadScores(data.scores))

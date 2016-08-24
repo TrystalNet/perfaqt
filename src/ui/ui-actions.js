@@ -19,3 +19,10 @@ export function setIsDirty(isDirty) {
     payload: { isDirty } 
   }
 }
+export function setIsDEVL(isDEVL) {
+  return {
+    type: 'UI',
+    uiType: 'SET_ISDEVL',
+    payload: { isDEVL } 
+  }
+}

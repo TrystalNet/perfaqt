@@ -70,38 +70,10 @@ class MyEditor extends Component {
       handleKeyCommand={this.handleKeyCommand.bind(this)}
       keyBindingFn={myKeyBindingFn}
       onEscape={this.saveAndExit.bind(this)}
+      onBlur={this.saveAndExit.bind(this)}
       onChange={this.onChange} />
   }  
 }
 
 export default MyEditor
-
-
-
-//       handleReturn={this.handleReturn}
-
-
-
-
-
-
-
-
-
-
-// junk
-
-
-
-
-// const styleInactive = {
-//   border: 'black 0px solid',
-//   flex:1  
-// }
-
-// const styleTextareaActive = {
-//   border: 'black 0px solid',
-//   backgroundColor: 'beige',
-//   fontSize:14
-// }
 
