@@ -27,7 +27,6 @@ export default class MenuBar extends Component {
           {
             isDirty ? <button onClick={onSave}>Save</button> : null
           }
-          <button onClick={onLoad}>Load</button>
         </div>
         <div style={styleRight}>
           <button onClick={onAddFaqt}>Add Faqt</button>
@@ -36,3 +35,4 @@ export default class MenuBar extends Component {
     );
   }
 }
+//           <button onClick={onLoad}>Load</button>
