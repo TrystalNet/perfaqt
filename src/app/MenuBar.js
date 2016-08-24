@@ -21,7 +21,6 @@ const styleRight = {
 export default class MenuBar extends Component {
   render() {
     const {onSave, onLoad, onAddFaqt, isDirty} = this.props
-    console.log('menubar:isDirty:',isDirty)
     return (
       <div id='toolbar' style={styleToolbar}>
         <div>

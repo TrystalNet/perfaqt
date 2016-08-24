@@ -74,8 +74,6 @@ export default class App extends Component {
       onSaveQuestion, onSetBestAnswer, onAddAnswer, onUpdateAnswer,
       onActivate
     } = this.props
-    console.log('APP.js:isDirty:',isDirty)
-
     return (
       <div id='app'>
         <QuestionBar {...{ question, questions, onAsk, onSaveQuestion }} />

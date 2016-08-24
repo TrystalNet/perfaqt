@@ -1,4 +1,5 @@
 import React, { Component } from 'react';
+import MyEditor from './Editor'
 
 const styleContainerInactive = {
   display:'flex',
@@ -36,6 +37,11 @@ class Answer extends Component {
     console.log('blur heard')
     this.props.onDeactivate()
   }
+  onDraftChanged(value) {
+    console.log('in onDraftChanged, the value is = ', value)
+    this.props.onChange(value)
+    this.props.onDeactivate()
+  }
   render() {
     let fldText
     const {id, text, isActive, onSetBest, onChange, onActivate, onDeactivate} = this.props
@@ -52,19 +58,21 @@ class Answer extends Component {
         </div>
       )
     }
-    return (
-      <div>
-        <textarea
-          style={styleTextareaActive}
-          ref={node => {fldText=node}} 
-          value={text} 
-          cols={72} 
-          onKeyDown={this.onKeyDown.bind(this)}
-          onBlur={() => this.onBlur.bind(this)}
-          onChange={()=>onChange(fldText.value)}>
-        </textarea>
-      </div>
-    )
+    return <div style={{backgroundColor:'beige'}}><MyEditor {...{text}} onChanged={this.onDraftChanged.bind(this)}/></div>
+    // return <MyEditor />
+    // return (
+    //   <div>
+    //     <textarea
+    //       style={styleTextareaActive}
+    //       ref={node => {fldText=node}} 
+    //       value={text} 
+    //       cols={72} 
+    //       onKeyDown={this.onKeyDown.bind(this)}
+    //       onBlur={() => this.onBlur.bind(this)}
+    //       onChange={()=>onChange(fldText.value)}>
+    //     </textarea>
+    //   </div>
+    // )
   }  
 }
 

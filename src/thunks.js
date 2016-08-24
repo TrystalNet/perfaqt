@@ -59,10 +59,12 @@ export function save() {
     // .done(result =>     dispatch(UI.setIsDirty(false)))
     // .fail((a, textStatus, errorThrown) => alert('error occurred: ' + errorThrown))
 }}
+
 function buildFakeData(howMany=10) {
   const questions = []
   const answers = []
   const scores = []
+  answers.push({id:'multiline', text:'Once upon a midnight dreary\nWhile I pondered weak and weary\nOver many a quaint and curious\n'})
   for(var i = 0; i < howMany; i++) {
     const qid = 'q' + i
     const aid = 'a' + i
