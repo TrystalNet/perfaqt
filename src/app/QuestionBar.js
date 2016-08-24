@@ -44,7 +44,7 @@ export default class QuestionBar extends Component {
     const listItems = questions.map((q,i) => <option key={i} style={styleQuestionOption}>{q}</option>)
     return (
       <div id='questionsContainer' style={styleQuestionBar}>
-        <div id='perfaqt' style={stylePerfaqt}>perfaqt</div>          
+        <div id='perfaqt' style={stylePerfaqt}>per<span style={{color:'blue'}}>faq</span>t</div>          
         <datalist id='dl1' >
           {listItems}
         </datalist>

@@ -44,20 +44,20 @@ export function addAnswer(text) {
 export function save() { 
   return function(dispatch, getState) {
     const state = getState()
-    dispatch(UI.setIsDirty(false))
-    // const upload = {
-    //   answers  : state.answers,
-    //   questions: state.questions,
-    //   scores   : state.scores
-    // }
-    // $.ajax({
-    //   type: 'PUT',
-    //   contentType: 'application/json',
-    //   url: `/save`,
-    //   data: JSON.stringify(upload)
-    // })
-    // .done(result =>     dispatch(UI.setIsDirty(false)))
-    // .fail((a, textStatus, errorThrown) => alert('error occurred: ' + errorThrown))
+    // dispatch(UI.setIsDirty(false))
+    const upload = {
+      answers  : state.answers,
+      questions: state.questions,
+      scores   : state.scores
+    }
+    $.ajax({
+      type: 'PUT',
+      contentType: 'application/json',
+      url: `/save`,
+      data: JSON.stringify(upload)
+    })
+    .done(result =>     dispatch(UI.setIsDirty(false)))
+    .fail((a, textStatus, errorThrown) => alert('error occurred: ' + errorThrown))
 }}
 
 function buildFakeData(howMany=10) {
@@ -80,25 +80,25 @@ function buildFakeData(howMany=10) {
 export function load() { 
   return function(dispatch, getState) {
     const state = getState()
-    const data = buildFakeData(50)
-    dispatch(QUESTIONS.loadQuestions(data.questions))
-    dispatch(ANSWERS.loadAnswers(data.answers))
-    dispatch(SCORES.loadScores(data.scores))
-    return
-    // $.ajax({
-    //   type: 'GET',
-    //   contentType: 'application/json',
-    //   url: `/load`
-    // })
-    // .done(data => {
-    //   data = buildFakeData(50)
-    //   dispatch(QUESTIONS.loadQuestions(data.questions))
-    //   dispatch(ANSWERS.loadAnswers(data.answers))
-    //   dispatch(SCORES.loadScores(data.scores))
-    // })
-    // .fail((a, textStatus, errorThrown) => {
-    //   alert('error occurred: ' + errorThrown)
-    // })
+    // const data = buildFakeData(50)
+    // dispatch(QUESTIONS.loadQuestions(data.questions))
+    // dispatch(ANSWERS.loadAnswers(data.answers))
+    // dispatch(SCORES.loadScores(data.scores))
+    // return
+    $.ajax({
+      type: 'GET',
+      contentType: 'application/json',
+      url: `/load`
+    })
+    .done(data => {
+      data = buildFakeData(50)
+      dispatch(QUESTIONS.loadQuestions(data.questions))
+      dispatch(ANSWERS.loadAnswers(data.answers))
+      dispatch(SCORES.loadScores(data.scores))
+    })
+    .fail((a, textStatus, errorThrown) => {
+      alert('error occurred: ' + errorThrown)
+    })
 }}
 export function setBestAnswer(aid) {
   return function(dispatch, getState, extras) {
