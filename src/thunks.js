@@ -41,6 +41,23 @@ export function addAnswer(text) {
     dispatch(ANSWERS.addAnswer({ id, text }))
   }
 }
+
+function buildFakeData(howMany=10) {
+  const questions = []
+  const answers = []
+  const scores = []
+  answers.push({id:'multiline', text:'Once upon a midnight dreary\nWhile I pondered weak and weary\nOver many a quaint and curious\n'})
+  for(var i = 0; i < howMany; i++) {
+    const qid = 'q' + i
+    const aid = 'a' + i
+    const sid = 's' + i
+    questions.push({id:qid, text:'question ' + i})
+    answers.push({id:aid, text:'Answer ' + i})
+    scores.push({id:sid, qid, aid, value:1})
+  }
+  return {questions, answers, scores}
+}
+
 export function save() { 
   return function(dispatch, getState) {
     const state = getState()
@@ -59,22 +76,6 @@ export function save() {
     .done(result =>     dispatch(UI.setIsDirty(false)))
     .fail((a, textStatus, errorThrown) => alert('error occurred: ' + errorThrown))
 }}
-
-function buildFakeData(howMany=10) {
-  const questions = []
-  const answers = []
-  const scores = []
-  answers.push({id:'multiline', text:'Once upon a midnight dreary\nWhile I pondered weak and weary\nOver many a quaint and curious\n'})
-  for(var i = 0; i < howMany; i++) {
-    const qid = 'q' + i
-    const aid = 'a' + i
-    const sid = 's' + i
-    questions.push({id:qid, text:'question ' + i})
-    answers.push({id:aid, text:'Answer ' + i})
-    scores.push({id:sid, qid, aid, value:1})
-  }
-  return {questions, answers, scores}
-}
 
 
 export function load() { 
@@ -96,7 +97,10 @@ export function load() {
       dispatch(SCORES.loadScores(data.scores))
     })
     .fail((a, textStatus, errorThrown) => {
-      alert('error occurred: ' + errorThrown)
+      dispatch(QUESTIONS.loadQuestions({}))
+      dispatch(ANSWERS.loadAnswers({}))
+      dispatch(SCORES.loadScores({}))
+      alert('loaded an empty faq to start')
     })
 }}
 export function setBestAnswer(aid) {

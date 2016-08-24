@@ -92,47 +92,7 @@ export default MyEditor
 // junk
 
 
-    // let fldText
-    // const {text, onChange} = this.props
-    // return (
-    //   <div>
-    //     <textarea
-    //       style={styleTextareaActive}
-    //       ref={node => {fldText=node}} 
-    //       value={text} 
-    //       cols={72} 
-    //       onKeyDown={this.onKeyDown.bind(this)}
-    //       onBlur={() => this.onBlur.bind(this)}
-    //       onChange={()=>onChange(fldText.value)}>
-    //     </textarea>
-    //   </div>
-    // )
 
-  // shouldComponentUpdate(nextProps) {
-  //   if(nextProps.text !== this.props.text) return true
-  //   if(nextProps.isActive !== this.props.isActive) return true
-  //   return false
-  // }
-  // onKeyDown(e) {
-  //   if(!this.props.isActive) return
-  //   switch(e.keyCode) {
-  //     case 27: break
-  //     default: return
-  //   }
-  //   this.props.onDeactivate()
-  // }
-  // onBlur(e) {
-  //   console.log('blur heard')
-  //   this.props.onDeactivate()
-  // }
-
-
-// const styleContainerInactive = {
-//   display:'flex',
-//   paddingTop: 5,
-//   paddingBottom: 5,
-//   borderBottom: 'lightgrey 1px solid'
-// }
 
 // const styleInactive = {
 //   border: 'black 0px solid',

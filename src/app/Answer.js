@@ -58,21 +58,7 @@ class Answer extends Component {
         </div>
       )
     }
-    return <div style={{backgroundColor:'beige'}}><MyEditor {...{text}} onChanged={this.onDraftChanged.bind(this)}/></div>
-    // return <MyEditor />
-    // return (
-    //   <div>
-    //     <textarea
-    //       style={styleTextareaActive}
-    //       ref={node => {fldText=node}} 
-    //       value={text} 
-    //       cols={72} 
-    //       onKeyDown={this.onKeyDown.bind(this)}
-    //       onBlur={() => this.onBlur.bind(this)}
-    //       onChange={()=>onChange(fldText.value)}>
-    //     </textarea>
-    //   </div>
-    // )
+    return <div style={{backgroundColor:'beige', paddingTop:5, paddingBottom:5, marginBottom:4}}><MyEditor {...{text}} onChanged={this.onDraftChanged.bind(this)}/></div>
   }  
 }
 
