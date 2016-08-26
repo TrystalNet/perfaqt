@@ -1,14 +1,14 @@
 import React, { Component } from 'react';
-import QuestionBar from './QuestionBar'
+import SearchBar from './SearchBar'
 import MenuBar from './MenuBar'
-import AnswersArea from './AnswersArea'
+import FaqtsArea from './FaqtsArea'
 
 const COL0WIDTH = 130
 
 const s1 = {padding:10 }
 const s2 = {padding:10, border:'gray 1px solid', overflowY:'auto' }
 
-const styleQuestionBar = {
+const styleSearchBar = {
   backgroundColor:'#f2f2f2', display:'flex', paddingTop:20, paddingBottom:20, borderBottom: 'lightgray 1px solid'
 }
 const stylePerfaqt = {
@@ -22,7 +22,7 @@ const styleToolbar = {
   borderBottom: 'lightgray 1px solid'
 }
 
-const styleQuestionField = {
+const styleSearchField = {
   fontSize:18,
   paddingLeft:10,
   flex:1
@@ -31,30 +31,30 @@ const styleKeepButton = {
   marginRight:20
 }
 
-const styleQuestionOption = {
+const styleSearchOption = {
   border: 'purple 3px solid',
   backgroundColor:'orange'
 }
 
 export default class App extends Component {
-  onQuestionChange(e) {
-    this.props.onAsk(this.refs.fldQuestion.value)
+  onSearchChange(e) {
+    this.props.onAsk(this.refs.fldSearch.value)
   }
-  onSaveQuestion(e) {
-    const question = this.refs.fldQuestion.value
-    if(!question || !question.length) return
-    this.props.onSaveQuestion(question)
+  onSaveSearch(e) {
+    const search = this.refs.fldSearch.value
+    if(!search || !search.length) return
+    this.props.onSaveSearch(search)
   }
-  onSetBest(answerId, e) {
-    const question = this.refs.fldQuestion.value
-    if(!question || !question.length) return
-    this.props.onSetBestAnswer(question, answerId)    
+  onSetBest(faqtId, e) {
+    const search = this.refs.fldSearch.value
+    if(!search || !search.length) return
+    this.props.onSetBestFaqt(search, faqtId)    
   }
-  onAddAnswer(e) {
-    const value = this.refs.fldNewAnswer.value
+  onAddFaqt(e) {
+    const value = this.refs.fldNewFaqt.value
     if(value && value.length) {
-      this.props.onAddAnswer(value)
-      this.refs.fldNewAnswer.value = ''
+      this.props.onAddFaqt(value)
+      this.refs.fldNewFaqt.value = ''
     }
   }
   onSave(e) {
@@ -63,22 +63,21 @@ export default class App extends Component {
   onLoad(e) {
     this.props.onLoad()
   }
-  onUpdateAnswer(answerId, e) {
-    const newValue = e.target.value
-    this.props.onUpdateAnswer(answerId, newValue)
-}
+  onUpdateFaqt(faqtId, e) {
+    this.props.onUpdateFaqt(faqtId, e.target.value)
+  }
   render() {
-    const {question, questions, answers, aid, isDirty} = this.props
+    const {search, searches, faqts, faqtId, isDirty} = this.props
     const {
-      onSave, onLoad, onAddFaqt, onAsk, 
-      onSaveQuestion, onSetBestAnswer, onAddAnswer, onUpdateAnswer,
+      onSave, onLoad, onAsk, 
+      onSaveSearch, onSetBestFaqt, onAddFaqt, onUpdateFaqt,
       onActivate
     } = this.props
     return (
       <div id='app'>
-        <QuestionBar {...{ question, questions, onAsk, onSaveQuestion }} />
+        <SearchBar {...{ search, searches, onAsk, onSaveSearch }} />
         <MenuBar {...{isDirty, onSave, onLoad, onAddFaqt}}/>
-        <AnswersArea {...{question, answers, aid, onSetBestAnswer, onAddAnswer, onUpdateAnswer, onActivate}} />
+        <FaqtsArea {...{faqts, faqtId, onSetBestFaqt, onUpdateFaqt, onActivate}} />
       </div>
     );
   }

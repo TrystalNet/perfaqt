@@ -1,17 +1,19 @@
 const defaultState = {
-  question:'',
-  aid: null,
+  search:'',
+  faqtId: null,
   isDirty: false,
-  isDEVL: false
+  isDEVL: false,
+  index: null
 }
 
 function reducer(uiState=defaultState, action) {
   if(action.type === 'UI') 
     switch(action.uiType) {  
-      case 'SET_QUESTION': return Object.assign({}, uiState, { question: action.payload.question })
-      case 'SET_AID': return Object.assign({}, uiState, { aid: action.payload.aid })
-      case 'SET_ISDIRTY': return Object.assign({}, uiState, { isDirty: action.payload.isDirty })
-      case 'SET_ISDEVL': return Object.assign({}, uiState, { isDEVL: action.payload.isDEVL })
+      case 'SET_SEARCH'  : return Object.assign({}, uiState, { search: action.payload.search })
+      case 'SET_FAQTID'  : return Object.assign({}, uiState, { faqtId: action.payload.faqtId })
+      case 'SET_ISDIRTY' : return Object.assign({}, uiState, { isDirty: action.payload.isDirty })
+      case 'SET_ISDEVL'  : return Object.assign({}, uiState, { isDEVL: action.payload.isDEVL })
+      case 'SET_INDEX'   : return Object.assign({}, uiState, { index: action.payload.index })
     }
   return uiState
 }

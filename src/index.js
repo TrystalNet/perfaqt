@@ -7,19 +7,19 @@ import { createStore, applyMiddleware } from 'redux'
 import * as THUNK from './thunks'
 import App from './app/app-container'
 
-import ANSWERS   from './answers/answers-reducer'
-import QUESTIONS from './questions/questions-reducer'
+import FAQTS   from './faqts/faqts-reducer'
+import SEARCHES from './searches/searches-reducer'
 import SCORES    from './scores/scores-reducer'
 import UI        from './ui/ui-reducer'
 
 function reducer(state={}, action) {
   const newState = {
-    answers  : ANSWERS(state.answers, action),
-    questions: QUESTIONS(state.questions, action),
-    scores   : SCORES(state.scores, action),
-    ui       : UI(state.ui, action)
+    faqts     : FAQTS(state.faqts, action),
+    searches  : SEARCHES(state.searches, action),
+    scores    : SCORES(state.scores, action),
+    ui        : UI(state.ui, action)
   }
-  if(action.type !== 'UPDATE_ANSWER') console.log(action.type)
+  if(action.type !== 'UPDATE_FAQT') console.log(action.type)
   return newState
 }
 

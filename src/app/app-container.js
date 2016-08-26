@@ -5,15 +5,15 @@ import * as SELECT from '../select'
 // import * as UI     from '../ui/ui-actions'
 
 function mapStateToProps(state) {
-  const aid = state.ui.aid
-  const question = state.ui.question || ''
-  const answers = SELECT.rankedAnswers(state, question)
-  const questions = SELECT.questions(state).map(question => question.text).sort()
+  const faqtId = state.ui.faqtId
+  const search = state.ui.search || ''
+  const faqts = SELECT.rankedFaqts(state, search)
+  const searches = SELECT.searches(state)
   return {
-    aid,
-    answers,
-    questions,
-    question,
+    faqtId,
+    faqts,
+    searches,
+    search,
     isDirty:state.ui.isDirty
   }
 }
@@ -23,14 +23,13 @@ function mapDispatchToProps(dispatch) {
     onAddFaqt:       () => dispatch(THUNK.addFaqt()),
     onLoad:          () => dispatch(THUNK.load()),
     onSave:          () => dispatch(THUNK.save()),
-    onAddAnswer:     text =>dispatch(THUNK.addAnswer(text)),
-    onAsk:           question => dispatch(THUNK.askQuestion(question)),
-    onSaveQuestion:  question => dispatch(THUNK.saveQuestion(question)),
-    onUpdateAnswer:  (aid, text) => dispatch(THUNK.updateAnswer(aid, text)),
-    onSetBestAnswer: aid => dispatch(THUNK.setBestAnswer(aid)),
-    onActivate     : aid => dispatch(THUNK.activateAnswer(aid)), 
-    onQuestionChange: function(question)  {
-      // dispatch(updateActiveQuestion(question))
+    onAsk:           search => dispatch(THUNK.doSearch(search)),
+    onSaveSearch:    search => dispatch(THUNK.saveSearch(search)),
+    onUpdateFaqt:    (faqtId, text) => dispatch(THUNK.updateFaqt(faqtId, text)),
+    onSetBestFaqt:   faqtId => dispatch(THUNK.setBestFaqt(faqtId)),
+    onActivate     : faqtId => dispatch(THUNK.activateFaqt(faqtId)), 
+    onSearchChange: function(search)  {
+      // dispatch(updateActiveSearch(search))
     }
   }
 }

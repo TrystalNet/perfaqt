@@ -66,7 +66,7 @@ class MyEditor extends Component {
   render() {
     return <Editor 
       editorState={this.state.editorState} 
-      placeHolder="...you answer..."
+      placeHolder="...faqt..."
       handleKeyCommand={this.handleKeyCommand.bind(this)}
       keyBindingFn={myKeyBindingFn}
       onEscape={this.saveAndExit.bind(this)}

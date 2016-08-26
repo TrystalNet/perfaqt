@@ -1,61 +1,73 @@
 import $ from 'jquery'
 import * as UNIQ from '@trystal/uniq-ish'
 import * as SELECT from './select'
-import * as ANSWERS from './answers/answers-actions'
-import * as QUESTIONS from './questions/questions-actions'
+import * as FAQTS from './faqts/faqts-actions'
+import * as SEARCHES from './searches/searches-actions'
 import * as SCORES from './scores/scores-actions'
 import * as UI from './ui/ui-actions'
 
-export function saveQuestion(question) {
-  return function(dispatch) {
-    const id = UNIQ.randomId(4)
-    const text = question
-    dispatch(QUESTIONS.addQuestion({id, text}))
-  }
-}
-export function askQuestion(question) {
-  return function(dispatch) {
-    dispatch(UI.setQuestion(question) )
-  }
-}
-export function activateAnswer(aid) {
-  return function(dispatch) {
-    dispatch(UI.setAID(aid))
-  }
-}
-export function updateAnswer(aid, text) {
+import lunr  from 'lunr'
+
+export function saveSearch(search) {
   return function(dispatch, getState) {
     const state = getState()
-    const A = SELECT.getAnswerById(state, aid)
+    if(SELECT.findSearchByText(state, search)) return
+    const id = UNIQ.randomId(4)
+    const text = search
+    dispatch(SEARCHES.addSearch({id, text}))
+  }
+}
+export function doSearch(search) {
+  return function(dispatch) {
+    dispatch(UI.setSearch(search) )
+  }
+}
+export function activateFaqt(faqtId) {
+  return function(dispatch) {
+    dispatch(UI.setFaqtId(faqtId))
+  }
+}
+export function updateFaqt(faqtId, text) {
+  return function(dispatch, getState) {
+    const state = getState()
+    const A = SELECT.getFaqtById(state, faqtId)
     if(!A) return
-    dispatch(ANSWERS.updateAnswer(aid, {text}))
+    dispatch(FAQTS.updateFaqt(faqtId, {text}))
     if(!state.isDirty) dispatch(UI.setIsDirty(true))
   }
 }
-export function addAnswer(text) {
+export function addFaqt(text) {
   return function(dispatch, getState) {
     const state = getState()
-    const existingAnswer = SELECT.findAnswerByText(state, text)
-    if(existingAnswer) return
+    const existingFaqt = SELECT.findFaqtByText(state, text)
+    if(existingFaqt) return
     const id = UNIQ.randomId(4) 
-    dispatch(ANSWERS.addAnswer({ id, text }))
+    dispatch(FAQTS.addFaqt({ id, text }))
   }
 }
 
 function buildFakeData(howMany=10) {
-  const questions = []
-  const answers = []
-  const scores = []
-  answers.push({id:'multiline', text:'Once upon a midnight dreary\nWhile I pondered weak and weary\nOver many a quaint and curious\n'})
-  for(var i = 0; i < howMany; i++) {
-    const qid = 'q' + i
-    const aid = 'a' + i
-    const sid = 's' + i
-    questions.push({id:qid, text:'question ' + i})
-    answers.push({id:aid, text:'Answer ' + i})
-    scores.push({id:sid, qid, aid, value:1})
+  function getFaqtText(i) {
+    switch(i) {
+      case 3: return 'Once upon a midnight dreary\nWhile I pondered weak and weary\nOver many a quaint and curious'
+      case 5: return 'The rain in spain falls mainly in the plain.'
+      case 10: return 'How about those blue jays?'
+      default: return 'Faqt ' + i
+    }
   }
-  return {questions, answers, scores}
+
+  const searches = []
+  const faqts = []
+  const scores = []
+  for(var i = 0; i < howMany; i++) {
+    const searchId = 'q' + i
+    const faqtId = 'a' + i
+    const scoreId = 's' + i
+    searches.push({id:searchId, text:'Search ' + i})
+    faqts.push({id:faqtId, text:getFaqtText(i)})
+    scores.push({id:scoreId, searchId, faqtId, value:1})
+  }
+  return {searches, faqts, scores}
 }
 
 export function save() { 
@@ -66,8 +78,8 @@ export function save() {
       return
     }
     const upload = {
-      answers  : state.answers,
-      questions: state.questions,
+      faqts  : state.faqts,
+      searches: state.searches,
       scores   : state.scores
     }
     $.ajax({
@@ -94,29 +106,44 @@ export function load() {
         data = buildFakeData(50)
         dispatch(UI.setIsDEVL(true))
       }
-      dispatch(QUESTIONS.loadQuestions(data.questions))
-      dispatch(ANSWERS.loadAnswers(data.answers))
+
+      const index = lunr(function() {
+        this.field('text')
+        this.ref('id')
+      })
+      function convert(data) {
+        return {
+          searches: data.questions,
+          faqts: data.answers,
+          scores: data.scores.map(({id, score, qid, aid}) => ({id, score, searchId:qid, faqtId:aid}))
+        }
+      }
+      if(data.answers) data = convert(data)
+      data.faqts.forEach(faqt => index.add(faqt))
+      dispatch(UI.setIndex(index))
+      dispatch(SEARCHES.loadSearches(data.searches))
+      dispatch(FAQTS.loadFaqts(data.faqts))
       dispatch(SCORES.loadScores(data.scores))
     })
     .fail((a, textStatus, errorThrown) => {
-      dispatch(QUESTIONS.loadQuestions({}))
-      dispatch(ANSWERS.loadAnswers({}))
+      dispatch(SEARCHES.loadSearches({}))
+      dispatch(FAQTS.loadFaqts({}))
       dispatch(SCORES.loadScores({}))
       alert('loaded an empty faq to start')
     })
 }}
-export function setBestAnswer(aid) {
+export function setBestFaqt(faqtId) {
   return function(dispatch, getState, extras) {
     const state = getState()
-    const question = state.ui.question
-    const Q = SELECT.findQuestionByText(state, question)
+    const search = state.ui.search
+    const Q = SELECT.findSearchByText(state, search)
     if(!Q) {
-      alert('save question first')
-      return // change this to create the question
+      alert('save search first')
+      return // change this to create the search
     }
-    let qid = Q.id
-    let matchingScore = SELECT.findScore(state, qid, aid)
-    let bestScore = SELECT.findBestScore(state, qid)
+    let searchId = Q.id
+    let matchingScore = SELECT.findScore(state, searchId, faqtId)
+    let bestScore = SELECT.findBestScore(state, searchId)
     if(matchingScore && matchingScore === bestScore) return
 
     let value = bestScore ? bestScore.value + 1 : 1
@@ -124,7 +151,7 @@ export function setBestAnswer(aid) {
     if(matchingScore) dispatch(SCORES.updateScore(matchingScore.id, {value}))
     else {
       const id = UNIQ.randomId(4)
-      const score = { id, qid, aid, value }
+      const score = { id, searchId, faqtId, value }
       dispatch(SCORES.addScore(score))
       if(!state.ui.isDirty) dispatch(UI.setIsDirty(true))
     }
@@ -134,28 +161,28 @@ export function setBestAnswer(aid) {
 export function addFaqt() {
   return function(dispatch, getState) {
     const state = getState()
-    function getQID(text) {
+    function getSearchId(text) {
       if(!text || !text.length) return null
-      const question = SELECT.findQuestionByText(state, text)
-      return question ? question.id : null
+      const search = SELECT.findSearchByText(state, text)
+      return search ? search.id : null
     }
-    function getScoreValue(qid) {
-      const score = SELECT.findBestScore(state, qid)
+    function getScoreValue(searchId) {
+      const score = SELECT.findBestScore(state, searchId)
       return score ? score.value + 1 : 1
     }
-    const qid = getQID(state.ui.question)
-    const aid = UNIQ.randomId(4)
-    const newAnswer = { id:aid, text:'' }
+    const searchId = getSearchId(state.ui.search)
+    const faqtId = UNIQ.randomId(4)
+    const newFaqt = { id:faqtId, text:'' }
 
-    dispatch(ANSWERS.addAnswer(newAnswer))
-    if(qid) {
+    dispatch(FAQTS.addFaqt(newFaqt))
+    if(searchId) {
       const score = {
         id: UNIQ.randomId(4),
-        qid, aid, 
-        value:getScoreValue(qid)
+        searchId, faqtId, 
+        value:getScoreValue(searchId)
       }      
       dispatch(SCORES.addScore(score))
     }
-     dispatch(UI.setAID(aid))
+     dispatch(UI.setFaqtId(faqtId))
  }
 }

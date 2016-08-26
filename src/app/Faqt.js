@@ -19,7 +19,7 @@ const styleTextareaActive = {
   fontSize:14
 }
 
-class Answer extends Component {
+class Faqt extends Component {
   shouldComponentUpdate(nextProps) {
     if(nextProps.text !== this.props.text) return true
     if(nextProps.isActive !== this.props.isActive) return true
@@ -34,11 +34,9 @@ class Answer extends Component {
     this.props.onDeactivate()
   }
   onBlur(e) {
-    console.log('blur heard')
     this.props.onDeactivate()
   }
   onDraftChanged(value) {
-    console.log('in onDraftChanged, the value is = ', value)
     this.props.onChange(value)
     this.props.onDeactivate()
   }
@@ -62,4 +60,4 @@ class Answer extends Component {
   }  
 }
 
-export default Answer
+export default Faqt

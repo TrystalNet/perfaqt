@@ -1,5 +1,5 @@
 import { connect } from 'react-redux'
-import Answer from './Answer'
+import Faqt from './Faqt'
 
 function mapStateToProps(state, ownProps) {
   const {isActive, id, text} = ownProps
@@ -17,7 +17,7 @@ function mapDispatchToProps(dispatch, ownProps) {
   }
 }
 
-const container = connect(mapStateToProps, mapDispatchToProps)(Answer)
+const container = connect(mapStateToProps, mapDispatchToProps)(Faqt)
 
 export default container
 
