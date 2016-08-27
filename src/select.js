@@ -56,6 +56,7 @@ function faqtsForNoSearch(state) {
   const FAQTIDS = _.map(FAQTS, 'id')
   const FAQTIDS2 = _.chain(SCORES).map('faqtId').uniq().value()  // scored faqts
   const FAQTINDEX = _.keyBy(FAQTS, 'id')
+
   const FAQTIDS1 = _.chain(FAQTIDS)
     .difference(FAQTIDS2)                               // unscored faqts
     .sortBy(faqtId => FAQTINDEX[faqtId].text.length)   // part0, no faqts, part1, faqts

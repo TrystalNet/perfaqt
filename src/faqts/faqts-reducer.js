@@ -8,7 +8,7 @@ function updateFaqt(faqts, {faqtId, edits}) {
 function reducer(faqts=[], action) {
   switch(action.type) {  
     case 'LOAD_FAQTS': return action.payload.faqts
-    case 'ADD_FAQT': return [...faqts,action.payload.faqts]
+    case 'ADD_FAQT': return [...faqts,action.payload.faqt]
     case 'UPDATE_FAQT': return updateFaqt(faqts, action.payload)
   }
   return faqts
