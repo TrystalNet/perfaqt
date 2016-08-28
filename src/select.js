@@ -45,7 +45,10 @@ function faqtsForSearchId(state, searchId, search) {
   const unranked = _.difference(nonBestFAQTIDS, ftFAQTIDS)
 
   const FAQT_INDEX = _.keyBy(FAQTS, 'id')
-  return [...bestFAQTIDS,...ftFAQTIDS, ...unranked].map(faqtId => FAQT_INDEX[faqtId])
+  const ids = [...bestFAQTIDS,...ftFAQTIDS, ...unranked]
+  var result = ids.map(faqtId => FAQT_INDEX[faqtId])
+  result = result.filter(item => item)
+  return result
 }
 
 function faqtsForNoSearch(state) {
@@ -62,7 +65,11 @@ function faqtsForNoSearch(state) {
     .difference(FAQTIDS2)                               // unscored faqts
     .sortBy(faqtId => FAQTINDEX[faqtId].text.length)   // part0, no faqts, part1, faqts
     .value()
-  return [...FAQTIDS1,...FAQTIDS2].map(faqtId => FAQTINDEX[faqtId])
+  var result = [...FAQTIDS1,...FAQTIDS2].map(faqtId => FAQTINDEX[faqtId])
+
+  result = result.filter(item => item)
+
+   return result
 }
 
 export function rankedFaqts(state, search) {
