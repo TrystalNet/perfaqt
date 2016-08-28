@@ -103,7 +103,7 @@ export default class SearchBar extends Component {
           renderSuggestion={search => <span>{search.text}</span>}
           inputProps={inputProps}/>
         <div style={styleRight}></div>
-        <div>{broadcast}</div>
+        <div style={{marginRight:15, color:'red', fontSize:'small'}}>{broadcast}</div>
         <button onClick={onLogout}>sign out</button>
       </div>
     )
