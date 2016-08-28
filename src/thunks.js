@@ -10,6 +10,15 @@ import lunr  from 'lunr'
 
 let FBAUTH
 let FBDATA
+let FULLTEXT 
+
+function initFullText(dispatch) {
+  FULLTEXT = lunr(function () {
+    this.field('text')
+    this.ref('id')
+  })
+  dispatch(UI.setIndex(FULLTEXT))
+}
 
 export function login(email, password) {
   return function(dispatch, getState) {
@@ -37,6 +46,7 @@ function initFaqts(dispatch, uid, faqId) {
       text:snap.val().text
     }
     dispatch(FAQTS.addFaqt(faqt))
+    FULLTEXT.add(faqt)
   })
   fbref.on('child_changed', snap => dispatch(FAQTS.updateFaqt(snap.key, {text:snap.val().text})))
 }
@@ -77,6 +87,8 @@ export function firebaseStuff(app, auth, db) {
     dbRefBroadcast.on('value', snap => dispatch(UI.setBroadcast(snap.val())))
     const uid = 'bob'
     const faqId = 'faq1'
+
+    initFullText(dispatch)
 
     initFaqts(dispatch, uid, faqId)
     initSearches(dispatch, uid, faqId)
