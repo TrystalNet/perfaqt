@@ -28,7 +28,6 @@ export function logout() {
     FBAUTH.signOut()
   }
 }
-
 function initFaqts(dispatch, uid, faqId) {
   const path = `faqts/${uid}/${faqId}`
   const fbref = FBDATA.ref().child(path)
@@ -56,7 +55,6 @@ function initSearches(dispatch, uid, faqId) {
     console.log(snap.key, snap.val().faqts)
   })
 }
-
 function initScores(dispatch, uid, faqId) {
   const fbref = FBDATA.ref().child(`scores/${uid}/${faqId}`)
   fbref.on('child_added', snap => {
@@ -66,7 +64,6 @@ function initScores(dispatch, uid, faqId) {
   })
   fbref.on('child_changed', snap => dispatch(SCORES.updateScore(snap.key, {value:snap.val().value})))
 }
-
 export function firebaseStuff(app, auth, db) {
   FBAUTH = auth
   FBDATA = db
@@ -123,7 +120,6 @@ export function setBestFaqt(faqtId) {
     else FBDATA.ref(`scores/${uid}/${faqId}/${UNIQ.randomId(4)}`).set({ searchId, faqtId, value })
   }  
 }
-
 export function updateFaqt(faqtId, text) {
   return function(dispatch, getState) {
     if(!SELECT.getFaqtById(getState(), faqtId)) return
@@ -132,35 +128,29 @@ export function updateFaqt(faqtId, text) {
     FBDATA.ref().update(updates)
   }
 }
-
-
-
 export function addFaqt() {
   return function(dispatch, getState) {
-    // const state = getState()
-    // function getSearchId(text) {
-    //   if(!text || !text.length) return null
-    //   const search = SELECT.findSearchByText(state, text)
-    //   return search ? search.id : null
-    // }
-    // function getScoreValue(searchId) {
-    //   const score = SELECT.findBestScore(state, searchId)
-    //   return score ? score.value + 1 : 1
-    // }
-    // const searchId = getSearchId(state.ui.search)
+    const state = getState()
+    const uid = 'bob'
+    const faqId = 'faq1'
+    function getSearchId(text) {
+      if(!text || !text.length) return null
+      const search = SELECT.findSearchByText(state, text)
+      return search ? search.id : null
+    }
+    function getScoreValue(searchId) {
+      const score = SELECT.findBestScore(state, searchId)
+      return score ? score.value + 1 : 1
+    }
+    const searchId = getSearchId(state.ui.search)
     const faqtId = UNIQ.randomId(4)
+    FBDATA.ref(`faqts/${uid}/${faqId}/${faqtId}`).set({text:''})
 
-    // dispatch(FAQTS.addFaqt(newFaqt))
-    // if(searchId) {
-    //   const score = {
-    //     id: UNIQ.randomId(4),
-    //     searchId, faqtId, 
-    //     value:getScoreValue(searchId)
-    //   }      
-    //   dispatch(SCORES.addScore(score))
-    // }
-
-    FBDATA.ref('faqts/bob/faq1/' + faqtId).set({text:''})
+    if(searchId) {
+      const scoreId = UNIQ.randomId(4)
+      const value = getScoreValue(searchId)
+      FBDATA.ref(`scores/${uid}/${faqId}/${scoreId}`).set({ searchId, faqtId, value })      
+    }
   }
 }
 export function saveSearch(search) {
