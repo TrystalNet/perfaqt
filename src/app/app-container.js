@@ -14,6 +14,7 @@ function mapStateToProps(state) {
     faqts,
     searches,
     search,
+    email: state.ui.email,
     isDirty:state.ui.isDirty
   }
 }
@@ -28,6 +29,8 @@ function mapDispatchToProps(dispatch) {
     onUpdateFaqt:    (faqtId, text) => dispatch(THUNK.updateFaqt(faqtId, text)),
     onSetBestFaqt:   faqtId => dispatch(THUNK.setBestFaqt(faqtId)),
     onActivate     : faqtId => dispatch(THUNK.activateFaqt(faqtId)), 
+    onLogout       : () => dispatch(THUNK.logout()),
+    onLogin        : (email,password) => dispatch(THUNK.login(email, password)),
     onSearchChange: function(search)  {
       // dispatch(updateActiveSearch(search))
     }

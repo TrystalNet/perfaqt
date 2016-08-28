@@ -92,7 +92,7 @@ export default class SearchBar extends Component {
       onKeyDown: this.onKeyDown.bind(this),
       onChange:this.onChange
     }
-    const {search, searches} = this.props
+    const {email, search, searches, onLogout} = this.props
     return (
       <div id='searchesContainer' style={styleSearchBar}>
         <div id='perfaqt' style={stylePerfaqt}>per<span style={{color:'blue'}}>faq</span>t</div>
@@ -103,13 +103,8 @@ export default class SearchBar extends Component {
           renderSuggestion={search => <span>{search.text}</span>}
           inputProps={inputProps}/>
         <div style={styleRight}></div>
+        <button onClick={onLogout}>sign out</button>
       </div>
     )
   }
 }
-//           renderSuggestionsContainer={renderSuggestionsContainer}
-
-// <button key='btnSaveSearch' style={styleKeepButton} onClick={this.onSaveSearch.bind(this)}>keep</button>
-// <input key='f1' ref='fldSearch' style={styleSearchField} list='dl1' type='text'
-//   onKeyDown={this.onKeyDown.bind(this)} 
-//   onChange={this.onSearchChange.bind(this)}></input>

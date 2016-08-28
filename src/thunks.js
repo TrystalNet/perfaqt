@@ -5,8 +5,33 @@ import * as FAQTS from './faqts/faqts-actions'
 import * as SEARCHES from './searches/searches-actions'
 import * as SCORES from './scores/scores-actions'
 import * as UI from './ui/ui-actions'
-
 import lunr  from 'lunr'
+
+let FBAUTH
+
+export function login(email, password) {
+  return function(dispatch, getState) {
+    FBAUTH.signInWithEmailAndPassword(email, password)
+  }
+}
+
+export function logout() {
+  return function(dispatch, getState) {
+    FBAUTH.signOut()
+    console.log('FBAUTH IS ', FBAUTH)
+    console.log('now we logout from thungs.js')
+  }
+}
+export function firebaseStuff(app, auth) {
+  FBAUTH = auth
+  return  function(dispatch, getState) {
+    console.log('the answer is still ', auth.onAuthStateChanged)
+    auth.onAuthStateChanged(user => {
+      if(user) dispatch(UI.setEmail(user.email))
+      else dispatch(UI.setEmail(null))
+    })
+  }
+}
 
 export function saveSearch(search) {
   return function(dispatch, getState) {
@@ -45,7 +70,6 @@ export function addFaqt(text) {
     dispatch(FAQTS.addFaqt({ id, text }))
   }
 }
-
 function buildFakeData(howMany=10) {
   function getFaqtText(i) {
     switch(i) {
@@ -69,7 +93,6 @@ function buildFakeData(howMany=10) {
   }
   return {searches, faqts, scores}
 }
-
 export function save() { 
   return function(dispatch, getState) {
     const state = getState()
@@ -91,8 +114,6 @@ export function save() {
     .done(result =>     dispatch(UI.setIsDirty(false)))
     .fail((a, textStatus, errorThrown) => alert('error occurred: ' + errorThrown))
 }}
-
-
 export function load() { 
   return function(dispatch, getState) {
     const state = getState()
@@ -157,7 +178,6 @@ export function setBestFaqt(faqtId) {
     }
   }  
 }
-
 export function addFaqt() {
   return function(dispatch, getState) {
     const state = getState()
@@ -186,3 +206,4 @@ export function addFaqt() {
      dispatch(UI.setFaqtId(faqtId))
  }
 }
+
