@@ -20,14 +20,9 @@ const styleRight = {
 
 export default class MenuBar extends Component {
   render() {
-    const {onSave, onLoad, onAddFaqt, isDirty} = this.props
+    const {onAddFaqt} = this.props
     return (
       <div id='toolbar' style={styleToolbar}>
-        <div>
-          {
-            isDirty ? <button onClick={onSave}>Save</button> : null
-          }
-        </div>
         <div style={styleRight}>
           <button onClick={onAddFaqt}>Add Faqt</button>
         </div>

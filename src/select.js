@@ -38,7 +38,8 @@ function faqtsForSearchId(state, searchId, search) {
     .map(score => score.faqtId)              // take just the faqt id
     .value()                              // return the faqtIds
 
-  const ftFAQTIDS = _.difference(fullTextIndex(state).search(search).map(item => item.ref), bestFAQTIDS)
+  const ftIndex = fullTextIndex(state)
+  const ftFAQTIDS = ftIndex ? _.difference(ftIndex.search(search).map(item => item.ref), bestFAQTIDS) : []
 
   const nonBestFAQTIDS = _.difference(allFAQTIDS, bestFAQTIDS)
   const unranked = _.difference(nonBestFAQTIDS, ftFAQTIDS)

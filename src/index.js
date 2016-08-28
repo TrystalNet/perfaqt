@@ -5,6 +5,7 @@ import { Provider } from 'react-redux'
 import { createStore, applyMiddleware } from 'redux'
 import firebase from 'firebase/app'
 import 'firebase/auth'
+import 'firebase/database'
 
 import * as THUNK from './thunks'
 import App from './app/app-container'
@@ -23,9 +24,7 @@ const config = {
 
 const app = firebase.initializeApp(config)
 const auth = firebase.auth()
-
-// auth.signInWithEmailAndPassword('edmontonsoccer@yahoo.ca','ouamd#9WIP')  // promise
-// auth.CreateUserWithEmailAndPassword('','')
+const db = firebase.database()
 
 function reducer(state={}, action) {
   const newState = {
@@ -39,10 +38,7 @@ function reducer(state={}, action) {
 }
 
 const store = createStore(reducer, applyMiddleware(Thunk))
-
 render(<Provider store={store}><App /></Provider>, document.getElementById('root'))
-
-store.dispatch(THUNK.firebaseStuff(app, auth))
-store.dispatch(THUNK.load())
+store.dispatch(THUNK.firebaseStuff(app, auth, db))
 
 

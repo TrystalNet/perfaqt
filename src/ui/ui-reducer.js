@@ -1,10 +1,9 @@
 const defaultState = {
   search:'',
   faqtId: null,
-  isDirty: false,
-  isDEVL: false,
   index: null,
-  email: null
+  connected: null,
+  broadcast: null
 }
 
 function reducer(uiState=defaultState, action) {
@@ -12,10 +11,9 @@ function reducer(uiState=defaultState, action) {
     switch(action.uiType) {  
       case 'SET_SEARCH'    : return Object.assign({}, uiState, { search: action.payload.search })
       case 'SET_FAQTID'    : return Object.assign({}, uiState, { faqtId: action.payload.faqtId })
-      case 'SET_ISDIRTY'   : return Object.assign({}, uiState, { isDirty: action.payload.isDirty })
-      case 'SET_ISDEVL'    : return Object.assign({}, uiState, { isDEVL: action.payload.isDEVL })
       case 'SET_INDEX'     : return Object.assign({}, uiState, { index: action.payload.index })
-      case 'SET_EMAIL'     : return Object.assign({}, uiState, { email: action.payload.email })
+      case 'SET_CONNECTED' : return Object.assign({}, uiState, { connected: action.payload.connected })
+      case 'SET_BROADCAST' : return Object.assign({}, uiState, { broadcast: action.payload.broadcast })
     }
   return uiState
 }

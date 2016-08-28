@@ -1,4 +1,5 @@
 import $ from 'jquery'
+import _ from 'lodash'
 import * as UNIQ from '@trystal/uniq-ish'
 import * as SELECT from './select'
 import * as FAQTS from './faqts/faqts-actions'
@@ -8,38 +9,81 @@ import * as UI from './ui/ui-actions'
 import lunr  from 'lunr'
 
 let FBAUTH
+let FBDATA
 
 export function login(email, password) {
   return function(dispatch, getState) {
     FBAUTH.signInWithEmailAndPassword(email, password)
+    .catch(e => alert(e.message))
   }
 }
-
+export function signup(email, password) {
+  return function(dispatch, getState) {
+    FBAUTH.createUserWithEmailAndPassword(email, password)
+    .catch(e => alert(e.message))
+  }
+}
 export function logout() {
   return function(dispatch, getState) {
     FBAUTH.signOut()
-    console.log('FBAUTH IS ', FBAUTH)
-    console.log('now we logout from thungs.js')
-  }
-}
-export function firebaseStuff(app, auth) {
-  FBAUTH = auth
-  return  function(dispatch, getState) {
-    console.log('the answer is still ', auth.onAuthStateChanged)
-    auth.onAuthStateChanged(user => {
-      if(user) dispatch(UI.setEmail(user.email))
-      else dispatch(UI.setEmail(null))
-    })
   }
 }
 
-export function saveSearch(search) {
-  return function(dispatch, getState) {
-    const state = getState()
-    if(SELECT.findSearchByText(state, search)) return
-    const id = UNIQ.randomId(4)
-    const text = search
-    dispatch(SEARCHES.addSearch({id, text}))
+function initFaqts(dispatch, uid, faqId) {
+  const path = `faqts/${uid}/${faqId}`
+  const fbref = FBDATA.ref().child(path)
+  fbref.on('child_added', snap => {
+    const faqt = {
+      id: snap.key,
+      text:snap.val().text
+    }
+    dispatch(FAQTS.addFaqt(faqt))
+  })
+  fbref.on('child_changed', snap => dispatch(FAQTS.updateFaqt(snap.key, {text:snap.val().text})))
+}
+function initSearches(dispatch, uid, faqId) {
+  const path = `searches/${uid}/${faqId}`
+  const fbref = FBDATA.ref().child(path)
+  fbref.on('child_added', snap => {
+    const fbSearch = snap.val()
+    const search = {
+      id: snap.key,
+      text:fbSearch.text
+    }
+    dispatch(SEARCHES.addSearch(search))
+  })
+  fbref.on('child_changed', snap => {
+    console.log(snap.key, snap.val().faqts)
+  })
+}
+
+function initScores(dispatch, uid, faqId) {
+  const fbref = FBDATA.ref().child(`scores/${uid}/${faqId}`)
+  fbref.on('child_added', snap => {
+    const {faqtId, searchId, value} = snap.val()
+    const score = { id: snap.key, searchId, faqtId, value }
+    dispatch(SCORES.addScore(score))
+  })
+  fbref.on('child_changed', snap => dispatch(SCORES.updateScore(snap.key, {value:snap.val().value})))
+}
+
+export function firebaseStuff(app, auth, db) {
+  FBAUTH = auth
+  FBDATA = db
+  return  function(dispatch, getState) {
+    // FBAUTH.currentUser.uid   !!!!
+    auth.onAuthStateChanged(user => {
+      if(user) dispatch(UI.setConnected(true))
+      else dispatch(UI.setConnected(false))
+    })
+    const dbRefBroadcast = db.ref().child('broadcast')
+    dbRefBroadcast.on('value', snap => dispatch(UI.setBroadcast(snap.val())))
+    const uid = 'bob'
+    const faqId = 'faq1'
+
+    initFaqts(dispatch, uid, faqId)
+    initSearches(dispatch, uid, faqId)
+    initScores(dispatch, uid, faqId)
   }
 }
 export function doSearch(search) {
@@ -52,107 +96,6 @@ export function activateFaqt(faqtId) {
     dispatch(UI.setFaqtId(faqtId))
   }
 }
-export function updateFaqt(faqtId, text) {
-  return function(dispatch, getState) {
-    const state = getState()
-    const A = SELECT.getFaqtById(state, faqtId)
-    if(!A) return
-    dispatch(FAQTS.updateFaqt(faqtId, {text}))
-    if(!state.isDirty) dispatch(UI.setIsDirty(true))
-  }
-}
-export function addFaqt(text) {
-  return function(dispatch, getState) {
-    const state = getState()
-    const existingFaqt = SELECT.findFaqtByText(state, text)
-    if(existingFaqt) return
-    const id = UNIQ.randomId(4) 
-    dispatch(FAQTS.addFaqt({ id, text }))
-  }
-}
-function buildFakeData(howMany=10) {
-  function getFaqtText(i) {
-    switch(i) {
-      case 3: return 'Once upon a midnight dreary\nWhile I pondered weak and weary\nOver many a quaint and curious'
-      case 5: return 'The rain in spain falls mainly in the plain.'
-      case 10: return 'How about those blue jays?'
-      default: return 'Faqt ' + i
-    }
-  }
-
-  const searches = []
-  const faqts = []
-  const scores = []
-  for(var i = 0; i < howMany; i++) {
-    const searchId = 'q' + i
-    const faqtId = 'a' + i
-    const scoreId = 's' + i
-    searches.push({id:searchId, text:'Search ' + i})
-    faqts.push({id:faqtId, text:getFaqtText(i)})
-    scores.push({id:scoreId, searchId, faqtId, value:1})
-  }
-  return {searches, faqts, scores}
-}
-export function save() { 
-  return function(dispatch, getState) {
-    const state = getState()
-    if(state.ui.isDEVL) {
-      dispatch(UI.setIsDirty(false))
-      return
-    }
-    const upload = {
-      faqts  : state.faqts,
-      searches: state.searches,
-      scores   : state.scores
-    }
-    $.ajax({
-      type: 'PUT',
-      contentType: 'application/json',
-      url: `/save`,
-      data: JSON.stringify(upload)
-    })
-    .done(result =>     dispatch(UI.setIsDirty(false)))
-    .fail((a, textStatus, errorThrown) => alert('error occurred: ' + errorThrown))
-}}
-export function load() { 
-  return function(dispatch, getState) {
-    const state = getState()
-    $.ajax({
-      type: 'GET',
-      contentType: 'application/json',
-      url: `/load`
-    })
-    .done(data => {
-      if(typeof data === 'string') {
-        data = buildFakeData(50)
-        dispatch(UI.setIsDEVL(true))
-      }
-
-      const index = lunr(function() {
-        this.field('text')
-        this.ref('id')
-      })
-      function convert(data) {
-        return {
-          searches: data.questions,
-          faqts: data.answers,
-          scores: data.scores.map(({id, score, qid, aid}) => ({id, score, searchId:qid, faqtId:aid}))
-        }
-      }
-      if(data.answers) data = convert(data)
-      data.faqts.forEach(faqt => index.add(faqt))
-      dispatch(UI.setIndex(index))
-      dispatch(SEARCHES.loadSearches(data.searches))
-      dispatch(FAQTS.loadFaqts(data.faqts))
-      dispatch(SCORES.loadScores(data.scores))
-    })
-    .fail((a, textStatus, errorThrown) => {
-      dispatch(SEARCHES.loadSearches({}))
-      dispatch(FAQTS.loadFaqts({}))
-      dispatch(SCORES.loadScores({}))
-      alert('loaded an empty faq to start')
-    })
-}}
 export function setBestFaqt(faqtId) {
   return function(dispatch, getState, extras) {
     const state = getState()
@@ -174,36 +117,59 @@ export function setBestFaqt(faqtId) {
       const id = UNIQ.randomId(4)
       const score = { id, searchId, faqtId, value }
       dispatch(SCORES.addScore(score))
-      if(!state.ui.isDirty) dispatch(UI.setIsDirty(true))
     }
   }  
 }
+
+export function updateFaqt(faqtId, text) {
+  return function(dispatch, getState) {
+    if(!SELECT.getFaqtById(getState(), faqtId)) return
+    var updates = {}
+    updates['faqts/bob/faq1/' + faqtId + '/text'] = text
+    FBDATA.ref().update(updates)
+  }
+}
+
+
+
 export function addFaqt() {
   return function(dispatch, getState) {
-    const state = getState()
-    function getSearchId(text) {
-      if(!text || !text.length) return null
-      const search = SELECT.findSearchByText(state, text)
-      return search ? search.id : null
-    }
-    function getScoreValue(searchId) {
-      const score = SELECT.findBestScore(state, searchId)
-      return score ? score.value + 1 : 1
-    }
-    const searchId = getSearchId(state.ui.search)
+    // const state = getState()
+    // function getSearchId(text) {
+    //   if(!text || !text.length) return null
+    //   const search = SELECT.findSearchByText(state, text)
+    //   return search ? search.id : null
+    // }
+    // function getScoreValue(searchId) {
+    //   const score = SELECT.findBestScore(state, searchId)
+    //   return score ? score.value + 1 : 1
+    // }
+    // const searchId = getSearchId(state.ui.search)
     const faqtId = UNIQ.randomId(4)
-    const newFaqt = { id:faqtId, text:'' }
 
-    dispatch(FAQTS.addFaqt(newFaqt))
-    if(searchId) {
-      const score = {
-        id: UNIQ.randomId(4),
-        searchId, faqtId, 
-        value:getScoreValue(searchId)
-      }      
-      dispatch(SCORES.addScore(score))
-    }
-     dispatch(UI.setFaqtId(faqtId))
- }
+    // dispatch(FAQTS.addFaqt(newFaqt))
+    // if(searchId) {
+    //   const score = {
+    //     id: UNIQ.randomId(4),
+    //     searchId, faqtId, 
+    //     value:getScoreValue(searchId)
+    //   }      
+    //   dispatch(SCORES.addScore(score))
+    // }
+
+    FBDATA.ref('faqts/bob/faq1/' + faqtId).set({text:''})
+  }
+}
+export function saveSearch(search) {
+  return function(dispatch, getState) {
+    const state = getState()
+    if(SELECT.findSearchByText(state, search)) return
+    const id = UNIQ.randomId(4)
+    const faqId = 'faq1'
+    const uid = 'bob'
+    const path = `searches/${uid}/${faqId}/${id}`
+    FBDATA.ref(path).set({text:search})
+    // dispatch(SEARCHES.addSearch({id, text}))
+  }
 }
 
