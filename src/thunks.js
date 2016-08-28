@@ -100,12 +100,16 @@ export function setBestFaqt(faqtId) {
 
     const state = getState()
     const search = state.ui.search
+    if(!search || !search.length) return
+
+    let searchId
     const Q = SELECT.findSearchByText(state, search)
-    if(!Q) {
-      alert('save search first')
-      return // change this to create the search
+    if(Q) searchId = Q.id
+    else {
+      searchId = UNIQ.randomId(4)
+      FBDATA.ref(`searches/${uid}/${faqId}/${searchId}`).set({text:search})
     }
-    const searchId = Q.id
+
     const matchingScore = SELECT.findScore(state, searchId, faqtId)
     const bestScore = SELECT.findBestScore(state, searchId)
     if(matchingScore && matchingScore === bestScore) return
@@ -142,15 +146,19 @@ export function addFaqt() {
       const score = SELECT.findBestScore(state, searchId)
       return score ? score.value + 1 : 1
     }
-    const searchId = getSearchId(state.ui.search)
     const faqtId = UNIQ.randomId(4)
     FBDATA.ref(`faqts/${uid}/${faqId}/${faqtId}`).set({text:''})
 
-    if(searchId) {
-      const scoreId = UNIQ.randomId(4)
-      const value = getScoreValue(searchId)
-      FBDATA.ref(`scores/${uid}/${faqId}/${scoreId}`).set({ searchId, faqtId, value })      
+    const search = state.ui.search
+    if(!search) return
+    let searchId = getSearchId(search)
+    if(!searchId) {
+      searchId = UNIQ.randomId(4)
+      FBDATA.ref(`searches/${uid}/${faqId}/${searchId}`).set({text:search})
     }
+    const scoreId = UNIQ.randomId(4)
+    const value = getScoreValue(searchId)
+    FBDATA.ref(`scores/${uid}/${faqId}/${scoreId}`).set({ searchId, faqtId, value })      
   }
 }
 export function saveSearch(search) {
@@ -162,7 +170,8 @@ export function saveSearch(search) {
     const uid = 'bob'
     const path = `searches/${uid}/${faqId}/${id}`
     FBDATA.ref(path).set({text:search})
-    // dispatch(SEARCHES.addSearch({id, text}))
   }
 }
+
+// now we need to add the full text search functionality back into the mix.....
 
