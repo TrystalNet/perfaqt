@@ -10,7 +10,9 @@ import lunr  from 'lunr'
 
 let FBAUTH
 let FBDATA
-let FULLTEXT 
+let FULLTEXT
+
+const FAQID = 'default'
 
 function initFullText(dispatch) {
   FULLTEXT = lunr(function () {
@@ -37,7 +39,8 @@ export function logout() {
     FBAUTH.signOut()
   }
 }
-function initFaqts(dispatch, uid, faqId) {
+function initFaqts(dispatch, faqId) {
+  const uid = FBAUTH.currentUser.uid
   const path = `faqts/${uid}/${faqId}`
   const fbref = FBDATA.ref().child(path)
   fbref.on('child_added', snap => {
@@ -50,7 +53,8 @@ function initFaqts(dispatch, uid, faqId) {
   })
   fbref.on('child_changed', snap => dispatch(FAQTS.updateFaqt(snap.key, {text:snap.val().text})))
 }
-function initSearches(dispatch, uid, faqId) {
+function initSearches(dispatch, faqId) {
+  const uid = FBAUTH.currentUser.uid
   const path = `searches/${uid}/${faqId}`
   const fbref = FBDATA.ref().child(path)
   fbref.on('child_added', snap => {
@@ -65,7 +69,8 @@ function initSearches(dispatch, uid, faqId) {
     console.log(snap.key, snap.val().faqts)
   })
 }
-function initScores(dispatch, uid, faqId) {
+function initScores(dispatch, faqId) {
+  const uid = FBAUTH.currentUser.uid
   const fbref = FBDATA.ref().child(`scores/${uid}/${faqId}`)
   fbref.on('child_added', snap => {
     const {faqtId, searchId, value} = snap.val()
@@ -80,19 +85,19 @@ export function firebaseStuff(app, auth, db) {
   return  function(dispatch, getState) {
     // FBAUTH.currentUser.uid   !!!!
     auth.onAuthStateChanged(user => {
-      if(user) dispatch(UI.setConnected(true))
+      if(user) {
+        dispatch(UI.setConnected(true))
+        initFaqts(dispatch, FAQID)
+        initSearches(dispatch, FAQID)
+        initScores(dispatch, FAQID)
+      }
       else dispatch(UI.setConnected(false))
     })
     const dbRefBroadcast = db.ref().child('broadcast')
     dbRefBroadcast.on('value', snap => dispatch(UI.setBroadcast(snap.val())))
-    const uid = 'bob'
-    const faqId = 'faq1'
 
     initFullText(dispatch)
 
-    initFaqts(dispatch, uid, faqId)
-    initSearches(dispatch, uid, faqId)
-    initScores(dispatch, uid, faqId)
   }
 }
 export function doSearch(search) {
@@ -107,9 +112,7 @@ export function activateFaqt(faqtId) {
 }
 export function setBestFaqt(faqtId) {
   return function(dispatch, getState, extras) {
-    const faqId = 'faq1'
-    const uid = 'bob'
-
+    const uid = FBAUTH.currentUser.uid
     const state = getState()
     const search = state.ui.search
     if(!search || !search.length) return
@@ -119,7 +122,7 @@ export function setBestFaqt(faqtId) {
     if(Q) searchId = Q.id
     else {
       searchId = UNIQ.randomId(4)
-      FBDATA.ref(`searches/${uid}/${faqId}/${searchId}`).set({text:search})
+      FBDATA.ref(`searches/${uid}/${FAQID}/${searchId}`).set({text:search})
     }
 
     const matchingScore = SELECT.findScore(state, searchId, faqtId)
@@ -130,25 +133,26 @@ export function setBestFaqt(faqtId) {
 
     if(matchingScore) {
       var updates = {}
-      updates[`scores/${uid}/${faqId}/${matchingScore.id}/value`] = value
+      updates[`scores/${uid}/${FAQID}/${matchingScore.id}/value`] = value
       FBDATA.ref().update(updates)
     }
-    else FBDATA.ref(`scores/${uid}/${faqId}/${UNIQ.randomId(4)}`).set({ searchId, faqtId, value })
+    else FBDATA.ref(`scores/${uid}/${FAQID}/${UNIQ.randomId(4)}`).set({ searchId, faqtId, value })
   }  
 }
 export function updateFaqt(faqtId, text) {
   return function(dispatch, getState) {
     if(!SELECT.getFaqtById(getState(), faqtId)) return
+    const uid = FBAUTH.currentUser.uid
     var updates = {}
-    updates['faqts/bob/faq1/' + faqtId + '/text'] = text
+    updates[`faqts/${uid}/${FAQID}/${faqtId}/text`] = text
     FBDATA.ref().update(updates)
   }
 }
 export function addFaqt() {
   return function(dispatch, getState) {
     const state = getState()
-    const uid = 'bob'
-    const faqId = 'faq1'
+    const uid = FBAUTH.currentUser.uid
+
     function getSearchId(text) {
       if(!text || !text.length) return null
       const search = SELECT.findSearchByText(state, text)
@@ -159,28 +163,27 @@ export function addFaqt() {
       return score ? score.value + 1 : 1
     }
     const faqtId = UNIQ.randomId(4)
-    FBDATA.ref(`faqts/${uid}/${faqId}/${faqtId}`).set({text:''})
+    FBDATA.ref(`faqts/${uid}/${FAQID}/${faqtId}`).set({text:''})
 
     const search = state.ui.search
     if(!search) return
     let searchId = getSearchId(search)
     if(!searchId) {
       searchId = UNIQ.randomId(4)
-      FBDATA.ref(`searches/${uid}/${faqId}/${searchId}`).set({text:search})
+      FBDATA.ref(`searches/${uid}/${FAQID}/${searchId}`).set({text:search})
     }
     const scoreId = UNIQ.randomId(4)
     const value = getScoreValue(searchId)
-    FBDATA.ref(`scores/${uid}/${faqId}/${scoreId}`).set({ searchId, faqtId, value })      
+    FBDATA.ref(`scores/${uid}/${FAQID}/${scoreId}`).set({ searchId, faqtId, value })      
   }
 }
 export function saveSearch(search) {
   return function(dispatch, getState) {
     const state = getState()
     if(SELECT.findSearchByText(state, search)) return
+    const uid = FBAUTH.currentUser.uid
     const id = UNIQ.randomId(4)
-    const faqId = 'faq1'
-    const uid = 'bob'
-    const path = `searches/${uid}/${faqId}/${id}`
+    const path = `searches/${uid}/${FAQID}/${id}`
     FBDATA.ref(path).set({text:search})
   }
 }
