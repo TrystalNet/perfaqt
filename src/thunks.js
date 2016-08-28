@@ -98,6 +98,9 @@ export function activateFaqt(faqtId) {
 }
 export function setBestFaqt(faqtId) {
   return function(dispatch, getState, extras) {
+    const faqId = 'faq1'
+    const uid = 'bob'
+
     const state = getState()
     const search = state.ui.search
     const Q = SELECT.findSearchByText(state, search)
@@ -105,19 +108,19 @@ export function setBestFaqt(faqtId) {
       alert('save search first')
       return // change this to create the search
     }
-    let searchId = Q.id
-    let matchingScore = SELECT.findScore(state, searchId, faqtId)
-    let bestScore = SELECT.findBestScore(state, searchId)
+    const searchId = Q.id
+    const matchingScore = SELECT.findScore(state, searchId, faqtId)
+    const bestScore = SELECT.findBestScore(state, searchId)
     if(matchingScore && matchingScore === bestScore) return
 
-    let value = bestScore ? bestScore.value + 1 : 1
+    const value = bestScore ? bestScore.value + 1 : 1
 
-    if(matchingScore) dispatch(SCORES.updateScore(matchingScore.id, {value}))
-    else {
-      const id = UNIQ.randomId(4)
-      const score = { id, searchId, faqtId, value }
-      dispatch(SCORES.addScore(score))
+    if(matchingScore) {
+      var updates = {}
+      updates[`scores/${uid}/${faqId}/${matchingScore.id}/value`] = value
+      FBDATA.ref().update(updates)
     }
+    else FBDATA.ref(`scores/${uid}/${faqId}/${UNIQ.randomId(4)}`).set({ searchId, faqtId, value })
   }  
 }
 
