@@ -93,7 +93,7 @@ class LoginPage extends Component {
   onSignup() {
     const email = this.refs.fldEmail.value
     const password = this.refs.fldPassword.value
-    // if(email && email.length && password && password.length) this.props.onLogin(email, password)
+    if(email && email.length && password && password.length) this.props.onSignup(email, password)
   }
   render() {
     return <div style={{display:'flex', flexDirection:'column', height:'100%'}}>
