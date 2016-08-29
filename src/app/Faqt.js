@@ -10,7 +10,10 @@ const styleContainerInactive = {
 
 const styleInactive = {
   border: 'black 0px solid',
-  flex:1  
+  flex:1,
+  minWidth:0,
+  overflowX: 'auto',
+  marginRight: 5
 }
 
 const styleTextareaActive = {
