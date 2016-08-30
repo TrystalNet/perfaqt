@@ -1,2 +1,2 @@
-copy dist\bundle.js ..\perfaqt\perfaqt_host\public
-copy perfaqt.css ..\perfaqt\perfaqt_host\public
+copy dist\bundle.js ..\fire-test\public
+copy perfaqt.css    ..\fire-test\public
