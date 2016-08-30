@@ -15,7 +15,9 @@ const styleInactive = {
   overflowX: 'auto',
   marginRight: 5,
   whiteSpace:'pre-wrap',
-  wordWrap:'break-word'
+  wordWrap:'break-word',
+  maxHeight:'15vh',
+  overflowY:'auto'
 }
 
 const styleTextareaActive = {
@@ -29,7 +31,9 @@ const styleEditorContainer = {
   paddingTop:5, 
   paddingBottom:5, 
   marginBottom:4,
-  marginRight: 48
+  marginRight: 48,
+  maxHeight:'50vh',
+  overflowY:'auto'
 }
 
 class Faqt extends Component {
