@@ -13,13 +13,13 @@ function myKeyBindingFn(e) {
   if(e.keyCode === 13 && e.shiftKey) {
     e.preventDefault()
     e.stopPropagation()
-    return 'split-block'
-  }
-  if(e.keyCode === 13) {
-    e.preventDefault()
-    e.stopPropagation()
     return 'save-and-exit'
   }
+  // if(e.keyCode === 13) {
+  //   e.preventDefault()
+  //   e.stopPropagation()
+  //   return 'split-block'
+  // }
   return getDefaultKeyBinding(e)
 }
 
