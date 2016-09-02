@@ -1,6 +1,6 @@
 import React, { Component } from 'react';
 import {COL0WIDTH} from '../constants'
-import Faqt from './faqt-container'
+import Faqt from './Faqt'
 
 const s2 = { paddingTop: 10, width:600 }
 
@@ -13,16 +13,16 @@ const FaqtsArea = ({faqts, faqtId, onSetBestFaqt, onUpdateFaqt, onActivate}) => 
   return (
     <div id='faqtsContainer' style={containerStyle}>
       <div style={s2}>
-        {faqts.map(faqt => 
+        {faqts.map(faqt => { 
+          return (  
           <Faqt 
             key={faqt.id}
-            isActive={faqt.id === faqtId} 
-            {...faqt}
+            faqtId={faqt.id}
             onSetBest={()=>onSetBestFaqt(faqt.id)}
-            onChange={text=>onUpdateFaqt(faqt.id, text)}
             onActivate={()=>onActivate(faqt.id)}
             onDeactivate={()=>onActivate(null)}
-            />
+            />)
+          }
         )}
       </div>
     </div>

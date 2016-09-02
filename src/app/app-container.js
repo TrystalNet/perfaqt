@@ -13,16 +13,16 @@ function mapStateToProps(state) {
 
 function mapDispatchToProps(dispatch) {
   return {
-    onAddFaqt:       () => dispatch(THUNK.addFaqt()),
-    onAsk:           search => dispatch(THUNK.doSearch(search)),
-    onSaveSearch:    search => dispatch(THUNK.saveSearch(search)),
-    onUpdateFaqt:    (faqtId, text) => dispatch(THUNK.updateFaqt(faqtId, text)),
-    onSetBestFaqt:   faqtId => dispatch(THUNK.setBestFaqt(faqtId)),
+    onAddFaqt      : () => dispatch(THUNK.addFaqt()),
+    onAsk          : search => dispatch(THUNK.doSearch(search)),
+    onSaveSearch   : search => dispatch(THUNK.saveSearch(search)),
+    onUpdateFaqt   : (faqtId, text) => dispatch(THUNK.updateFaqt(faqtId, text)),
+    onSetBestFaqt  : faqtId => dispatch(THUNK.setBestFaqt(faqtId)),
     onActivate     : faqtId => dispatch(THUNK.activateFaqt(faqtId)), 
     onLogout       : () => dispatch(THUNK.logout()),
     onLogin        : (email,password) => dispatch(THUNK.login(email, password)),
     onSignup       : (email,password) => dispatch(THUNK.signup(email, password)),
-    onSearchChange: function(search)  {
+    onSearchChange : function(search)  {
       // dispatch(updateActiveSearch(search))
     }
   }

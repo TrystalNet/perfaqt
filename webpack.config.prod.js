@@ -1,8 +1,8 @@
 var webpack = require('webpack')
 
 module.exports = {
-  entry: './src/index',
   resolve:{extensions:['','.js']},
+  entry: './src/index.jsx',
   output: {filename: './dist/bundle.js'},
   plugins: [
     new webpack.DefinePlugin({
@@ -13,7 +13,7 @@ module.exports = {
   ],
   module:{
       loaders:[{ 
-            test: /\.js$/, 
+            test: /\.jsx?$/, 
             exclude: /node_modules/, 
             loader: 'babel-loader'
         }

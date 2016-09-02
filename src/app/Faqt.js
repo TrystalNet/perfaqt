@@ -1,39 +1,26 @@
 import React, { Component } from 'react';
+import { connect } from 'react-redux'
+import * as SELECT from '../select'
 import MyEditor from './Editor'
+import * as THUNK from '../thunks' 
 
-const styleContainerInactive = {
+const style0 = {
   display:'flex',
   paddingTop: 5,
   paddingBottom: 5,
   borderBottom: 'lightgrey 1px solid'
 }
-
-const styleInactive = {
-  border: 'black 0px solid',
+const style0A = {
   flex:1,
   minWidth:0,
-  overflowX: 'auto',
   marginRight: 5,
-  whiteSpace:'pre-wrap',
-  wordWrap:'break-word',
+  overflowX: 'auto',
   maxHeight:'15vh',
   overflowY:'auto'
 }
-
-const styleTextareaActive = {
-  border: 'black 0px solid',
-  backgroundColor: 'beige',
-  fontSize:14
-}
-
-const styleEditorContainer = {
-  backgroundColor:'beige', 
-  paddingTop:5, 
-  paddingBottom:5, 
-  marginBottom:4,
-  marginRight: 48,
-  maxHeight:'50vh',
-  overflowY:'auto'
+const style0Ax = {
+  backgroundColor : 'beige',
+  maxHeight : '50vh'
 }
 
 class Faqt extends Component {
@@ -42,33 +29,41 @@ class Faqt extends Component {
     if(nextProps.isActive !== this.props.isActive) return true
     return false
   }
-  onKeyDown(e) {
-    if(!this.props.isActive) return
-    switch(e.keyCode) {
-      case 27: break
-      default: return
-    }
-    this.props.onDeactivate()
-  }
   onBlur(e) {
-    this.props.onDeactivate()
+    // this.props.onDeactivate()
   }
-  onDraftChanged(value) {
-    this.props.onChange(value)
-    this.props.onDeactivate()
+  onFocus(e) {
+    this.props.onActivate()
   }
   render() {
-    const {id, text, isActive, onSetBest, onChange, onActivate, onDeactivate} = this.props
-    if(!isActive) {
-      return <div style={styleContainerInactive}>
-        <div style={styleInactive} onClick={onActivate}>{text}</div>
-        <button onClick={onSetBest}>best</button>
+    const {isActive, text, draftjs, onSetBest, onSave, onSaveAndExit} = this.props
+    const style = isActive ? Object.assign({},style0A,style0Ax) : style0A 
+    return <div ref='container' style={style0}>
+      <div style={style} onFocus={this.onFocus.bind(this)} onBlur={this.onBlur.bind(this)}>
+        <MyEditor {...{text, draftjs, onSave, onSaveAndExit}} />
       </div>
-    }
-    return <div style={styleEditorContainer}>
-      <MyEditor {...{text}} onChanged={this.onDraftChanged.bind(this)}/>
+      <button onClick={onSetBest}>best</button>
     </div>
   }  
 }
 
-export default Faqt
+function mapStateToProps(state, ownProps) {
+  const { faqtId } = ownProps
+  const { text, draftjs } = SELECT.getFaqtById(state, faqtId)
+  const isActive = faqtId === state.ui.faqtId
+  return { isActive, text, draftjs }
+}
+
+function mapDispatchToProps(dispatch, ownProps) {
+  const {onSetBest, onActivate, onDeactivate} = ownProps
+  return { 
+    onSave: (text, draftjs) => dispatch(THUNK.updateFaqt(ownProps.faqtId, text, draftjs)),
+    onSaveAndExit:  (text, draftjs) => dispatch(THUNK.updateFaqt(ownProps.faqtId, text, draftjs)),
+    onSetBest, 
+    onActivate, 
+    onDeactivate 
+  }
+}
+
+const FUCK = connect(mapStateToProps, mapDispatchToProps)(Faqt)
+export default FUCK

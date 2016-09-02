@@ -44,10 +44,8 @@ function initFaqts(dispatch, faqId) {
   const path = `faqts/${uid}/${faqId}`
   const fbref = FBDATA.ref().child(path)
   fbref.on('child_added', snap => {
-    const faqt = {
-      id: snap.key,
-      text:snap.val().text
-    }
+    const {text, draftjs} = snap.val()
+    const faqt = { id: snap.key, text, draftjs }
     dispatch(FAQTS.addFaqt(faqt))
     FULLTEXT.add(faqt)
   })
@@ -107,6 +105,7 @@ export function doSearch(search) {
 }
 export function activateFaqt(faqtId) {
   return function(dispatch) {
+    console.log('activating ' + faqtId)
     dispatch(UI.setFaqtId(faqtId))
   }
 }
@@ -139,12 +138,12 @@ export function setBestFaqt(faqtId) {
     else FBDATA.ref(`scores/${uid}/${FAQID}/${UNIQ.randomId(4)}`).set({ searchId, faqtId, value })
   }  
 }
-export function updateFaqt(faqtId, text) {
+export function updateFaqt(faqtId, text, draftjs) {
   return function(dispatch, getState) {
     if(!SELECT.getFaqtById(getState(), faqtId)) return
     const uid = FBAUTH.currentUser.uid
     var updates = {}
-    updates[`faqts/${uid}/${FAQID}/${faqtId}/text`] = text
+    updates[`faqts/${uid}/${FAQID}/${faqtId}`] = {text,draftjs}
     FBDATA.ref().update(updates)
   }
 }
@@ -163,7 +162,7 @@ export function addFaqt() {
       return score ? score.value + 1 : 1
     }
     const faqtId = UNIQ.randomId(4)
-    FBDATA.ref(`faqts/${uid}/${FAQID}/${faqtId}`).set({text:''})
+    FBDATA.ref(`faqts/${uid}/${FAQID}/${faqtId}`).set({text:'', draftjs:{}})
 
     const search = state.ui.search
     if(!search) return
@@ -175,6 +174,8 @@ export function addFaqt() {
     const scoreId = UNIQ.randomId(4)
     const value = getScoreValue(searchId)
     FBDATA.ref(`scores/${uid}/${FAQID}/${scoreId}`).set({ searchId, faqtId, value })      
+
+    dispatch(UI.setFaqtId(faqtId))
   }
 }
 export function saveSearch(search) {

@@ -1,19 +1,15 @@
 import React, { Component } from 'react';
 import {
   Editor, EditorState, 
-  convertFromRaw, convertToRaw, 
+  convertFromRaw, convertToRaw,
   getDefaultKeyBinding, KeyBindingUtil,
-  DraftHandleValue, Modifier
+  RichUtils 
 } from 'draft-js'
+import * as THUNK  from '../thunks'
 
 const {hasCommandModifier} = KeyBindingUtil
-const SAVEANDEXIT = 'save-and-exit'
 
 function myKeyBindingFn(e) {
-  switch(e.keyCode) {
-    case 121: 
-    case 27: return SAVEANDEXIT  // 27 doesn't work for some reason 
-  }
   return getDefaultKeyBinding(e)
 }
 
@@ -23,20 +19,17 @@ function buildBlock(text) {
     text:text
   }
 }
-
 function buildRawDraftContentState(text) {
   const block = buildBlock(text)
   return {
     blocks:[block],
     entityMap:{}
   }
-} 
-
+}
 function buildContentState(text) {
   const rawState = buildRawDraftContentState(text)
   return convertFromRaw(rawState)
 }
-
 function convertToText(rawDraftContentState) {
   return rawDraftContentState.blocks.map(block => block.text).join('\n')
 }
@@ -44,33 +37,53 @@ function convertToText(rawDraftContentState) {
 class MyEditor extends Component {
   constructor(props) {
     super(props)
-    const contentState = buildContentState(props.text)
+
+    let contentState = buildContentState(props.text)
+
+    if(props.draftjs) {
+      const draftjs = props.draftjs;
+      if(!draftjs.blocks) draftjs.blocks = [{type:'unstyled',text:props.text}];
+      if(!draftjs.entityMap) draftjs.entityMap = {}
+      contentState = convertFromRaw(draftjs)
+    }
+
     const editorState = EditorState.createWithContent(contentState)
     this.state = {editorState: editorState}
     this.onChange = editorState => this.setState({editorState})
   }
-  saveAndExit() {
+  saveChanges() {
     const editorState = this.state.editorState
     const contentState = editorState.getCurrentContent()
-    const rawDraftContentState = convertToRaw(contentState)
-    const text = convertToText(rawDraftContentState)
-    this.props.onChanged(text)
+    const draftjs = convertToRaw(contentState)
+    const text = convertToText(draftjs)
+    this.props.onSave(text, draftjs)
+  }
+  saveChangesAndExit() {
+    const editorState = this.state.editorState
+    const contentState = editorState.getCurrentContent()
+    const draftjs = convertToRaw(contentState)
+    const text = convertToText(draftjs)
+    this.props.onSaveAndExit(text, draftjs)
   }
   handleKeyCommand(command) {
-    switch(command) {
-      case SAVEANDEXIT: this.saveAndExit(); break
-      default: return false
+    const newState = RichUtils.handleKeyCommand(this.state.editorState, command)
+    if(newState) {
+      this.onChange(newState)
+      return true
     }
-    return true
-  }
+    // if (command === 'myeditor-save') {
+    //   return true;
+    // }
+    return false
+  }  
   render() {
     return <Editor 
-      editorState={this.state.editorState} 
       placeHolder="...faqt..."
       handleKeyCommand={this.handleKeyCommand.bind(this)}
       keyBindingFn={myKeyBindingFn}
-      onEscape={this.saveAndExit.bind(this)}
-      onBlur={this.saveAndExit.bind(this)}
+      editorState={this.state.editorState} 
+      onEscape={this.saveChanges.bind(this)}
+      onBlur={this.saveChanges.bind(this)}
       onChange={this.onChange} />
   }  
 }
