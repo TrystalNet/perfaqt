@@ -84,7 +84,14 @@ export default class SearchBar extends Component {
     e.preventDefault()
     e.stopPropagation()
   }
+  componentDidUpdate(prevProps) {
+    if(prevProps.isFocus || !this.props.isFocus) return
+    const input = this.refs.fldSearch.input
+    input.focus()
+    input.select()
+  }
   render() {
+    console.log('rendering searchbar')
     const { value, suggestions } = this.state
     const inputProps = {
       placeholder: 'Type a search',
@@ -92,11 +99,15 @@ export default class SearchBar extends Component {
       onKeyDown: this.onKeyDown.bind(this),
       onChange:this.onChange
     }
-    const {search, searches, broadcast, onLogout} = this.props
+    const {
+      search, searches, broadcast, 
+      onLogout, onGotFocus
+    } = this.props
     return (
-      <div id='searchesContainer' style={styleSearchBar}>
+      <div id='searchesContainer' style={styleSearchBar} onFocus={onGotFocus}>
         <div id='perfaqt' style={stylePerfaqt}>per<span style={{color:'blue'}}>faq</span>t</div>
         <Autosuggest 
+          ref='fldSearch'
           suggestions={suggestions} 
           onSuggestionsUpdateRequested={this.onSuggestionsUpdateRequested}
           getSuggestionValue={search => search.text}

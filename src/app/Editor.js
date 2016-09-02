@@ -82,7 +82,7 @@ class MyEditor extends Component {
       handleKeyCommand={this.handleKeyCommand.bind(this)}
       keyBindingFn={myKeyBindingFn}
       editorState={this.state.editorState} 
-      onEscape={this.saveChanges.bind(this)}
+      onEscape={this.saveChangesAndExit.bind(this)}
       onBlur={this.saveChanges.bind(this)}
       onChange={this.onChange} />
   }  

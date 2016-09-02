@@ -55,15 +55,14 @@ function mapStateToProps(state, ownProps) {
 }
 
 function mapDispatchToProps(dispatch, ownProps) {
-  const {onSetBest, onActivate, onDeactivate} = ownProps
+  const {faqtId, onSetBest, onDeactivate} = ownProps
   return { 
-    onSave: (text, draftjs) => dispatch(THUNK.updateFaqt(ownProps.faqtId, text, draftjs)),
-    onSaveAndExit:  (text, draftjs) => dispatch(THUNK.updateFaqt(ownProps.faqtId, text, draftjs)),
-    onSetBest, 
-    onActivate, 
+    onSave:         (text, draftjs) => dispatch(THUNK.updateFaqt(faqtId, text, draftjs)),
+    onSaveAndExit:  (text, draftjs) => dispatch(THUNK.updateFaqtAndExit(faqtId, text, draftjs)),
+    onActivate:     ()              => dispatch(THUNK.activateFaqt(faqtId)),
+    onSetBest,
     onDeactivate 
   }
 }
 
-const FUCK = connect(mapStateToProps, mapDispatchToProps)(Faqt)
-export default FUCK
+export default connect(mapStateToProps, mapDispatchToProps)(Faqt)

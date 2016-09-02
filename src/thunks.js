@@ -105,8 +105,7 @@ export function doSearch(search) {
 }
 export function activateFaqt(faqtId) {
   return function(dispatch) {
-    console.log('activating ' + faqtId)
-    dispatch(UI.setFaqtId(faqtId))
+    dispatch(UI.setFocus(faqtId))
   }
 }
 export function setBestFaqt(faqtId) {
@@ -138,15 +137,28 @@ export function setBestFaqt(faqtId) {
     else FBDATA.ref(`scores/${uid}/${FAQID}/${UNIQ.randomId(4)}`).set({ searchId, faqtId, value })
   }  
 }
+
+function updateOneFaqt(faqtId, text, draftjs) {
+  const uid = FBAUTH.currentUser.uid
+  var updates = {}
+  updates[`faqts/${uid}/${FAQID}/${faqtId}`] = {text,draftjs}
+  FBDATA.ref().update(updates)
+}
+
 export function updateFaqt(faqtId, text, draftjs) {
   return function(dispatch, getState) {
     if(!SELECT.getFaqtById(getState(), faqtId)) return
-    const uid = FBAUTH.currentUser.uid
-    var updates = {}
-    updates[`faqts/${uid}/${FAQID}/${faqtId}`] = {text,draftjs}
-    FBDATA.ref().update(updates)
+    updateOneFaqt(faqtId, text, draftjs)
   }
 }
+
+export function updateFaqtAndExit(faqtId, text, draftjs) {
+  return function(dispatch, getState) {
+    if(SELECT.getFaqtById(getState(), faqtId)) updateOneFaqt(faqtId, text, draftjs)
+    dispatch(UI.setFocus('__search'))
+  }
+}
+
 export function addFaqt() {
   return function(dispatch, getState) {
     const state = getState()
@@ -175,7 +187,7 @@ export function addFaqt() {
     const value = getScoreValue(searchId)
     FBDATA.ref(`scores/${uid}/${FAQID}/${scoreId}`).set({ searchId, faqtId, value })      
 
-    dispatch(UI.setFaqtId(faqtId))
+    dispatch(UI.setFocus(faqtId))
   }
 }
 export function saveSearch(search) {

@@ -19,7 +19,6 @@ const FaqtsArea = ({faqts, faqtId, onSetBestFaqt, onUpdateFaqt, onActivate}) => 
             key={faqt.id}
             faqtId={faqt.id}
             onSetBest={()=>onSetBestFaqt(faqt.id)}
-            onActivate={()=>onActivate(faqt.id)}
             onDeactivate={()=>onActivate(null)}
             />)
           }

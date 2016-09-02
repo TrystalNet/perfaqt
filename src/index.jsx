@@ -39,8 +39,6 @@ function reducer(state={}, action) {
 
 const store = createStore(reducer, applyMiddleware(Thunk))
 
-var x = <div>ketchup</div>
-
 render(<Provider store={store}><App /></Provider>, document.getElementById('root'))
 store.dispatch(THUNK.firebaseStuff(app, auth, db))
 

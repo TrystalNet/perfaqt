@@ -1,5 +1,5 @@
 import React, { Component } from 'react';
-import SearchBar from './SearchBar'
+import SearchBar from '../searchbar/container'
 import MenuBar from './MenuBar'
 import FaqtsArea from './FaqtsArea'
 import LoginPage from './LoginPage'
@@ -76,7 +76,7 @@ export default class App extends Component {
     if(!connected) return (<LoginPage {...{onLogin, onSignup}} />)
     return (
       <div id='app'>
-        <SearchBar {...{ search, searches, broadcast, onAsk, onSaveSearch, onLogout }} />
+        <SearchBar />
         <MenuBar   {...{ onAddFaqt }}/>
         <FaqtsArea {...{ faqts, faqtId, onSetBestFaqt, onUpdateFaqt, onActivate }} />
       </div>
