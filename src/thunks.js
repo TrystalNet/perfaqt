@@ -145,17 +145,15 @@ function updateOneFaqt(faqtId, text, draftjs) {
   FBDATA.ref().update(updates)
 }
 
-export function updateFaqt(faqtId, text, draftjs) {
+export function updateFaqt(faqtId, text, draftjs, nextFocus) {
   return function(dispatch, getState) {
     if(!SELECT.getFaqtById(getState(), faqtId)) return
     updateOneFaqt(faqtId, text, draftjs)
-  }
-}
-
-export function updateFaqtAndExit(faqtId, text, draftjs) {
-  return function(dispatch, getState) {
-    if(SELECT.getFaqtById(getState(), faqtId)) updateOneFaqt(faqtId, text, draftjs)
-    dispatch(UI.setFocus('__search'))
+    if(!nextFocus) return
+    switch(nextFocus) {
+      case 'search': return dispatch(UI.setFocus('__search'))
+      case 'nothing': return dispatch(UI.setFocus(null))
+    }
   }
 }
 

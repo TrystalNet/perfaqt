@@ -10,6 +10,16 @@ import * as THUNK  from '../thunks'
 const {hasCommandModifier} = KeyBindingUtil
 
 function myKeyBindingFn(e) {
+  if(e.keyCode === 13 && e.shiftKey) {
+    e.preventDefault()
+    e.stopPropagation()
+    return 'split-block'
+  }
+  if(e.keyCode === 13) {
+    e.preventDefault()
+    e.stopPropagation()
+    return 'save-and-exit'
+  }
   return getDefaultKeyBinding(e)
 }
 
@@ -63,7 +73,14 @@ class MyEditor extends Component {
     const contentState = editorState.getCurrentContent()
     const draftjs = convertToRaw(contentState)
     const text = convertToText(draftjs)
-    this.props.onSaveAndExit(text, draftjs)
+    this.props.onSave(text, draftjs,'search')
+  }
+  saveChangesAndBlur() {
+    const editorState = this.state.editorState
+    const contentState = editorState.getCurrentContent()
+    const draftjs = convertToRaw(contentState)
+    const text = convertToText(draftjs)
+    this.props.onSave(text, draftjs, 'nothing')
   }
   handleKeyCommand(command) {
     const newState = RichUtils.handleKeyCommand(this.state.editorState, command)
@@ -71,9 +88,10 @@ class MyEditor extends Component {
       this.onChange(newState)
       return true
     }
-    // if (command === 'myeditor-save') {
-    //   return true;
-    // }
+    if(command === 'save-and-exit') {
+      this.saveChangesAndExit()
+      return true
+    }
     return false
   }  
   render() {
@@ -83,7 +101,7 @@ class MyEditor extends Component {
       keyBindingFn={myKeyBindingFn}
       editorState={this.state.editorState} 
       onEscape={this.saveChangesAndExit.bind(this)}
-      onBlur={this.saveChanges.bind(this)}
+      onBlur={this.saveChangesAndBlur.bind(this)}
       onChange={this.onChange} />
   }  
 }

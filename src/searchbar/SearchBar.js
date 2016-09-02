@@ -91,7 +91,6 @@ export default class SearchBar extends Component {
     input.select()
   }
   render() {
-    console.log('rendering searchbar')
     const { value, suggestions } = this.state
     const inputProps = {
       placeholder: 'Type a search',

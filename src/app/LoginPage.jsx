@@ -12,7 +12,6 @@ class LoginPage extends Component {
     if(email && email.length && password && password.length) this.props.onSignup(email, password)
   }
   render() {
-    console.log('rendering login page')
     return <div style={{display:'flex', flexDirection:'column', height:'100%'}}>
       <div style={{flex:1, textAlign:'center'}}></div>
       <div style={{display:'flex'}}>

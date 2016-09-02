@@ -29,18 +29,15 @@ class Faqt extends Component {
     if(nextProps.isActive !== this.props.isActive) return true
     return false
   }
-  onBlur(e) {
-    // this.props.onDeactivate()
-  }
   onFocus(e) {
     this.props.onActivate()
   }
   render() {
-    const {isActive, text, draftjs, onSetBest, onSave, onSaveAndExit} = this.props
+    const {isActive, text, draftjs, onSetBest, onSave} = this.props
     const style = isActive ? Object.assign({},style0A,style0Ax) : style0A 
     return <div ref='container' style={style0}>
-      <div style={style} onFocus={this.onFocus.bind(this)} onBlur={this.onBlur.bind(this)}>
-        <MyEditor {...{text, draftjs, onSave, onSaveAndExit}} />
+      <div style={style} onFocus={this.onFocus.bind(this)}>
+        <MyEditor {...{text, draftjs, onSave}} />
       </div>
       <button onClick={onSetBest}>best</button>
     </div>
@@ -55,13 +52,11 @@ function mapStateToProps(state, ownProps) {
 }
 
 function mapDispatchToProps(dispatch, ownProps) {
-  const {faqtId, onSetBest, onDeactivate} = ownProps
+  const {faqtId, onSetBest} = ownProps
   return { 
-    onSave:         (text, draftjs) => dispatch(THUNK.updateFaqt(faqtId, text, draftjs)),
-    onSaveAndExit:  (text, draftjs) => dispatch(THUNK.updateFaqtAndExit(faqtId, text, draftjs)),
-    onActivate:     ()              => dispatch(THUNK.activateFaqt(faqtId)),
-    onSetBest,
-    onDeactivate 
+    onSave:         (text, draftjs, nextFocus) => dispatch(THUNK.updateFaqt(faqtId, text, draftjs, nextFocus)),
+    onActivate:     () => dispatch(THUNK.activateFaqt(faqtId)),
+    onSetBest:      () => dispatch(THUNK.setBestFaqt(faqtId)),
   }
 }
 

@@ -78,7 +78,7 @@ export default class App extends Component {
       <div id='app'>
         <SearchBar />
         <MenuBar   {...{ onAddFaqt }}/>
-        <FaqtsArea {...{ faqts, faqtId, onSetBestFaqt, onUpdateFaqt, onActivate }} />
+        <FaqtsArea {...{ faqts, faqtId, onSetBestFaqt }} />
       </div>
     );
   }
