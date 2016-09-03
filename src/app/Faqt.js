@@ -27,6 +27,8 @@ class Faqt extends Component {
   shouldComponentUpdate(nextProps) {
     if(nextProps.text !== this.props.text) return true
     if(nextProps.isActive !== this.props.isActive) return true
+    console.log(this.refEdit)
+    console.log(this.refEdit.focus)
     return false
   }
   onFocus(e) {
@@ -35,9 +37,12 @@ class Faqt extends Component {
   render() {
     const {isActive, text, draftjs, onSetBest, onSave} = this.props
     const style = isActive ? Object.assign({},style0A,style0Ax) : style0A 
+    // where is the focus() method that draftjs claims to be providing?
     return <div ref='container' style={style0}>
       <div style={style} onFocus={this.onFocus.bind(this)}>
-        <MyEditor {...{text, draftjs, onSave}} />
+
+
+        <MyEditor ref={node => this.refEdit = node} {...{text, draftjs, onSave}} />
       </div>
       <button onClick={onSetBest}>best</button>
     </div>

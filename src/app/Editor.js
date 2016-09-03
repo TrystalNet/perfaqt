@@ -94,6 +94,15 @@ class MyEditor extends Component {
     }
     return false
   }  
+  // componentDidUpdate(prevProps) {
+  //   if(prevProps.isActive || !this.props.isActive) return
+  //   // console.log('set teh focus to this:', this.refEdit)
+  //   this.refEdit.focus()
+  //   // const input = this.refs.fldSearch.input
+  //   // input.focus()
+  //   // input.select()
+  // }
+//      ref={node => this.refEdit = node}
   render() {
     return <Editor 
       placeHolder="...faqt..."

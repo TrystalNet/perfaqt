@@ -17,6 +17,7 @@ const FAQID = 'default'
 function initFullText(dispatch) {
   FULLTEXT = lunr(function () {
     this.field('text')
+    this.field('tags',{boost:100})
     this.ref('id')
   })
   dispatch(UI.setIndex(FULLTEXT))
@@ -49,7 +50,12 @@ function initFaqts(dispatch, faqId) {
     dispatch(FAQTS.addFaqt(faqt))
     FULLTEXT.add(faqt)
   })
-  fbref.on('child_changed', snap => dispatch(FAQTS.updateFaqt(snap.key, {text:snap.val().text})))
+  fbref.on('child_changed', snap => {
+    const {text, draftjs} = snap.val() 
+    const faqt = { id: snap.key, text, draftjs }
+    dispatch(FAQTS.updateFaqt(snap.key, {text, draftjs}))
+    FULLTEXT.update(faqt)
+  })
 }
 function initSearches(dispatch, faqId) {
   const uid = FBAUTH.currentUser.uid
