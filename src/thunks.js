@@ -45,15 +45,15 @@ function initFaqts(dispatch, faqId) {
   const path = `faqts/${uid}/${faqId}`
   const fbref = FBDATA.ref().child(path)
   fbref.on('child_added', snap => {
-    const {text, draftjs} = snap.val()
-    const faqt = { id: snap.key, text, draftjs }
+    const {text, draftjs, tags} = snap.val()
+    const faqt = { id: snap.key, text, draftjs, tags }
     dispatch(FAQTS.addFaqt(faqt))
     FULLTEXT.add(faqt)
   })
   fbref.on('child_changed', snap => {
-    const {text, draftjs} = snap.val() 
-    const faqt = { id: snap.key, text, draftjs }
-    dispatch(FAQTS.updateFaqt(snap.key, {text, draftjs}))
+    const {text, draftjs, tags} = snap.val() 
+    const faqt = { id: snap.key, text, draftjs, tags }
+    dispatch(FAQTS.updateFaqt(snap.key, {text, draftjs, tags}))
     FULLTEXT.update(faqt)
   })
 }
@@ -153,8 +153,18 @@ export function setBestFaqt(faqtId) {
 function updateOneFaqt(faqtId, text, draftjs) {
   const uid = FBAUTH.currentUser.uid
   var updates = {}
-  updates[`faqts/${uid}/${FAQID}/${faqtId}`] = {text,draftjs}
+  updates[`faqts/${uid}/${FAQID}/${faqtId}/text`] = text
+  updates[`faqts/${uid}/${FAQID}/${faqtId}/draftjs`] = draftjs
   FBDATA.ref().update(updates)
+}
+
+export function updateTags(faqtId, tags) {
+  return function(dispatch, getState) {
+    const uid = FBAUTH.currentUser.uid
+    var updates = {}
+    updates[`faqts/${uid}/${FAQID}/${faqtId}/tags`] = tags
+    FBDATA.ref().update(updates)
+  }
 }
 
 export function updateFaqt(faqtId, text, draftjs, nextFocus) {
@@ -174,6 +184,14 @@ export function updateFaqt(faqtId, text, draftjs, nextFocus) {
     }
   }
 }
+
+export function saveTags(faqtId, tags) {
+  return function(dispatch, getState) {
+    if(!SELECT.getFaqtById(getState(), faqtId)) return
+    updateOneFaqt(faqtId, tags)
+  }
+}
+
 
 export function addFaqt() {
   return function(dispatch, getState) {

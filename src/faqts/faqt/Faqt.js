@@ -23,10 +23,10 @@ const BEIGE = {
   maxHeight : '50vh'
 }
 
-const TagsControl = ({isActive, tags}) => {
+const TagsControl = ({isActive, tags, onSave}) => {
   const styleTagsB = { backgroundColor:'lightgrey', fontSize:'small', fontStyle:'italic' }
   return isActive 
-    ? <TagsEditor tags={tags} />
+    ? <TagsEditor {...{tags, onSave}} />
     : <div style={styleTagsB}>{tags}</div>
 }
 
@@ -35,7 +35,10 @@ class Faqt extends Component {
     this.props.onActivate()
   }
   render() {
-    const {isActive, focusedControl, text, draftjs, tags, onSetBest, onSave} = this.props
+    const {
+      isActive, focusedControl, text, draftjs, tags, 
+      onSetBest, onSave, onSaveTags
+    } = this.props
     const style = isActive ? Object.assign({},style0A,BEIGE) : style0A
 
     return <div style={{backgroundColor:'paleblue',marginBottom:5, padding:1}}>
@@ -45,7 +48,7 @@ class Faqt extends Component {
         </div>
         <button onClick={onSetBest}>best</button>
       </div>
-      <TagsControl {...{isActive, tags}} />
+      <TagsControl {...{isActive, tags, onSave:onSaveTags}} />
     </div>
   }  
 }

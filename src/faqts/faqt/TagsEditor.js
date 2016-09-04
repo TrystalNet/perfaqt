@@ -10,10 +10,22 @@ class TagsEditor extends Component {
   handleChange(e) {
     this.setState({value: e.target.value})
   }
+  onKeyDown(e) {
+    if(e.keyCode !== 13) return
+    e.stopPropagation()
+    e.preventDefault()
+    this.props.onSave(this.state.value)
+  }
   render() {
     const {tags} = this.props
     return <div style={S1}>
-      <input type='text' value={this.state.value} onChange={this.handleChange} style={{flex:1}}/>
+      <input 
+        ref={c => this._input = c} 
+        type='text' 
+        value={this.state.value} 
+        onChange={this.handleChange.bind(this)}
+        onKeyDown={this.onKeyDown.bind(this)} 
+        style={{flex:1}}/>
     </div>
   }
 }
