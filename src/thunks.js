@@ -111,7 +111,13 @@ export function doSearch(search) {
 }
 export function activateFaqt(faqtId) {
   return function(dispatch) {
-    dispatch(UI.setFocus(faqtId))
+    dispatch(UI.setFocused(faqtId))
+    dispatch(UI.setFaqtId(faqtId))
+  }
+}
+export function focusSearch() {
+  return function(dispatch) {
+    dispatch(UI.setFocused('SEARCH'))
   }
 }
 export function setBestFaqt(faqtId) {
@@ -157,8 +163,14 @@ export function updateFaqt(faqtId, text, draftjs, nextFocus) {
     updateOneFaqt(faqtId, text, draftjs)
     if(!nextFocus) return
     switch(nextFocus) {
-      case 'search': return dispatch(UI.setFocus('__search'))
-      case 'nothing': return dispatch(UI.setFocus(null))
+      case 'SEARCH': 
+        dispatch(UI.setFaqtId(null))
+        dispatch(UI.setFocused('SEARCH'))
+        return
+      case 'nothing': 
+        dispatch(UI.setFaqtId(null))
+        dispatch(UI.setFocused(null))
+        return 
     }
   }
 }
@@ -191,7 +203,8 @@ export function addFaqt() {
     const value = getScoreValue(searchId)
     FBDATA.ref(`scores/${uid}/${FAQID}/${scoreId}`).set({ searchId, faqtId, value })      
 
-    dispatch(UI.setFocus(faqtId))
+    dispatch(UI.setFocused(faqtId))
+    dispatch(UI.setFaqtId(faqtId))
   }
 }
 export function saveSearch(search) {

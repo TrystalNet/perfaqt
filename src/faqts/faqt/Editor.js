@@ -5,7 +5,6 @@ import {
   getDefaultKeyBinding, KeyBindingUtil,
   RichUtils 
 } from 'draft-js'
-import * as THUNK  from '../thunks'
 
 const {hasCommandModifier} = KeyBindingUtil
 
@@ -61,26 +60,19 @@ class MyEditor extends Component {
     this.state = {editorState: editorState}
     this.onChange = editorState => this.setState({editorState})
   }
+  saveChangesAndExit() {
+    const editorState = this.state.editorState
+    const contentState = editorState.getCurrentContent()
+    const draftjs = convertToRaw(contentState)
+    const text = convertToText(draftjs)
+    this.props.onSave(text, draftjs,'SEARCH')
+  }
   saveChanges() {
     const editorState = this.state.editorState
     const contentState = editorState.getCurrentContent()
     const draftjs = convertToRaw(contentState)
     const text = convertToText(draftjs)
     this.props.onSave(text, draftjs)
-  }
-  saveChangesAndExit() {
-    const editorState = this.state.editorState
-    const contentState = editorState.getCurrentContent()
-    const draftjs = convertToRaw(contentState)
-    const text = convertToText(draftjs)
-    this.props.onSave(text, draftjs,'search')
-  }
-  saveChangesAndBlur() {
-    const editorState = this.state.editorState
-    const contentState = editorState.getCurrentContent()
-    const draftjs = convertToRaw(contentState)
-    const text = convertToText(draftjs)
-    this.props.onSave(text, draftjs, 'nothing')
   }
   handleKeyCommand(command) {
     const newState = RichUtils.handleKeyCommand(this.state.editorState, command)
@@ -94,15 +86,6 @@ class MyEditor extends Component {
     }
     return false
   }  
-  // componentDidUpdate(prevProps) {
-  //   if(prevProps.isActive || !this.props.isActive) return
-  //   // console.log('set teh focus to this:', this.refEdit)
-  //   this.refEdit.focus()
-  //   // const input = this.refs.fldSearch.input
-  //   // input.focus()
-  //   // input.select()
-  // }
-//      ref={node => this.refEdit = node}
   render() {
     return <Editor 
       placeHolder="...faqt..."
@@ -110,7 +93,7 @@ class MyEditor extends Component {
       keyBindingFn={myKeyBindingFn}
       editorState={this.state.editorState} 
       onEscape={this.saveChangesAndExit.bind(this)}
-      onBlur={this.saveChangesAndBlur.bind(this)}
+      onBlur={this.saveChanges.bind(this)}
       onChange={this.onChange} />
   }  
 }

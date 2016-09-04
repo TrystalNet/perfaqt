@@ -22703,6 +22703,7 @@
 	function initFullText(dispatch) {
 	  FULLTEXT = (0, _lunr2.default)(function () {
 	    this.field('text');
+	    this.field('tags', { boost: 100 });
 	    this.ref('id');
 	  });
 	  dispatch(UI.setIndex(FULLTEXT));
@@ -22742,7 +22743,14 @@
 	    FULLTEXT.add(faqt);
 	  });
 	  fbref.on('child_changed', function (snap) {
-	    return dispatch(FAQTS.updateFaqt(snap.key, { text: snap.val().text }));
+	    var _snap$val2 = snap.val();
+
+	    var text = _snap$val2.text;
+	    var draftjs = _snap$val2.draftjs;
+
+	    var faqt = { id: snap.key, text: text, draftjs: draftjs };
+	    dispatch(FAQTS.updateFaqt(snap.key, { text: text, draftjs: draftjs }));
+	    FULLTEXT.update(faqt);
 	  });
 	}
 	function initSearches(dispatch, faqId) {
@@ -22765,11 +22773,11 @@
 	  var uid = FBAUTH.currentUser.uid;
 	  var fbref = FBDATA.ref().child('scores/' + uid + '/' + faqId);
 	  fbref.on('child_added', function (snap) {
-	    var _snap$val2 = snap.val();
+	    var _snap$val3 = snap.val();
 
-	    var faqtId = _snap$val2.faqtId;
-	    var searchId = _snap$val2.searchId;
-	    var value = _snap$val2.value;
+	    var faqtId = _snap$val3.faqtId;
+	    var searchId = _snap$val3.searchId;
+	    var value = _snap$val3.value;
 
 	    var score = { id: snap.key, searchId: searchId, faqtId: faqtId, value: value };
 	    dispatch(SCORES.addScore(score));
@@ -54655,6 +54663,8 @@
 	  value: true
 	});
 
+	var _extends = Object.assign || function (target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i]; for (var key in source) { if (Object.prototype.hasOwnProperty.call(source, key)) { target[key] = source[key]; } } } return target; };
+
 	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 
 	var _react = __webpack_require__(1);
@@ -54718,6 +54728,8 @@
 	    value: function shouldComponentUpdate(nextProps) {
 	      if (nextProps.text !== this.props.text) return true;
 	      if (nextProps.isActive !== this.props.isActive) return true;
+	      console.log(this.refEdit);
+	      console.log(this.refEdit.focus);
 	      return false;
 	    }
 	  }, {
@@ -54728,6 +54740,8 @@
 	  }, {
 	    key: 'render',
 	    value: function render() {
+	      var _this2 = this;
+
 	      var _props = this.props;
 	      var isActive = _props.isActive;
 	      var text = _props.text;
@@ -54736,13 +54750,16 @@
 	      var onSave = _props.onSave;
 
 	      var style = isActive ? Object.assign({}, style0A, style0Ax) : style0A;
+	      // where is the focus() method that draftjs claims to be providing?
 	      return _react2.default.createElement(
 	        'div',
 	        { ref: 'container', style: style0 },
 	        _react2.default.createElement(
 	          'div',
 	          { style: style, onFocus: this.onFocus.bind(this) },
-	          _react2.default.createElement(_Editor2.default, { text: text, draftjs: draftjs, onSave: onSave })
+	          _react2.default.createElement(_Editor2.default, _extends({ ref: function ref(node) {
+	              return _this2.refEdit = node;
+	            } }, { text: text, draftjs: draftjs, onSave: onSave }))
 	        ),
 	        _react2.default.createElement(
 	          'button',
@@ -54925,6 +54942,16 @@
 	      }
 	      return false;
 	    }
+	    // componentDidUpdate(prevProps) {
+	    //   if(prevProps.isActive || !this.props.isActive) return
+	    //   // console.log('set teh focus to this:', this.refEdit)
+	    //   this.refEdit.focus()
+	    //   // const input = this.refs.fldSearch.input
+	    //   // input.focus()
+	    //   // input.select()
+	    // }
+	    //      ref={node => this.refEdit = node}
+
 	  }, {
 	    key: 'render',
 	    value: function render() {

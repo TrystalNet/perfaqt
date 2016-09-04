@@ -39,17 +39,6 @@ const styleRight = {
   textAlign:'right', 
   marginRight:10
 }
-
-// function renderSuggestionsContainer(props) {
-//   console.log('no way')
-//   const { ref }  = props 
-//   const callRef = isolatedScroll => {
-//     if (isolatedScroll !== null) {
-//       ref(isolatedScroll.component);
-//     }
-//   };
-//  return <IsolatedScroll {...props} ref={callRef} />
-// }
 export default class SearchBar extends Component {
   constructor(props) {
     super()
@@ -61,10 +50,6 @@ export default class SearchBar extends Component {
   onSuggestionsUpdateRequested = ({value, reason}) => {
     this.setState({suggestions: getSuggestions(value, this.props.searches)})
     this.props.onAsk(value)
-  }
-
-  onSearchChange(e) {
-    this.props.onAsk(this.refs.fldSearch.value)
   }
   onSaveSearch(e) {
     const search = this.refs.fldSearch.value
