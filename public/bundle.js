@@ -76,19 +76,19 @@
 
 	var _appContainer2 = _interopRequireDefault(_appContainer);
 
-	var _faqtsReducer = __webpack_require__(354);
+	var _faqtsReducer = __webpack_require__(356);
 
 	var _faqtsReducer2 = _interopRequireDefault(_faqtsReducer);
 
-	var _searchesReducer = __webpack_require__(355);
+	var _searchesReducer = __webpack_require__(357);
 
 	var _searchesReducer2 = _interopRequireDefault(_searchesReducer);
 
-	var _scoresReducer = __webpack_require__(356);
+	var _scoresReducer = __webpack_require__(358);
 
 	var _scoresReducer2 = _interopRequireDefault(_scoresReducer);
 
-	var _uiReducer = __webpack_require__(357);
+	var _uiReducer = __webpack_require__(359);
 
 	var _uiReducer2 = _interopRequireDefault(_uiReducer);
 
@@ -22649,8 +22649,11 @@
 	exports.firebaseStuff = firebaseStuff;
 	exports.doSearch = doSearch;
 	exports.activateFaqt = activateFaqt;
+	exports.focusSearch = focusSearch;
 	exports.setBestFaqt = setBestFaqt;
+	exports.updateTags = updateTags;
 	exports.updateFaqt = updateFaqt;
+	exports.saveTags = saveTags;
 	exports.addFaqt = addFaqt;
 	exports.saveSearch = saveSearch;
 
@@ -22737,8 +22740,9 @@
 
 	    var text = _snap$val.text;
 	    var draftjs = _snap$val.draftjs;
+	    var tags = _snap$val.tags;
 
-	    var faqt = { id: snap.key, text: text, draftjs: draftjs };
+	    var faqt = { id: snap.key, text: text, draftjs: draftjs, tags: tags };
 	    dispatch(FAQTS.addFaqt(faqt));
 	    FULLTEXT.add(faqt);
 	  });
@@ -22747,9 +22751,10 @@
 
 	    var text = _snap$val2.text;
 	    var draftjs = _snap$val2.draftjs;
+	    var tags = _snap$val2.tags;
 
-	    var faqt = { id: snap.key, text: text, draftjs: draftjs };
-	    dispatch(FAQTS.updateFaqt(snap.key, { text: text, draftjs: draftjs }));
+	    var faqt = { id: snap.key, text: text, draftjs: draftjs, tags: tags };
+	    dispatch(FAQTS.updateFaqt(snap.key, { text: text, draftjs: draftjs, tags: tags }));
 	    FULLTEXT.update(faqt);
 	  });
 	}
@@ -22814,7 +22819,13 @@
 	}
 	function activateFaqt(faqtId) {
 	  return function (dispatch) {
-	    dispatch(UI.setFocus(faqtId));
+	    dispatch(UI.setFocused(faqtId));
+	    dispatch(UI.setFaqtId(faqtId));
+	  };
+	}
+	function focusSearch() {
+	  return function (dispatch) {
+	    dispatch(UI.setFocused('SEARCH'));
 	  };
 	}
 	function setBestFaqt(faqtId) {
@@ -22848,8 +22859,19 @@
 	function updateOneFaqt(faqtId, text, draftjs) {
 	  var uid = FBAUTH.currentUser.uid;
 	  var updates = {};
-	  updates['faqts/' + uid + '/' + FAQID + '/' + faqtId] = { text: text, draftjs: draftjs };
+	  updates['faqts/' + uid + '/' + FAQID + '/' + faqtId + '/text'] = text;
+	  updates['faqts/' + uid + '/' + FAQID + '/' + faqtId + '/draftjs'] = draftjs;
 	  FBDATA.ref().update(updates);
+	}
+
+	function updateTags(faqtId, tags) {
+	  return function (dispatch, getState) {
+	    var uid = FBAUTH.currentUser.uid;
+	    var updates = {};
+	    updates['faqts/' + uid + '/' + FAQID + '/' + faqtId + '/tags'] = tags;
+	    FBDATA.ref().update(updates);
+	    dispatch(UI.setFocused('SEARCH'));
+	  };
 	}
 
 	function updateFaqt(faqtId, text, draftjs, nextFocus) {
@@ -22858,11 +22880,22 @@
 	    updateOneFaqt(faqtId, text, draftjs);
 	    if (!nextFocus) return;
 	    switch (nextFocus) {
-	      case 'search':
-	        return dispatch(UI.setFocus('__search'));
+	      case 'SEARCH':
+	        dispatch(UI.setFaqtId(null));
+	        dispatch(UI.setFocused('SEARCH'));
+	        return;
 	      case 'nothing':
-	        return dispatch(UI.setFocus(null));
+	        dispatch(UI.setFaqtId(null));
+	        dispatch(UI.setFocused(null));
+	        return;
 	    }
+	  };
+	}
+
+	function saveTags(faqtId, tags) {
+	  return function (dispatch, getState) {
+	    if (!SELECT.getFaqtById(getState(), faqtId)) return;
+	    updateOneFaqt(faqtId, tags);
 	  };
 	}
 
@@ -22894,7 +22927,8 @@
 	    var value = getScoreValue(searchId);
 	    FBDATA.ref('scores/' + uid + '/' + FAQID + '/' + scoreId).set({ searchId: searchId, faqtId: faqtId, value: value });
 
-	    dispatch(UI.setFocus(faqtId));
+	    dispatch(UI.setFocused(faqtId));
+	    dispatch(UI.setFaqtId(faqtId));
 	  };
 	}
 	function saveSearch(search) {
@@ -49997,8 +50031,11 @@
 	  return { type: 'UI', uiType: uiType, payload: payload };
 	};
 
-	var setFocus = exports.setFocus = function setFocus(faqtId) {
-	  return simple('SET_FOCUS', { faqtId: faqtId });
+	var setFocused = exports.setFocused = function setFocused(focused) {
+	  return simple('SET_FOCUSED', { focused: focused });
+	};
+	var setFaqtId = exports.setFaqtId = function setFaqtId(faqtId) {
+	  return simple('SET_FAQTID', { faqtId: faqtId });
 	};
 	var setSearch = exports.setSearch = function setSearch(search) {
 	  return simple('SET_SEARCH', { search: search });
@@ -52101,15 +52138,11 @@
 	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 	function mapStateToProps(state) {
-	  var _state$ui = state.ui;
-	  var broadcast = _state$ui.broadcast;
-	  var connected = _state$ui.connected;
-	  var faqtId = _state$ui.faqtId;
+	  var connected = state.ui.connected;
 
 	  var search = state.ui.search || '';
 	  var faqts = SELECT.rankedFaqts(state, search);
-	  var searches = SELECT.searches(state);
-	  return { faqtId: faqtId, faqts: faqts, searches: searches, search: search, broadcast: broadcast, connected: connected };
+	  return { faqts: faqts, connected: connected };
 	}
 
 	function mapDispatchToProps(dispatch) {
@@ -52117,32 +52150,11 @@
 	    onAddFaqt: function onAddFaqt() {
 	      return dispatch(THUNK.addFaqt());
 	    },
-	    onAsk: function onAsk(search) {
-	      return dispatch(THUNK.doSearch(search));
-	    },
-	    onSaveSearch: function onSaveSearch(search) {
-	      return dispatch(THUNK.saveSearch(search));
-	    },
-	    onUpdateFaqt: function onUpdateFaqt(faqtId, text) {
-	      return dispatch(THUNK.updateFaqt(faqtId, text));
-	    },
-	    onSetBestFaqt: function onSetBestFaqt(faqtId) {
-	      return dispatch(THUNK.setBestFaqt(faqtId));
-	    },
-	    onActivate: function onActivate(faqtId) {
-	      return dispatch(THUNK.activateFaqt(faqtId));
-	    },
-	    onLogout: function onLogout() {
-	      return dispatch(THUNK.logout());
-	    },
 	    onLogin: function onLogin(email, password) {
 	      return dispatch(THUNK.login(email, password));
 	    },
 	    onSignup: function onSignup(email, password) {
 	      return dispatch(THUNK.signup(email, password));
-	    },
-	    onSearchChange: function onSearchChange(search) {
-	      // dispatch(updateActiveSearch(search))
 	    }
 	  };
 	}
@@ -52171,15 +52183,15 @@
 
 	var _container2 = _interopRequireDefault(_container);
 
-	var _MenuBar = __webpack_require__(222);
-
-	var _MenuBar2 = _interopRequireDefault(_MenuBar);
-
-	var _FaqtsArea = __webpack_require__(223);
+	var _FaqtsArea = __webpack_require__(222);
 
 	var _FaqtsArea2 = _interopRequireDefault(_FaqtsArea);
 
-	var _LoginPage = __webpack_require__(353);
+	var _MenuBar = __webpack_require__(354);
+
+	var _MenuBar2 = _interopRequireDefault(_MenuBar);
+
+	var _LoginPage = __webpack_require__(355);
 
 	var _LoginPage2 = _interopRequireDefault(_LoginPage);
 
@@ -52191,39 +52203,6 @@
 
 	function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
 
-	var COL0WIDTH = 130;
-
-	var s1 = { padding: 10 };
-	var s2 = { padding: 10, border: 'gray 1px solid', overflowY: 'auto' };
-
-	var styleSearchBar = {
-	  backgroundColor: '#f2f2f2', display: 'flex', paddingTop: 20, paddingBottom: 20, borderBottom: 'lightgray 1px solid'
-	};
-	var stylePerfaqt = {
-	  width: COL0WIDTH,
-	  fontSize: 35,
-	  textAlign: 'center',
-	  border: 'lightgray 0px solid'
-	};
-	var styleToolbar = {
-	  height: 40,
-	  borderBottom: 'lightgray 1px solid'
-	};
-
-	var styleSearchField = {
-	  fontSize: 18,
-	  paddingLeft: 10,
-	  flex: 1
-	};
-	var styleKeepButton = {
-	  marginRight: 20
-	};
-
-	var styleSearchOption = {
-	  border: 'purple 3px solid',
-	  backgroundColor: 'orange'
-	};
-
 	var App = function (_Component) {
 	  _inherits(App, _Component);
 
@@ -52234,66 +52213,13 @@
 	  }
 
 	  _createClass(App, [{
-	    key: 'onSearchChange',
-	    value: function onSearchChange(e) {
-	      this.props.onAsk(this.refs.fldSearch.value);
-	    }
-	  }, {
-	    key: 'onSaveSearch',
-	    value: function onSaveSearch(e) {
-	      var search = this.refs.fldSearch.value;
-	      if (!search || !search.length) return;
-	      this.props.onSaveSearch(search);
-	    }
-	  }, {
-	    key: 'onSetBest',
-	    value: function onSetBest(faqtId, e) {
-	      var search = this.refs.fldSearch.value;
-	      if (!search || !search.length) return;
-	      this.props.onSetBestFaqt(search, faqtId);
-	    }
-	  }, {
-	    key: 'onAddFaqt',
-	    value: function onAddFaqt(e) {
-	      var value = this.refs.fldNewFaqt.value;
-	      if (value && value.length) {
-	        this.props.onAddFaqt(value);
-	        this.refs.fldNewFaqt.value = '';
-	      }
-	    }
-	  }, {
-	    key: 'onSave',
-	    value: function onSave(e) {
-	      this.props.onSave();
-	    }
-	  }, {
-	    key: 'onLoad',
-	    value: function onLoad(e) {
-	      this.props.onLoad();
-	    }
-	  }, {
-	    key: 'onUpdateFaqt',
-	    value: function onUpdateFaqt(faqtId, e) {
-	      this.props.onUpdateFaqt(faqtId, e.target.value);
-	    }
-	  }, {
 	    key: 'render',
 	    value: function render() {
 	      var _props = this.props;
-	      var search = _props.search;
-	      var searches = _props.searches;
 	      var faqts = _props.faqts;
-	      var faqtId = _props.faqtId;
 	      var connected = _props.connected;
-	      var broadcast = _props.broadcast;
 	      var _props2 = this.props;
-	      var onAsk = _props2.onAsk;
-	      var onSaveSearch = _props2.onSaveSearch;
-	      var onSetBestFaqt = _props2.onSetBestFaqt;
 	      var onAddFaqt = _props2.onAddFaqt;
-	      var onUpdateFaqt = _props2.onUpdateFaqt;
-	      var onActivate = _props2.onActivate;
-	      var onLogout = _props2.onLogout;
 	      var onLogin = _props2.onLogin;
 	      var onSignup = _props2.onSignup;
 
@@ -52303,7 +52229,7 @@
 	        { id: 'app' },
 	        _react2.default.createElement(_container2.default, null),
 	        _react2.default.createElement(_MenuBar2.default, { onAddFaqt: onAddFaqt }),
-	        _react2.default.createElement(_FaqtsArea2.default, { faqts: faqts, faqtId: faqtId, onSetBestFaqt: onSetBestFaqt })
+	        _react2.default.createElement(_FaqtsArea2.default, { faqts: faqts })
 	      );
 	    }
 	  }]);
@@ -52345,11 +52271,11 @@
 	  var _state$ui = state.ui;
 	  var broadcast = _state$ui.broadcast;
 	  var connected = _state$ui.connected;
-	  var faqtId = _state$ui.faqtId;
+	  var focused = _state$ui.focused;
 
 	  var search = state.ui.search || '';
 	  var searches = SELECT.searches(state);
-	  var isFocus = faqtId === '__search';
+	  var isFocus = focused === 'SEARCH';
 	  return { searches: searches, search: search, broadcast: broadcast, connected: connected, isFocus: isFocus };
 	}
 
@@ -52362,10 +52288,7 @@
 	      return dispatch(THUNK.saveSearch(search));
 	    },
 	    onGotFocus: function onGotFocus() {
-	      return dispatch(THUNK.activateFaqt(null));
-	    },
-	    onSearchChange: function onSearchChange(search) {
-	      // dispatch(updateActiveSearch(search))
+	      return dispatch(THUNK.focusSearch());
 	    }
 	  };
 	}
@@ -52441,17 +52364,6 @@
 	  marginRight: 10
 	};
 
-	// function renderSuggestionsContainer(props) {
-	//   console.log('no way')
-	//   const { ref }  = props 
-	//   const callRef = isolatedScroll => {
-	//     if (isolatedScroll !== null) {
-	//       ref(isolatedScroll.component);
-	//     }
-	//   };
-	//  return <IsolatedScroll {...props} ref={callRef} />
-	// }
-
 	var SearchBar = function (_Component) {
 	  _inherits(SearchBar, _Component);
 
@@ -52482,11 +52394,6 @@
 	  }
 
 	  _createClass(SearchBar, [{
-	    key: 'onSearchChange',
-	    value: function onSearchChange(e) {
-	      this.props.onAsk(this.refs.fldSearch.value);
-	    }
-	  }, {
 	    key: 'onSaveSearch',
 	    value: function onSaveSearch(e) {
 	      var search = this.refs.fldSearch.value;
@@ -54555,43 +54462,33 @@
 
 	var _react2 = _interopRequireDefault(_react);
 
-	var _reactRedux = __webpack_require__(164);
-
 	var _constants = __webpack_require__(221);
+
+	var _faqtContainer = __webpack_require__(223);
+
+	var _faqtContainer2 = _interopRequireDefault(_faqtContainer);
 
 	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
-	var styleToolbar = {
-	  height: 40,
-	  borderBottom: 'lightgray 1px solid',
-	  paddingLeft: _constants.COL0WIDTH,
-	  width: 600,
-	  display: 'flex'
-	};
+	var s1 = { paddingLeft: _constants.COL0WIDTH, overflowY: 'auto' };
+	var s2 = { paddingTop: 10, width: 600 };
 
-	var styleRight = {
-	  flex: 1,
-	  textAlign: 'right'
-	};
+	var FaqtsArea = function FaqtsArea(_ref) {
+	  var faqts = _ref.faqts;
 
-	var MenuBar = function MenuBar(_ref) {
-	  var onAddFaqt = _ref.onAddFaqt;
 	  return _react2.default.createElement(
 	    'div',
-	    { id: 'toolbar', style: styleToolbar },
+	    { id: 'faqtsContainer', style: s1 },
 	    _react2.default.createElement(
 	      'div',
-	      { style: styleRight },
-	      _react2.default.createElement(
-	        'button',
-	        { onClick: onAddFaqt },
-	        'Add Faqt'
-	      )
+	      { style: s2 },
+	      faqts.map(function (faqt) {
+	        return _react2.default.createElement(_faqtContainer2.default, { key: faqt.id, faqtId: faqt.id });
+	      })
 	    )
 	  );
 	};
-
-	exports.default = (0, _reactRedux.connect)()(MenuBar);
+	exports.default = FaqtsArea;
 
 /***/ },
 /* 223 */
@@ -54607,51 +54504,58 @@
 
 	var _react2 = _interopRequireDefault(_react);
 
-	var _constants = __webpack_require__(221);
+	var _reactRedux = __webpack_require__(164);
 
-	var _Faqt = __webpack_require__(224);
+	var _select = __webpack_require__(198);
 
-	var _Faqt2 = _interopRequireDefault(_Faqt);
+	var SELECT = _interopRequireWildcard(_select);
+
+	var _thunks = __webpack_require__(193);
+
+	var THUNK = _interopRequireWildcard(_thunks);
+
+	var _faqt = __webpack_require__(224);
+
+	var _faqt2 = _interopRequireDefault(_faqt);
+
+	function _interopRequireWildcard(obj) { if (obj && obj.__esModule) { return obj; } else { var newObj = {}; if (obj != null) { for (var key in obj) { if (Object.prototype.hasOwnProperty.call(obj, key)) newObj[key] = obj[key]; } } newObj.default = obj; return newObj; } }
 
 	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
-	var s2 = { paddingTop: 10, width: 600 };
+	function mapStateToProps(state, ownProps) {
+	  var faqtId = ownProps.faqtId;
 
-	var containerStyle = {
-	  paddingLeft: _constants.COL0WIDTH,
-	  overflowY: 'auto'
-	};
+	  var _SELECT$getFaqtById = SELECT.getFaqtById(state, faqtId);
 
-	var piggycontainerStyle = {
-	  paddingLeft: _constants.COL0WIDTH,
-	  overflowY: 'auto',
-	  border: 'red 1px solid'
-	};
+	  var text = _SELECT$getFaqtById.text;
+	  var draftjs = _SELECT$getFaqtById.draftjs;
+	  var tags = _SELECT$getFaqtById.tags;
 
-	// const EditFaqt = ({faqtId}) => {
-	//   return <div id='faqtsContainer' style={piggycontainerStyle}>
-	//     <div style={s2}><Faqt key={faqtId} faqtId={faqtId} /></div>
-	//   </div>
-	// }
+	  var isActive = faqtId === state.ui.faqtId;
+	  var focusedControl = isActive ? state.ui.focused : null;
+	  return { isActive: isActive, focusedControl: focusedControl, text: text, draftjs: draftjs, tags: tags };
+	}
 
-	var FaqtsArea = function FaqtsArea(_ref) {
-	  var faqts = _ref.faqts;
-	  var faqtId = _ref.faqtId;
+	function mapDispatchToProps(dispatch, ownProps) {
+	  var faqtId = ownProps.faqtId;
 
-	  // if(faqtId) return <EditFaqt faqtId={faqtId} />
-	  return _react2.default.createElement(
-	    'div',
-	    { id: 'faqtsContainer', style: containerStyle },
-	    _react2.default.createElement(
-	      'div',
-	      { style: s2 },
-	      faqts.map(function (faqt) {
-	        return _react2.default.createElement(_Faqt2.default, { key: faqt.id, faqtId: faqt.id });
-	      })
-	    )
-	  );
-	};
-	exports.default = FaqtsArea;
+	  return {
+	    onSave: function onSave(text, draftjs, nextFocus) {
+	      return dispatch(THUNK.updateFaqt(faqtId, text, draftjs, nextFocus));
+	    },
+	    onSaveTags: function onSaveTags(tags) {
+	      return dispatch(THUNK.updateTags(faqtId, tags));
+	    },
+	    onActivate: function onActivate() {
+	      return dispatch(THUNK.activateFaqt(faqtId));
+	    },
+	    onSetBest: function onSetBest() {
+	      return dispatch(THUNK.setBestFaqt(faqtId));
+	    }
+	  };
+	}
+
+	exports.default = (0, _reactRedux.connect)(mapStateToProps, mapDispatchToProps)(_faqt2.default);
 
 /***/ },
 /* 224 */
@@ -54673,19 +54577,13 @@
 
 	var _reactRedux = __webpack_require__(164);
 
-	var _select = __webpack_require__(198);
-
-	var SELECT = _interopRequireWildcard(_select);
-
 	var _Editor = __webpack_require__(225);
 
 	var _Editor2 = _interopRequireDefault(_Editor);
 
-	var _thunks = __webpack_require__(193);
+	var _TagsEditor = __webpack_require__(353);
 
-	var THUNK = _interopRequireWildcard(_thunks);
-
-	function _interopRequireWildcard(obj) { if (obj && obj.__esModule) { return obj; } else { var newObj = {}; if (obj != null) { for (var key in obj) { if (Object.prototype.hasOwnProperty.call(obj, key)) newObj[key] = obj[key]; } } newObj.default = obj; return newObj; } }
+	var _TagsEditor2 = _interopRequireDefault(_TagsEditor);
 
 	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
@@ -54696,6 +54594,7 @@
 	function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
 
 	var style0 = {
+	  backgroundColor: 'white',
 	  display: 'flex',
 	  paddingTop: 5,
 	  paddingBottom: 5,
@@ -54709,9 +54608,18 @@
 	  maxHeight: '15vh',
 	  overflowY: 'auto'
 	};
-	var style0Ax = {
+	var BEIGE = {
 	  backgroundColor: 'beige',
 	  maxHeight: '50vh'
+	};
+
+	var TagsControl = function TagsControl(_ref) {
+	  var isActive = _ref.isActive;
+	  var tags = _ref.tags;
+	  var onSave = _ref.onSave;
+
+	  var styleTagsB = { fontSize: 'small', fontStyle: 'italic' };
+	  return isActive ? _react2.default.createElement(_TagsEditor2.default, { tags: tags, onSave: onSave }) : null;
 	};
 
 	var Faqt = function (_Component) {
@@ -54724,15 +54632,6 @@
 	  }
 
 	  _createClass(Faqt, [{
-	    key: 'shouldComponentUpdate',
-	    value: function shouldComponentUpdate(nextProps) {
-	      if (nextProps.text !== this.props.text) return true;
-	      if (nextProps.isActive !== this.props.isActive) return true;
-	      console.log(this.refEdit);
-	      console.log(this.refEdit.focus);
-	      return false;
-	    }
-	  }, {
 	    key: 'onFocus',
 	    value: function onFocus(e) {
 	      this.props.onActivate();
@@ -54744,28 +54643,36 @@
 
 	      var _props = this.props;
 	      var isActive = _props.isActive;
+	      var focusedControl = _props.focusedControl;
 	      var text = _props.text;
 	      var draftjs = _props.draftjs;
+	      var tags = _props.tags;
 	      var onSetBest = _props.onSetBest;
 	      var onSave = _props.onSave;
+	      var onSaveTags = _props.onSaveTags;
 
-	      var style = isActive ? Object.assign({}, style0A, style0Ax) : style0A;
-	      // where is the focus() method that draftjs claims to be providing?
+	      var style = isActive ? Object.assign({}, style0A, BEIGE) : style0A;
+
 	      return _react2.default.createElement(
 	        'div',
-	        { ref: 'container', style: style0 },
+	        { style: { backgroundColor: 'paleblue', marginBottom: 5, padding: 1 } },
 	        _react2.default.createElement(
 	          'div',
-	          { style: style, onFocus: this.onFocus.bind(this) },
-	          _react2.default.createElement(_Editor2.default, _extends({ ref: function ref(node) {
-	              return _this2.refEdit = node;
-	            } }, { text: text, draftjs: draftjs, onSave: onSave }))
+	          { ref: 'container', style: style0 },
+	          _react2.default.createElement(
+	            'div',
+	            { style: style, onFocus: this.onFocus.bind(this) },
+	            _react2.default.createElement(_Editor2.default, _extends({ ref: function ref(node) {
+	                return _this2.refEdit = node;
+	              } }, { text: text, draftjs: draftjs, onSave: onSave }))
+	          ),
+	          _react2.default.createElement(
+	            'button',
+	            { onClick: onSetBest },
+	            'best'
+	          )
 	        ),
-	        _react2.default.createElement(
-	          'button',
-	          { onClick: onSetBest },
-	          'best'
-	        )
+	        _react2.default.createElement(TagsControl, { isActive: isActive, tags: tags, onSave: onSaveTags })
 	      );
 	    }
 	  }]);
@@ -54773,36 +54680,7 @@
 	  return Faqt;
 	}(_react.Component);
 
-	function mapStateToProps(state, ownProps) {
-	  var faqtId = ownProps.faqtId;
-
-	  var _SELECT$getFaqtById = SELECT.getFaqtById(state, faqtId);
-
-	  var text = _SELECT$getFaqtById.text;
-	  var draftjs = _SELECT$getFaqtById.draftjs;
-
-	  var isActive = faqtId === state.ui.faqtId;
-	  return { isActive: isActive, text: text, draftjs: draftjs };
-	}
-
-	function mapDispatchToProps(dispatch, ownProps) {
-	  var faqtId = ownProps.faqtId;
-	  var onSetBest = ownProps.onSetBest;
-
-	  return {
-	    onSave: function onSave(text, draftjs, nextFocus) {
-	      return dispatch(THUNK.updateFaqt(faqtId, text, draftjs, nextFocus));
-	    },
-	    onActivate: function onActivate() {
-	      return dispatch(THUNK.activateFaqt(faqtId));
-	    },
-	    onSetBest: function onSetBest() {
-	      return dispatch(THUNK.setBestFaqt(faqtId));
-	    }
-	  };
-	}
-
-	exports.default = (0, _reactRedux.connect)(mapStateToProps, mapDispatchToProps)(Faqt);
+	exports.default = Faqt;
 
 /***/ },
 /* 225 */
@@ -54821,12 +54699,6 @@
 	var _react2 = _interopRequireDefault(_react);
 
 	var _draftJs = __webpack_require__(226);
-
-	var _thunks = __webpack_require__(193);
-
-	var THUNK = _interopRequireWildcard(_thunks);
-
-	function _interopRequireWildcard(obj) { if (obj && obj.__esModule) { return obj; } else { var newObj = {}; if (obj != null) { for (var key in obj) { if (Object.prototype.hasOwnProperty.call(obj, key)) newObj[key] = obj[key]; } } newObj.default = obj; return newObj; } }
 
 	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
@@ -54902,6 +54774,15 @@
 	  }
 
 	  _createClass(MyEditor, [{
+	    key: 'saveChangesAndExit',
+	    value: function saveChangesAndExit() {
+	      var editorState = this.state.editorState;
+	      var contentState = editorState.getCurrentContent();
+	      var draftjs = (0, _draftJs.convertToRaw)(contentState);
+	      var text = convertToText(draftjs);
+	      this.props.onSave(text, draftjs, 'SEARCH');
+	    }
+	  }, {
 	    key: 'saveChanges',
 	    value: function saveChanges() {
 	      var editorState = this.state.editorState;
@@ -54909,24 +54790,6 @@
 	      var draftjs = (0, _draftJs.convertToRaw)(contentState);
 	      var text = convertToText(draftjs);
 	      this.props.onSave(text, draftjs);
-	    }
-	  }, {
-	    key: 'saveChangesAndExit',
-	    value: function saveChangesAndExit() {
-	      var editorState = this.state.editorState;
-	      var contentState = editorState.getCurrentContent();
-	      var draftjs = (0, _draftJs.convertToRaw)(contentState);
-	      var text = convertToText(draftjs);
-	      this.props.onSave(text, draftjs, 'search');
-	    }
-	  }, {
-	    key: 'saveChangesAndBlur',
-	    value: function saveChangesAndBlur() {
-	      var editorState = this.state.editorState;
-	      var contentState = editorState.getCurrentContent();
-	      var draftjs = (0, _draftJs.convertToRaw)(contentState);
-	      var text = convertToText(draftjs);
-	      this.props.onSave(text, draftjs, 'nothing');
 	    }
 	  }, {
 	    key: 'handleKeyCommand',
@@ -54942,16 +54805,6 @@
 	      }
 	      return false;
 	    }
-	    // componentDidUpdate(prevProps) {
-	    //   if(prevProps.isActive || !this.props.isActive) return
-	    //   // console.log('set teh focus to this:', this.refEdit)
-	    //   this.refEdit.focus()
-	    //   // const input = this.refs.fldSearch.input
-	    //   // input.focus()
-	    //   // input.select()
-	    // }
-	    //      ref={node => this.refEdit = node}
-
 	  }, {
 	    key: 'render',
 	    value: function render() {
@@ -54961,7 +54814,7 @@
 	        keyBindingFn: myKeyBindingFn,
 	        editorState: this.state.editorState,
 	        onEscape: this.saveChangesAndExit.bind(this),
-	        onBlur: this.saveChangesAndBlur.bind(this),
+	        onBlur: this.saveChanges.bind(this),
 	        onChange: this.onChange });
 	    }
 	  }]);
@@ -72351,6 +72204,146 @@
 
 	function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
 
+	var S1 = { display: 'flex', border: 'black 0px solid', backgroundColor: 'lightgrey', padding: 5, paddingRight: 6 };
+
+	var TagsEditor = function (_Component) {
+	  _inherits(TagsEditor, _Component);
+
+	  function TagsEditor(props) {
+	    _classCallCheck(this, TagsEditor);
+
+	    var _this = _possibleConstructorReturn(this, Object.getPrototypeOf(TagsEditor).call(this, props));
+
+	    _this.state = { value: props.tags };
+	    return _this;
+	  }
+
+	  _createClass(TagsEditor, [{
+	    key: 'handleChange',
+	    value: function handleChange(e) {
+	      this.setState({ value: e.target.value });
+	    }
+	  }, {
+	    key: 'onKeyDown',
+	    value: function onKeyDown(e) {
+	      if (e.keyCode !== 13) return;
+	      e.stopPropagation();
+	      e.preventDefault();
+	      this.props.onSave(this.state.value);
+	    }
+	  }, {
+	    key: 'render',
+	    value: function render() {
+	      var _this2 = this;
+
+	      var tags = this.props.tags;
+
+	      return _react2.default.createElement(
+	        'div',
+	        { style: S1 },
+	        _react2.default.createElement(
+	          'div',
+	          { style: { flex: 0, margin: 3, marginRight: 8 } },
+	          _react2.default.createElement(
+	            'b',
+	            null,
+	            'Tags:'
+	          )
+	        ),
+	        _react2.default.createElement('input', {
+	          ref: function ref(c) {
+	            return _this2._input = c;
+	          },
+	          type: 'text',
+	          value: this.state.value,
+	          onChange: this.handleChange.bind(this),
+	          onKeyDown: this.onKeyDown.bind(this),
+	          style: { flex: 1, border: 'red 0px solid', paddingLeft: 5 } })
+	      );
+	    }
+	  }]);
+
+	  return TagsEditor;
+	}(_react.Component);
+
+	exports.default = TagsEditor;
+
+/***/ },
+/* 354 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+
+	Object.defineProperty(exports, "__esModule", {
+	  value: true
+	});
+
+	var _react = __webpack_require__(1);
+
+	var _react2 = _interopRequireDefault(_react);
+
+	var _reactRedux = __webpack_require__(164);
+
+	var _constants = __webpack_require__(221);
+
+	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+	var styleToolbar = {
+	  height: 40,
+	  borderBottom: 'lightgray 1px solid',
+	  paddingLeft: _constants.COL0WIDTH,
+	  width: 600,
+	  display: 'flex'
+	};
+
+	var styleRight = {
+	  flex: 1,
+	  textAlign: 'right'
+	};
+
+	var MenuBar = function MenuBar(_ref) {
+	  var onAddFaqt = _ref.onAddFaqt;
+	  return _react2.default.createElement(
+	    'div',
+	    { id: 'toolbar', style: styleToolbar },
+	    _react2.default.createElement(
+	      'div',
+	      { style: styleRight },
+	      _react2.default.createElement(
+	        'button',
+	        { onClick: onAddFaqt },
+	        'Add Faqt'
+	      )
+	    )
+	  );
+	};
+
+	exports.default = (0, _reactRedux.connect)()(MenuBar);
+
+/***/ },
+/* 355 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+
+	Object.defineProperty(exports, "__esModule", {
+	  value: true
+	});
+
+	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+
+	var _react = __webpack_require__(1);
+
+	var _react2 = _interopRequireDefault(_react);
+
+	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+	function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
+
+	function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
+
 	var LoginPage = function (_Component) {
 	  _inherits(LoginPage, _Component);
 
@@ -72436,7 +72429,7 @@
 	exports.default = LoginPage;
 
 /***/ },
-/* 354 */
+/* 356 */
 /***/ function(module, exports) {
 
 	'use strict';
@@ -72454,7 +72447,8 @@
 	  var faqt = faqts.find(function (F) {
 	    return F.id === faqtId;
 	  });
-	  if (!faqt || faqt.text === edits.text) return faqts;
+	  if (!faqt) return faqts;
+	  if (faqt.text === edits.text && faqt.tags === edits.tags) return faqts;
 	  return faqts.map(function (faqt) {
 	    if (faqt.id !== faqtId) return faqt;
 	    return Object.assign({}, faqt, edits);
@@ -72488,7 +72482,7 @@
 	exports.default = reducer;
 
 /***/ },
-/* 355 */
+/* 357 */
 /***/ function(module, exports) {
 
 	'use strict';
@@ -72515,7 +72509,7 @@
 	exports.default = reducer;
 
 /***/ },
-/* 356 */
+/* 358 */
 /***/ function(module, exports) {
 
 	'use strict';
@@ -72557,7 +72551,7 @@
 	exports.default = reducer;
 
 /***/ },
-/* 357 */
+/* 359 */
 /***/ function(module, exports) {
 
 	'use strict';
@@ -72566,12 +72560,20 @@
 	  value: true
 	});
 	var defaultState = {
-	  search: '',
+	  focused: null,
 	  faqtId: null,
+	  // ------------- //
+	  search: '',
 	  index: null,
 	  connected: null,
 	  broadcast: null
 	};
+
+	// but here's the thing; we want the acxtive faqt to remain in place regardless 
+	// of where the focus is; so they need to be separate
+	// so first then, 
+	// 1. rename faqtId to focused <== this will actually be the control that is focused 
+	// 2. add faqtId, and have it take over the role of focused that focused has
 
 	function reducer() {
 	  var uiState = arguments.length <= 0 || arguments[0] === undefined ? defaultState : arguments[0];
@@ -72580,14 +72582,17 @@
 	  if (action.type === 'UI') switch (action.uiType) {
 	    case 'SET_SEARCH':
 	      return Object.assign({}, uiState, { search: action.payload.search });
-	    case 'SET_FOCUS':
-	      return Object.assign({}, uiState, { faqtId: action.payload.faqtId });
 	    case 'SET_INDEX':
 	      return Object.assign({}, uiState, { index: action.payload.index });
 	    case 'SET_CONNECTED':
 	      return Object.assign({}, uiState, { connected: action.payload.connected });
 	    case 'SET_BROADCAST':
 	      return Object.assign({}, uiState, { broadcast: action.payload.broadcast });
+	    // ------------------- // 
+	    case 'SET_FOCUSED':
+	      return Object.assign({}, uiState, { focused: action.payload.focused });
+	    case 'SET_FAQTID':
+	      return Object.assign({}, uiState, { faqtId: action.payload.faqtId });
 	  }
 	  return uiState;
 	}
