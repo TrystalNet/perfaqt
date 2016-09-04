@@ -4,8 +4,7 @@ import * as THUNK  from '../thunks'
 import * as SELECT from '../select'
 
 function mapStateToProps(state) {
-  const { broadcast, connected, focused  } = state.ui
-  const search = state.ui.search || ''
+  const { broadcast, connected, focused, search  } = state.ui
   const searches = SELECT.searches(state)
   const isFocus = focused === 'SEARCH'
   return { searches, search, broadcast, connected, isFocus }

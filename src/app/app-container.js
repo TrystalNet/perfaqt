@@ -5,8 +5,8 @@ import * as SELECT from '../select'
 
 function mapStateToProps(state) {
   const { connected } = state.ui
-  const search = state.ui.search || ''
-  const faqts = SELECT.rankedFaqts(state, search)
+  const search = state.ui.search
+  const faqts = SELECT.getFaqts(state, search) 
   return { faqts, connected }
 }
 

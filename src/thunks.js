@@ -104,9 +104,10 @@ export function firebaseStuff(app, auth, db) {
 
   }
 }
-export function doSearch(search) {
-  return function(dispatch) {
-    dispatch(UI.setSearch(search) )
+export function doSearch(text) {
+  return function(dispatch, getState) {
+    const search = SELECT.findSearchByText(getState(), text)
+    dispatch(UI.setSearch(search))
   }
 }
 export function activateFaqt(faqtId) {

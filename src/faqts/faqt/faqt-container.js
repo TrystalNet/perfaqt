@@ -9,7 +9,9 @@ function mapStateToProps(state, ownProps) {
   const { text, draftjs, tags } = SELECT.getFaqtById(state, faqtId)
   const isActive  = faqtId === state.ui.faqtId
   const focusedControl   = isActive ? state.ui.focused : null 
-  return { isActive, focusedControl, text, draftjs, tags }
+  const search = SELECT.getSearch(state)
+  const score = search ? SELECT.findScore(state, search.id, faqtId) : null
+  return { isActive, focusedControl, text, draftjs, tags, score }
 }
 
 function mapDispatchToProps(dispatch, ownProps) {

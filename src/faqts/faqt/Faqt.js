@@ -3,6 +3,7 @@ import { connect } from 'react-redux'
 import MyEditor from './Editor'
 import TagsEditor from './TagsEditor'
 
+const S0 = {backgroundColor:'paleblue',marginBottom:5, padding:1}
 const style0 = {
   backgroundColor:'white',
   display:'flex',
@@ -30,23 +31,30 @@ const TagsControl = ({isActive, tags, onSave}) => {
     : null
 }
 
+const ScoreButton = ({score}) => {
+  if(!score) return null
+  return <button>{score.value}</button>
+}
+
 class Faqt extends Component {
   onFocus(e) {
     this.props.onActivate()
   }
   render() {
     const {
-      isActive, focusedControl, text, draftjs, tags, 
+      isActive, focusedControl, text, draftjs, tags, score, 
       onSetBest, onSave, onSaveTags
     } = this.props
     const style = isActive ? Object.assign({},style0A,BEIGE) : style0A
-
-    return <div style={{backgroundColor:'paleblue',marginBottom:5, padding:1}}>
+    return <div style={S0}>
       <div ref='container' style={style0}>
         <div style={style} onFocus={this.onFocus.bind(this)}>
           <MyEditor ref={node => this.refEdit = node} {...{text, draftjs, onSave}} />
         </div>
-        <button onClick={onSetBest}>best</button>
+        <div style={{display:'flex', flexDirection:'column'}}>
+          <button onClick={onSetBest}>best</button>
+          <ScoreButton {...{score}} />
+        </div>
       </div>
       <TagsControl {...{isActive, tags, onSave:onSaveTags}} />
     </div>
