@@ -24,10 +24,10 @@ const BEIGE = {
 }
 
 const TagsControl = ({isActive, tags, onSave}) => {
-  const styleTagsB = { backgroundColor:'lightgrey', fontSize:'small', fontStyle:'italic' }
+  const styleTagsB = { fontSize:'small', fontStyle:'italic' }
   return isActive 
     ? <TagsEditor {...{tags, onSave}} />
-    : <div style={styleTagsB}>{tags}</div>
+    : null
 }
 
 class Faqt extends Component {

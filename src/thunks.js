@@ -164,6 +164,7 @@ export function updateTags(faqtId, tags) {
     var updates = {}
     updates[`faqts/${uid}/${FAQID}/${faqtId}/tags`] = tags
     FBDATA.ref().update(updates)
+    dispatch(UI.setFocused('SEARCH'))
   }
 }
 
