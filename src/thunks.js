@@ -44,16 +44,18 @@ function initFaqts(dispatch, faqId) {
   const uid = FBAUTH.currentUser.uid
   const path = `faqts/${uid}/${faqId}`
   const fbref = FBDATA.ref().child(path)
+  let defaultTime = new Date(2016,1,1).getTime()  // temporary solution to support legacy faqts
   fbref.on('child_added', snap => {
-    const {text, draftjs, tags} = snap.val()
-    const faqt = { id: snap.key, text, draftjs, tags }
+    const {text, draftjs, tags, created} = snap.val()
+    const when = created || defaultTime++
+    const faqt = { id: snap.key, text, draftjs, tags, created:when }
     dispatch(FAQTS.addFaqt(faqt))
     FULLTEXT.add(faqt)
   })
   fbref.on('child_changed', snap => {
-    const {text, draftjs, tags} = snap.val() 
-    const faqt = { id: snap.key, text, draftjs, tags }
-    dispatch(FAQTS.updateFaqt(snap.key, {text, draftjs, tags}))
+    const {text, draftjs, tags, created} = snap.val() 
+    const faqt = { id: snap.key, text, draftjs, tags, created }
+    dispatch(FAQTS.updateFaqt(snap.key, {text, draftjs, tags, created}))
     FULLTEXT.update(faqt)
   })
 }
@@ -131,6 +133,7 @@ export function setBestFaqt(faqtId) {
     if(!search.id) {
       const {text} = search
       if(!text || !text.length) return
+      if(typeof text === 'object') throw 'text cannot be an object in setBestFaqt'
       search.id = UNIQ.randomId(4)
       FBDATA.ref(`searches/${uid}/${FAQID}/${search.id}/text`)
       .set(text)
@@ -151,7 +154,6 @@ export function setBestFaqt(faqtId) {
     else FBDATA.ref(`scores/${uid}/${FAQID}/${UNIQ.randomId(4)}`).set({ searchId:search.id, faqtId, value })
   }  
 }
-
 function updateOneFaqt(faqtId, text, draftjs) {
   const uid = FBAUTH.currentUser.uid
   var updates = {}
@@ -159,7 +161,6 @@ function updateOneFaqt(faqtId, text, draftjs) {
   updates[`faqts/${uid}/${FAQID}/${faqtId}/draftjs`] = draftjs
   FBDATA.ref().update(updates)
 }
-
 export function updateTags(faqtId, tags) {
   return function(dispatch, getState) {
     const uid = FBAUTH.currentUser.uid
@@ -169,7 +170,6 @@ export function updateTags(faqtId, tags) {
     dispatch(UI.setFocused('SEARCH'))
   }
 }
-
 export function updateFaqt(faqtId, text, draftjs, nextFocus) {
   return function(dispatch, getState) {
     if(!SELECT.getFaqtById(getState(), faqtId)) return
@@ -187,14 +187,12 @@ export function updateFaqt(faqtId, text, draftjs, nextFocus) {
     }
   }
 }
-
 export function saveTags(faqtId, tags) {
   return function(dispatch, getState) {
     if(!SELECT.getFaqtById(getState(), faqtId)) return
     updateOneFaqt(faqtId, tags)
   }
 }
-
 
 export function addFaqt() {
   return function(dispatch, getState) {
@@ -211,13 +209,15 @@ export function addFaqt() {
       return score ? score.value + 1 : 1
     }
     const faqtId = UNIQ.randomId(4)
-    FBDATA.ref(`faqts/${uid}/${FAQID}/${faqtId}`).set({text:'', draftjs:{}})
+    const created = Date.now()
+    FBDATA.ref(`faqts/${uid}/${FAQID}/${faqtId}`).set({text:'', draftjs:{}, created})
     .then(() => {
       const search = SELECT.getSearch(state)
       if(search && search.text) {
         if(!search.id) {
           search.id = UNIQ.randomId(4)
-          FBDATA.ref(`searches/${uid}/${FAQID}/${search.id}`).set({text:search.text})
+          if(typeof search.text === 'object') throw 'search.text cannot be an object in addSearch'
+          FBDATA.ref(`searches/${uid}/${FAQID}/${search.id}/text`).set(search.text)
         }
         const scoreId = UNIQ.randomId(4)
         const value = getScoreValue(search.id)
@@ -231,17 +231,18 @@ export function addFaqt() {
 export function saveSearch(text) {
   return function(dispatch, getState) {
     if(!text || !text.length) return
+    if(typeof text === 'object') throw 'text cannot be an object in saveSearch'
     const state = getState()
     let search = SELECT.findSearchByText(state, text)
     if(search && search.id) return dispatch(UI.setSearch(search))
+    search = {
+      id: UNIQ.randomId(4),
+      text
+    }
     const uid = FBAUTH.currentUser.uid
-    const id = UNIQ.randomId(4)
-    const path = `searches/${uid}/${FAQID}/${id}`
-    FBDATA.ref(path).set({text})
-    .then(x => {
-      search = {id, text}
-      dispatch(UI.setSearch(search))
-    })
+    const path = `searches/${uid}/${FAQID}/${search.id}/text`
+    FBDATA.ref(path).set(search.text)
+    .then(() => dispatch(UI.setSearch(search)))
   }
 }
 

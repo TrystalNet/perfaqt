@@ -22642,6 +22642,9 @@
 	Object.defineProperty(exports, "__esModule", {
 	  value: true
 	});
+
+	var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol ? "symbol" : typeof obj; };
+
 	exports.login = login;
 	exports.signup = signup;
 	exports.logout = logout;
@@ -22735,14 +22738,17 @@
 	  var uid = FBAUTH.currentUser.uid;
 	  var path = 'faqts/' + uid + '/' + faqId;
 	  var fbref = FBDATA.ref().child(path);
+	  var defaultTime = new Date(2016, 1, 1).getTime(); // temporary solution to support legacy faqts
 	  fbref.on('child_added', function (snap) {
 	    var _snap$val = snap.val();
 
 	    var text = _snap$val.text;
 	    var draftjs = _snap$val.draftjs;
 	    var tags = _snap$val.tags;
+	    var created = _snap$val.created;
 
-	    var faqt = { id: snap.key, text: text, draftjs: draftjs, tags: tags };
+	    var when = created || defaultTime++;
+	    var faqt = { id: snap.key, text: text, draftjs: draftjs, tags: tags, created: when };
 	    dispatch(FAQTS.addFaqt(faqt));
 	    FULLTEXT.add(faqt);
 	  });
@@ -22752,9 +22758,10 @@
 	    var text = _snap$val2.text;
 	    var draftjs = _snap$val2.draftjs;
 	    var tags = _snap$val2.tags;
+	    var created = _snap$val2.created;
 
-	    var faqt = { id: snap.key, text: text, draftjs: draftjs, tags: tags };
-	    dispatch(FAQTS.updateFaqt(snap.key, { text: text, draftjs: draftjs, tags: tags }));
+	    var faqt = { id: snap.key, text: text, draftjs: draftjs, tags: tags, created: created };
+	    dispatch(FAQTS.updateFaqt(snap.key, { text: text, draftjs: draftjs, tags: tags, created: created }));
 	    FULLTEXT.update(faqt);
 	  });
 	}
@@ -22842,6 +22849,7 @@
 	      var text = search.text;
 
 	      if (!text || !text.length) return;
+	      if ((typeof text === 'undefined' ? 'undefined' : _typeof(text)) === 'object') throw 'text cannot be an object in setBestFaqt';
 	      search.id = UNIQ.randomId(4);
 	      FBDATA.ref('searches/' + uid + '/' + FAQID + '/' + search.id + '/text').set(text).then(function () {
 	        return dispatch(UI.setSearch(search));
@@ -22861,7 +22869,6 @@
 	    } else FBDATA.ref('scores/' + uid + '/' + FAQID + '/' + UNIQ.randomId(4)).set({ searchId: search.id, faqtId: faqtId, value: value });
 	  };
 	}
-
 	function updateOneFaqt(faqtId, text, draftjs) {
 	  var uid = FBAUTH.currentUser.uid;
 	  var updates = {};
@@ -22869,7 +22876,6 @@
 	  updates['faqts/' + uid + '/' + FAQID + '/' + faqtId + '/draftjs'] = draftjs;
 	  FBDATA.ref().update(updates);
 	}
-
 	function updateTags(faqtId, tags) {
 	  return function (dispatch, getState) {
 	    var uid = FBAUTH.currentUser.uid;
@@ -22879,7 +22885,6 @@
 	    dispatch(UI.setFocused('SEARCH'));
 	  };
 	}
-
 	function updateFaqt(faqtId, text, draftjs, nextFocus) {
 	  return function (dispatch, getState) {
 	    if (!SELECT.getFaqtById(getState(), faqtId)) return;
@@ -22897,7 +22902,6 @@
 	    }
 	  };
 	}
-
 	function saveTags(faqtId, tags) {
 	  return function (dispatch, getState) {
 	    if (!SELECT.getFaqtById(getState(), faqtId)) return;
@@ -22920,12 +22924,14 @@
 	      return score ? score.value + 1 : 1;
 	    }
 	    var faqtId = UNIQ.randomId(4);
-	    FBDATA.ref('faqts/' + uid + '/' + FAQID + '/' + faqtId).set({ text: '', draftjs: {} }).then(function () {
+	    var created = Date.now();
+	    FBDATA.ref('faqts/' + uid + '/' + FAQID + '/' + faqtId).set({ text: '', draftjs: {}, created: created }).then(function () {
 	      var search = SELECT.getSearch(state);
 	      if (search && search.text) {
 	        if (!search.id) {
 	          search.id = UNIQ.randomId(4);
-	          FBDATA.ref('searches/' + uid + '/' + FAQID + '/' + search.id).set({ text: search.text });
+	          if (_typeof(search.text) === 'object') throw 'search.text cannot be an object in addSearch';
+	          FBDATA.ref('searches/' + uid + '/' + FAQID + '/' + search.id + '/text').set(search.text);
 	        }
 	        var scoreId = UNIQ.randomId(4);
 	        var value = getScoreValue(search.id);
@@ -22939,15 +22945,18 @@
 	function saveSearch(text) {
 	  return function (dispatch, getState) {
 	    if (!text || !text.length) return;
+	    if ((typeof text === 'undefined' ? 'undefined' : _typeof(text)) === 'object') throw 'text cannot be an object in saveSearch';
 	    var state = getState();
 	    var search = SELECT.findSearchByText(state, text);
 	    if (search && search.id) return dispatch(UI.setSearch(search));
+	    search = {
+	      id: UNIQ.randomId(4),
+	      text: text
+	    };
 	    var uid = FBAUTH.currentUser.uid;
-	    var id = UNIQ.randomId(4);
-	    var path = 'searches/' + uid + '/' + FAQID + '/' + id;
-	    FBDATA.ref(path).set({ text: text }).then(function (x) {
-	      search = { id: id, text: text };
-	      dispatch(UI.setSearch(search));
+	    var path = 'searches/' + uid + '/' + FAQID + '/' + search.id + '/text';
+	    FBDATA.ref(path).set(search.text).then(function () {
+	      return dispatch(UI.setSearch(search));
 	    });
 	  };
 	}
@@ -49927,28 +49936,11 @@
 	  return getEm(FAQTS, [].concat(_toConsumableArray(ftFAQTIDS), _toConsumableArray(unranked)));
 	}
 	function faqtsForNoSearch(state) {
-	  // step1,  start with faqts that are not associated with any score
-	  // step1a, put blank faqts at the top
-	  // step2,  eventually, order remaining faqts by date desc
-	  var SCORES = scores(state);
-	  var FAQTS = faqts(state);
-	  var FAQTIDS = _.map(FAQTS, 'id');
-	  var FAQTIDS2 = _.chain(SCORES).map('faqtId').uniq().value(); // scored faqts
-	  var FAQTINDEX = _.keyBy(FAQTS, 'id');
-
-	  var FAQTIDS1 = _.chain(FAQTIDS).difference(FAQTIDS2) // unscored faqts
-	  .sortBy(function (faqtId) {
-	    return FAQTINDEX[faqtId].text.length;
-	  }) // part0, no faqts, part1, faqts
-	  .value();
-
-	  var result = [].concat(_toConsumableArray(FAQTIDS1), _toConsumableArray(FAQTIDS2)).map(function (faqtId) {
-	    return FAQTINDEX[faqtId];
+	  var FAQTS = [].concat(_toConsumableArray(faqts(state)));
+	  FAQTS.sort(function (a, b) {
+	    return b.created - a.created;
 	  });
-	  result = result.filter(function (item) {
-	    return item;
-	  });
-	  return result;
+	  return FAQTS;
 	}
 
 	function findScore(state, searchId, faqtId) {
@@ -52319,8 +52311,8 @@
 
 	function mapDispatchToProps(dispatch) {
 	  return {
-	    onAsk: function onAsk(search) {
-	      return dispatch(THUNK.doSearch(search));
+	    onAsk: function onAsk(text) {
+	      return dispatch(THUNK.doSearch(text));
 	    },
 	    onSaveSearch: function onSaveSearch(text) {
 	      return dispatch(THUNK.saveSearch(text));
@@ -52369,10 +52361,7 @@
 	  var inputLength = inputValue.length;
 	  if (!inputLength) return [];
 	  return searches.filter(function (search) {
-	    var FUCK = search.text || '';
-	    var THIS = FUCK.toLowerCase();
-	    var SHIT = THIS.slice(0, inputLength);
-	    return SHIT === inputValue;
+	    return inputValue === (search.text || '').toLowerCase().slice(0, inputLength);
 	  });
 	}
 

@@ -45,23 +45,9 @@ function faqtsForSearchText(state, search) {
   return getEm(FAQTS, [...ftFAQTIDS, ...unranked])
 }
 function faqtsForNoSearch(state) {
-  // step1,  start with faqts that are not associated with any score
-  // step1a, put blank faqts at the top
-  // step2,  eventually, order remaining faqts by date desc
-  const SCORES = scores(state)
-  const FAQTS = faqts(state)
-  const FAQTIDS = _.map(FAQTS, 'id')
-  const FAQTIDS2 = _.chain(SCORES).map('faqtId').uniq().value()  // scored faqts
-  const FAQTINDEX = _.keyBy(FAQTS, 'id')
-
-  const FAQTIDS1 = _.chain(FAQTIDS)
-    .difference(FAQTIDS2)                               // unscored faqts
-    .sortBy(faqtId => FAQTINDEX[faqtId].text.length)   // part0, no faqts, part1, faqts
-    .value()
-
-  var result = [...FAQTIDS1,...FAQTIDS2].map(faqtId => FAQTINDEX[faqtId])
-  result = result.filter(item => item)
-  return result
+  const FAQTS = [...faqts(state)]
+  FAQTS.sort((a,b) => b.created - a.created)
+  return FAQTS
 }
 
 export function findScore(state, searchId, faqtId) {

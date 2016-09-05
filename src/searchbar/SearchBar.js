@@ -8,12 +8,7 @@ function getSuggestions(value, searches) {
   const inputValue = value.trim().toLowerCase()
   const inputLength = inputValue.length
   if(!inputLength) return []
-  return searches.filter(search => {
-    const FUCK = search.text || ''
-    const THIS = FUCK.toLowerCase()
-    const SHIT = THIS.slice(0, inputLength)
-    return SHIT === inputValue
-  })
+  return searches.filter(search => inputValue === (search.text || '').toLowerCase().slice(0, inputLength))
 }
 
 const styleSearchBar = {
