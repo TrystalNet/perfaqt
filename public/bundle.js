@@ -22649,7 +22649,7 @@
 	exports.signup = signup;
 	exports.logout = logout;
 	exports.firebaseStuff = firebaseStuff;
-	exports.doSearch = doSearch;
+	exports.setSearch = setSearch;
 	exports.activateFaqt = activateFaqt;
 	exports.focusSearch = focusSearch;
 	exports.setBestFaqt = setBestFaqt;
@@ -22820,8 +22820,9 @@
 	    initFullText(dispatch);
 	  };
 	}
-	function doSearch(text) {
+	function setSearch(text) {
 	  return function (dispatch, getState) {
+	    if (!text) return dispatch(UI.setSearch(null));
 	    var search = SELECT.findSearchByText(getState(), text);
 	    if (!search) search = { id: null, text: text };
 	    dispatch(UI.setSearch(search));
@@ -52311,8 +52312,8 @@
 
 	function mapDispatchToProps(dispatch) {
 	  return {
-	    onAsk: function onAsk(text) {
-	      return dispatch(THUNK.doSearch(text));
+	    onSearchChange: function onSearchChange(text) {
+	      return dispatch(THUNK.setSearch(text));
 	    },
 	    onSaveSearch: function onSaveSearch(text) {
 	      return dispatch(THUNK.saveSearch(text));
@@ -52408,13 +52409,13 @@
 	      var reason = _ref.reason;
 
 	      _this.setState({ suggestions: getSuggestions(value, _this.props.searches) });
-	      _this.props.onAsk(value);
 	    };
 
 	    _this.onChange = function (event, _ref2) {
 	      var newValue = _ref2.newValue;
 
 	      _this.setState({ value: newValue });
+	      _this.props.onSearchChange(newValue);
 	    };
 
 	    _this.state = {
