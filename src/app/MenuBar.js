@@ -2,10 +2,13 @@ import React, { Component } from 'react';
 import { connect } from 'react-redux'
 import { COL0WIDTH} from '../constants'
 
+const styleContainer = {
+  paddingLeft: COL0WIDTH,
+}
+
 const styleToolbar = {
   height:40,
   borderBottom: 'lightgray 1px solid',
-  paddingLeft: COL0WIDTH,
   width:600,
   display:'flex'
 }
@@ -15,9 +18,11 @@ const styleRight = {
   textAlign:'right'
 }
 
-const MenuBar = ({onAddFaqt}) => <div id='toolbar' style={styleToolbar}>
-  <div style={styleRight}>
-    <button onClick={onAddFaqt}>Add Faqt</button>
+const MenuBar = ({onAddFaqt}) => <div style={styleContainer}>
+  <div id='toolbar' style={styleToolbar}>
+    <div style={styleRight}>
+      <button onClick={onAddFaqt}>Add Faqt</button>
+    </div>
   </div>
 </div>
 

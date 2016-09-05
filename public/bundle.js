@@ -52370,6 +52370,7 @@
 	  backgroundColor: '#f2f2f2',
 	  display: 'flex',
 	  paddingTop: 20, paddingBottom: 20,
+	  alignItems: 'center',
 	  borderBottom: 'lightgray 1px solid'
 	};
 	var stylePerfaqt = {
@@ -72387,10 +72388,13 @@
 
 	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
+	var styleContainer = {
+	  paddingLeft: _constants.COL0WIDTH
+	};
+
 	var styleToolbar = {
 	  height: 40,
 	  borderBottom: 'lightgray 1px solid',
-	  paddingLeft: _constants.COL0WIDTH,
 	  width: 600,
 	  display: 'flex'
 	};
@@ -72404,14 +72408,18 @@
 	  var onAddFaqt = _ref.onAddFaqt;
 	  return _react2.default.createElement(
 	    'div',
-	    { id: 'toolbar', style: styleToolbar },
+	    { style: styleContainer },
 	    _react2.default.createElement(
 	      'div',
-	      { style: styleRight },
+	      { id: 'toolbar', style: styleToolbar },
 	      _react2.default.createElement(
-	        'button',
-	        { onClick: onAddFaqt },
-	        'Add Faqt'
+	        'div',
+	        { style: styleRight },
+	        _react2.default.createElement(
+	          'button',
+	          { onClick: onAddFaqt },
+	          'Add Faqt'
+	        )
 	      )
 	    )
 	  );

@@ -14,7 +14,8 @@ function getSuggestions(value, searches) {
 const styleSearchBar = {
   backgroundColor:'#f2f2f2', 
   display:'flex', 
-  paddingTop:20, paddingBottom:20, 
+  paddingTop:20, paddingBottom:20,
+  alignItems:'center', 
   borderBottom: 'lightgray 1px solid'
 }
 const stylePerfaqt = {
