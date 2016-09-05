@@ -3,6 +3,7 @@ import { connect } from 'react-redux'
 import MyEditor from './Editor'
 import TagsEditor from './TagsEditor'
 import ScoreButton from './ScoreButton'
+import EditToolbar from './EditToolbar'
 
 const S0 = {backgroundColor:'paleblue',marginBottom:5, padding:1}
 const style0 = {
@@ -32,6 +33,7 @@ const TagsControl = ({isActive, tags, onSave}) => {
     : null
 }
 
+
 class Faqt extends Component {
   onFocus(e) {
     this.props.onActivate()
@@ -43,6 +45,7 @@ class Faqt extends Component {
     } = this.props
     const style = isActive ? Object.assign({},style0A,BEIGE) : style0A
     return <div style={S0}>
+      <EditToolbar active={isActive} />
       <div ref='container' style={style0}>
         <div style={style} onFocus={this.onFocus.bind(this)}>
           <MyEditor ref={node => this.refEdit = node} {...{text, draftjs, onSave}} />
