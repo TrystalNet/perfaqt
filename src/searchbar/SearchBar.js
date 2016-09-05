@@ -7,7 +7,13 @@ import {COL0WIDTH} from '../constants'
 function getSuggestions(value, searches) {
   const inputValue = value.trim().toLowerCase()
   const inputLength = inputValue.length
-  return inputLength === 0 ? [] : searches.filter(search => search.text.toLowerCase().slice(0, inputLength) === inputValue)
+  if(!inputLength) return []
+  return searches.filter(search => {
+    const FUCK = search.text || ''
+    const THIS = FUCK.toLowerCase()
+    const SHIT = THIS.slice(0, inputLength)
+    return SHIT === inputValue
+  })
 }
 
 const styleSearchBar = {
@@ -52,9 +58,7 @@ export default class SearchBar extends Component {
     this.props.onAsk(value)
   }
   onSaveSearch(e) {
-    const search = this.refs.fldSearch.value
-    if(!search || !search.length) return
-    this.props.onSaveSearch(search)
+    this.props.onSaveSearch(this.refs.fldSearch.value)
   }
   onChange = (event, {newValue}) => {
     this.setState({value: newValue})

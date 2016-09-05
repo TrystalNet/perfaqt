@@ -33,7 +33,6 @@ function reducer(state={}, action) {
     scores    : SCORES(state.scores, action),
     ui        : UI(state.ui, action)
   }
-  // if(action.type !== 'UPDATE_FAQT') console.log(action.type)
   return newState
 }
 
