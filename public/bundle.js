@@ -76,19 +76,19 @@
 
 	var _appContainer2 = _interopRequireDefault(_appContainer);
 
-	var _faqtsReducer = __webpack_require__(356);
+	var _faqtsReducer = __webpack_require__(357);
 
 	var _faqtsReducer2 = _interopRequireDefault(_faqtsReducer);
 
-	var _searchesReducer = __webpack_require__(357);
+	var _searchesReducer = __webpack_require__(358);
 
 	var _searchesReducer2 = _interopRequireDefault(_searchesReducer);
 
-	var _scoresReducer = __webpack_require__(358);
+	var _scoresReducer = __webpack_require__(359);
 
 	var _scoresReducer2 = _interopRequireDefault(_scoresReducer);
 
-	var _uiReducer = __webpack_require__(359);
+	var _uiReducer = __webpack_require__(360);
 
 	var _uiReducer2 = _interopRequireDefault(_uiReducer);
 
@@ -22656,6 +22656,7 @@
 	exports.saveTags = saveTags;
 	exports.addFaqt = addFaqt;
 	exports.saveSearch = saveSearch;
+	exports.deleteScore = deleteScore;
 
 	var _jquery = __webpack_require__(194);
 
@@ -22790,6 +22791,9 @@
 	  fbref.on('child_changed', function (snap) {
 	    return dispatch(SCORES.updateScore(snap.key, { value: snap.val().value }));
 	  });
+	  fbref.on('child_removed', function (snap) {
+	    return dispatch(SCORES.deleteScore(snap.key));
+	  });
 	}
 	function firebaseStuff(app, auth, db) {
 	  FBAUTH = auth;
@@ -22812,8 +22816,9 @@
 	    initFullText(dispatch);
 	  };
 	}
-	function doSearch(search) {
-	  return function (dispatch) {
+	function doSearch(text) {
+	  return function (dispatch, getState) {
+	    var search = SELECT.findSearchByText(getState(), text);
 	    dispatch(UI.setSearch(search));
 	  };
 	}
@@ -22833,17 +22838,18 @@
 	    var uid = FBAUTH.currentUser.uid;
 	    var state = getState();
 	    var search = state.ui.search;
-	    if (!search || !search.length) return;
+	    if (!search) return;
 
-	    var searchId = void 0;
-	    var Q = SELECT.findSearchByText(state, search);
-	    if (Q) searchId = Q.id;else {
-	      searchId = UNIQ.randomId(4);
-	      FBDATA.ref('searches/' + uid + '/' + FAQID + '/' + searchId).set({ text: search });
+	    if (!search.id) {
+	      var text = search.text;
+
+	      if (!text || !text.length) return;
+	      search.id = UNIQ.randomId(4);
+	      FBDATA.ref('searches/' + uid + '/' + FAQID + '/' + search.id + '/text').set(text);
 	    }
 
-	    var matchingScore = SELECT.findScore(state, searchId, faqtId);
-	    var bestScore = SELECT.findBestScore(state, searchId);
+	    var matchingScore = SELECT.findScore(state, search.id, faqtId);
+	    var bestScore = SELECT.findBestScore(state, search.id);
 	    if (matchingScore && matchingScore === bestScore) return;
 
 	    var value = bestScore ? bestScore.value + 1 : 1;
@@ -22852,7 +22858,7 @@
 	      var updates = {};
 	      updates['scores/' + uid + '/' + FAQID + '/' + matchingScore.id + '/value'] = value;
 	      FBDATA.ref().update(updates);
-	    } else FBDATA.ref('scores/' + uid + '/' + FAQID + '/' + UNIQ.randomId(4)).set({ searchId: searchId, faqtId: faqtId, value: value });
+	    } else FBDATA.ref('scores/' + uid + '/' + FAQID + '/' + UNIQ.randomId(4)).set({ searchId: search.id, faqtId: faqtId, value: value });
 	  };
 	}
 
@@ -22942,7 +22948,13 @@
 	  };
 	}
 
-	// now we need to add the full text search functionality back into the mix.....
+	function deleteScore(scoreId) {
+	  return function (dispatch, getState) {
+	    var uid = FBAUTH.currentUser.uid;
+	    var path = 'scores/' + uid + '/' + FAQID + '/' + scoreId;
+	    FBDATA.ref(path).remove();
+	  };
+	}
 
 /***/ },
 /* 194 */
@@ -49822,10 +49834,11 @@
 	Object.defineProperty(exports, "__esModule", {
 	  value: true
 	});
-	exports.getFaqtById = exports.findFaqtByText = exports.findSearchByText = exports.fullTextIndex = exports.scores = exports.searches = exports.faqts = undefined;
+	exports.getFaqtById = exports.findFaqtByText = exports.getSearch = exports.fullTextIndex = exports.scores = exports.searches = exports.faqts = undefined;
 	exports.findScore = findScore;
 	exports.findBestScore = findBestScore;
-	exports.rankedFaqts = rankedFaqts;
+	exports.getFaqts = getFaqts;
+	exports.findSearchByText = findSearchByText;
 
 	var _lodash = __webpack_require__(195);
 
@@ -49847,13 +49860,10 @@
 	var fullTextIndex = exports.fullTextIndex = function fullTextIndex(state) {
 	  return state.ui.index;
 	};
-
-	var findSearchByText = exports.findSearchByText = function findSearchByText(state, text) {
-	  text = text.toLowerCase();
-	  return searches(state).find(function (Q) {
-	    return Q.text.toLowerCase() === text;
-	  });
+	var getSearch = exports.getSearch = function getSearch(state) {
+	  return state.ui.search;
 	};
+
 	var findFaqtByText = exports.findFaqtByText = function findFaqtByText(state, text) {
 	  return faqts(state).find(function (A) {
 	    return A.text === text;
@@ -49865,12 +49875,83 @@
 	  });
 	};
 
-	function findScore(state, searchId, faqtId) {
-	  return scores(state).find(function (score) {
-	    return score.searchId === searchId && score.faqtId === faqtId;
+	function getEm(FAQTS, ids) {
+	  var FAQT_INDEX = _.keyBy(FAQTS, 'id');
+	  var result = ids.map(function (faqtId) {
+	    return FAQT_INDEX[faqtId];
 	  });
+	  result = result.filter(function (item) {
+	    return item;
+	  });
+	  return result;
+	}
+	function faqtsForSearchIdAndText(state, search) {
+	  var id = search.id;
+	  var text = search.text;
+
+	  var SCORES = scores(state);
+	  var bestFAQTIDS = _.chain(SCORES).filter(function (score) {
+	    return score.searchId === id;
+	  }).orderBy('value', 'desc').map(function (score) {
+	    return score.faqtId;
+	  }).value();
+
+	  var ftIndex = fullTextIndex(state);
+	  var ftFAQTIDS = ftIndex ? _.difference(ftIndex.search(text).map(function (item) {
+	    return item.ref;
+	  }), bestFAQTIDS) : [];
+
+	  var FAQTS = faqts(state);
+	  var allFAQTIDS = _.map(FAQTS, 'id');
+	  var nonBestFAQTIDS = _.difference(allFAQTIDS, bestFAQTIDS);
+	  var unranked = _.difference(nonBestFAQTIDS, ftFAQTIDS);
+
+	  return getEm(FAQTS, [].concat(_toConsumableArray(bestFAQTIDS), _toConsumableArray(ftFAQTIDS), _toConsumableArray(unranked)));
+	}
+	function faqtsForSearchText(state, search) {
+	  var text = search.text;
+
+	  var FAQTS = faqts(state);
+	  var allFAQTIDS = _.map(FAQTS, 'id');
+	  var ftIndex = fullTextIndex(state);
+
+	  var ftFAQTIDS = ftIndex ? ftIndex.search(text).map(function (item) {
+	    return item.ref;
+	  }) : [];
+	  var unranked = _.difference(allFAQTIDS, ftFAQTIDS);
+
+	  return getEm(FAQTS, [].concat(_toConsumableArray(ftFAQTIDS), _toConsumableArray(unranked)));
+	}
+	function faqtsForNoSearch(state) {
+	  // step1,  start with faqts that are not associated with any score
+	  // step1a, put blank faqts at the top
+	  // step2,  eventually, order remaining faqts by date desc
+	  var SCORES = scores(state);
+	  var FAQTS = faqts(state);
+	  var FAQTIDS = _.map(FAQTS, 'id');
+	  var FAQTIDS2 = _.chain(SCORES).map('faqtId').uniq().value(); // scored faqts
+	  var FAQTINDEX = _.keyBy(FAQTS, 'id');
+
+	  var FAQTIDS1 = _.chain(FAQTIDS).difference(FAQTIDS2) // unscored faqts
+	  .sortBy(function (faqtId) {
+	    return FAQTINDEX[faqtId].text.length;
+	  }) // part0, no faqts, part1, faqts
+	  .value();
+
+	  var result = [].concat(_toConsumableArray(FAQTIDS1), _toConsumableArray(FAQTIDS2)).map(function (faqtId) {
+	    return FAQTINDEX[faqtId];
+	  });
+	  result = result.filter(function (item) {
+	    return item;
+	  });
+	  return result;
 	}
 
+	function findScore(state, searchId, faqtId) {
+	  return searchId ? scores(state).find(function (score) {
+	    return score.searchId === searchId && score.faqtId === faqtId;
+	  }) : null;
+	}
 	function findBestScore(state, searchId) {
 	  var matches = scores(state).filter(function (score) {
 	    return score.searchId === searchId;
@@ -49887,69 +49968,19 @@
 	    return itemValue > accumValue ? item : accum;
 	  });
 	}
-
-	function faqtsForSearchId(state, searchId, search) {
-	  var SCORES = scores(state);
-	  var FAQTS = faqts(state);
-	  var allFAQTIDS = _.map(FAQTS, 'id');
-	  var bestFAQTIDS = _.chain(SCORES).filter(function (score) {
-	    return score.searchId === searchId;
-	  }) // only scores tied to the search
-	  .orderBy('value', 'desc') // order by value desc
-	  .map(function (score) {
-	    return score.faqtId;
-	  }) // take just the faqt id
-	  .value(); // return the faqtIds
-
-	  var ftIndex = fullTextIndex(state);
-	  var ftFAQTIDS = ftIndex ? _.difference(ftIndex.search(search).map(function (item) {
-	    return item.ref;
-	  }), bestFAQTIDS) : [];
-
-	  var nonBestFAQTIDS = _.difference(allFAQTIDS, bestFAQTIDS);
-	  var unranked = _.difference(nonBestFAQTIDS, ftFAQTIDS);
-
-	  var FAQT_INDEX = _.keyBy(FAQTS, 'id');
-	  var ids = [].concat(_toConsumableArray(bestFAQTIDS), _toConsumableArray(ftFAQTIDS), _toConsumableArray(unranked));
-	  var result = ids.map(function (faqtId) {
-	    return FAQT_INDEX[faqtId];
-	  });
-	  result = result.filter(function (item) {
-	    return item;
-	  });
-	  return result;
-	}
-
-	function faqtsForNoSearch(state) {
-	  // step1,  start with faqts that are not associated with any score
-	  // step1a, put blank faqts at the top
-	  // step2,  eventually, order remaining faqts by date desc
-	  var SCORES = scores(state);
-	  var FAQTS = faqts(state);
-	  var FAQTIDS = _.map(FAQTS, 'id');
-	  var FAQTIDS2 = _.chain(SCORES).map('faqtId').uniq().value(); // scored faqts
-	  var FAQTINDEX = _.keyBy(FAQTS, 'id');
-
-	  var FAQTIDS1 = _.chain(FAQTIDS).difference(FAQTIDS2) // unscored faqts
-	  .sortBy(function (faqtId) {
-	    return FAQTINDEX[faqtId].text.length;
-	  }) // part0, no faqts, part1, faqts
-	  .value();
-	  var result = [].concat(_toConsumableArray(FAQTIDS1), _toConsumableArray(FAQTIDS2)).map(function (faqtId) {
-	    return FAQTINDEX[faqtId];
-	  });
-
-	  result = result.filter(function (item) {
-	    return item;
-	  });
-
-	  return result;
-	}
-
-	function rankedFaqts(state, search) {
-	  var searchId = _.isEmpty(search) ? null : (findSearchByText(state, search) || { id: null }).id;
-	  if (searchId) return faqtsForSearchId(state, searchId, search);
+	function getFaqts(state, search) {
+	  if (search) {
+	    if (search.id) return faqtsForSearchIdAndText(state, search);
+	    if (search.text && search.text.length) return faqtsForSearchText(state, search);
+	  }
 	  return faqtsForNoSearch(state);
+	}
+	function findSearchByText(state, text) {
+	  if (_.isEmpty(text)) return null;
+	  text = text.toLowerCase();
+	  return searches(state).find(function (Q) {
+	    return Q.text.toLowerCase() === text;
+	  });
 	}
 
 /***/ },
@@ -50011,11 +50042,14 @@
 	var loadScores = exports.loadScores = function loadScores(scores) {
 	  return simple('LOAD_SCORES', { scores: scores });
 	};
+	var updateScore = exports.updateScore = function updateScore(id, edits) {
+	  return simple('UPDATE_SCORE', { id: id, edits: edits });
+	};
 	var addScore = exports.addScore = function addScore(score) {
 	  return simple('ADD_SCORE', { score: score });
 	};
-	var updateScore = exports.updateScore = function updateScore(id, edits) {
-	  return simple('UPDATE_SCORE', { id: id, edits: edits });
+	var deleteScore = exports.deleteScore = function deleteScore(id) {
+	  return simple('DELETE_SCORE', { id: id });
 	};
 
 /***/ },
@@ -52140,8 +52174,8 @@
 	function mapStateToProps(state) {
 	  var connected = state.ui.connected;
 
-	  var search = state.ui.search || '';
-	  var faqts = SELECT.rankedFaqts(state, search);
+	  var search = state.ui.search;
+	  var faqts = SELECT.getFaqts(state, search);
 	  return { faqts: faqts, connected: connected };
 	}
 
@@ -52187,11 +52221,11 @@
 
 	var _FaqtsArea2 = _interopRequireDefault(_FaqtsArea);
 
-	var _MenuBar = __webpack_require__(354);
+	var _MenuBar = __webpack_require__(355);
 
 	var _MenuBar2 = _interopRequireDefault(_MenuBar);
 
-	var _LoginPage = __webpack_require__(355);
+	var _LoginPage = __webpack_require__(356);
 
 	var _LoginPage2 = _interopRequireDefault(_LoginPage);
 
@@ -52272,8 +52306,8 @@
 	  var broadcast = _state$ui.broadcast;
 	  var connected = _state$ui.connected;
 	  var focused = _state$ui.focused;
+	  var search = _state$ui.search;
 
-	  var search = state.ui.search || '';
 	  var searches = SELECT.searches(state);
 	  var isFocus = focused === 'SEARCH';
 	  return { searches: searches, search: search, broadcast: broadcast, connected: connected, isFocus: isFocus };
@@ -54533,7 +54567,9 @@
 
 	  var isActive = faqtId === state.ui.faqtId;
 	  var focusedControl = isActive ? state.ui.focused : null;
-	  return { isActive: isActive, focusedControl: focusedControl, text: text, draftjs: draftjs, tags: tags };
+	  var search = SELECT.getSearch(state);
+	  var score = search ? SELECT.findScore(state, search.id, faqtId) : null;
+	  return { isActive: isActive, focusedControl: focusedControl, text: text, draftjs: draftjs, tags: tags, score: score };
 	}
 
 	function mapDispatchToProps(dispatch, ownProps) {
@@ -54585,6 +54621,10 @@
 
 	var _TagsEditor2 = _interopRequireDefault(_TagsEditor);
 
+	var _ScoreButton = __webpack_require__(354);
+
+	var _ScoreButton2 = _interopRequireDefault(_ScoreButton);
+
 	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
@@ -54593,6 +54633,7 @@
 
 	function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
 
+	var S0 = { backgroundColor: 'paleblue', marginBottom: 5, padding: 1 };
 	var style0 = {
 	  backgroundColor: 'white',
 	  display: 'flex',
@@ -54647,15 +54688,15 @@
 	      var text = _props.text;
 	      var draftjs = _props.draftjs;
 	      var tags = _props.tags;
+	      var score = _props.score;
 	      var onSetBest = _props.onSetBest;
 	      var onSave = _props.onSave;
 	      var onSaveTags = _props.onSaveTags;
 
 	      var style = isActive ? Object.assign({}, style0A, BEIGE) : style0A;
-
 	      return _react2.default.createElement(
 	        'div',
-	        { style: { backgroundColor: 'paleblue', marginBottom: 5, padding: 1 } },
+	        { style: S0 },
 	        _react2.default.createElement(
 	          'div',
 	          { ref: 'container', style: style0 },
@@ -54667,9 +54708,14 @@
 	              } }, { text: text, draftjs: draftjs, onSave: onSave }))
 	          ),
 	          _react2.default.createElement(
-	            'button',
-	            { onClick: onSetBest },
-	            'best'
+	            'div',
+	            { style: { display: 'flex', flexDirection: 'column' } },
+	            _react2.default.createElement(
+	              'button',
+	              { onClick: onSetBest },
+	              'best'
+	            ),
+	            _react2.default.createElement(_ScoreButton2.default, { score: score })
 	          )
 	        ),
 	        _react2.default.createElement(TagsControl, { isActive: isActive, tags: tags, onSave: onSaveTags })
@@ -72282,6 +72328,63 @@
 
 	var _react2 = _interopRequireDefault(_react);
 
+	var _thunks = __webpack_require__(193);
+
+	var THUNK = _interopRequireWildcard(_thunks);
+
+	var _reactRedux = __webpack_require__(164);
+
+	function _interopRequireWildcard(obj) { if (obj && obj.__esModule) { return obj; } else { var newObj = {}; if (obj != null) { for (var key in obj) { if (Object.prototype.hasOwnProperty.call(obj, key)) newObj[key] = obj[key]; } } newObj.default = obj; return newObj; } }
+
+	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+	var ScoreButton = function ScoreButton(_ref) {
+	  var score = _ref.score;
+	  var onDelete = _ref.onDelete;
+
+	  if (!score) return null;
+	  var onClick = function onClick(event) {
+	    onDelete();
+	  };
+	  return _react2.default.createElement(
+	    'button',
+	    { onClick: onClick },
+	    score.value
+	  );
+	};
+
+	function mapStateToProps(state, ownProps) {
+	  var score = ownProps.score;
+
+	  return { score: score };
+	}
+
+	function mapDispatchToProps(dispatch, ownProps) {
+	  var score = ownProps.score;
+
+	  return {
+	    onDelete: function onDelete() {
+	      return dispatch(THUNK.deleteScore(score.id));
+	    }
+	  };
+	}
+
+	exports.default = (0, _reactRedux.connect)(mapStateToProps, mapDispatchToProps)(ScoreButton);
+
+/***/ },
+/* 355 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+
+	Object.defineProperty(exports, "__esModule", {
+	  value: true
+	});
+
+	var _react = __webpack_require__(1);
+
+	var _react2 = _interopRequireDefault(_react);
+
 	var _reactRedux = __webpack_require__(164);
 
 	var _constants = __webpack_require__(221);
@@ -72321,7 +72424,7 @@
 	exports.default = (0, _reactRedux.connect)()(MenuBar);
 
 /***/ },
-/* 355 */
+/* 356 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -72429,7 +72532,7 @@
 	exports.default = LoginPage;
 
 /***/ },
-/* 356 */
+/* 357 */
 /***/ function(module, exports) {
 
 	'use strict';
@@ -72482,7 +72585,7 @@
 	exports.default = reducer;
 
 /***/ },
-/* 357 */
+/* 358 */
 /***/ function(module, exports) {
 
 	'use strict';
@@ -72509,7 +72612,7 @@
 	exports.default = reducer;
 
 /***/ },
-/* 358 */
+/* 359 */
 /***/ function(module, exports) {
 
 	'use strict';
@@ -72533,6 +72636,15 @@
 	  });
 	}
 
+	function deleteScore(scores, _ref2) {
+	  var id = _ref2.id;
+
+	  var result = scores.filter(function (score) {
+	    return score.id !== id;
+	  });
+	  return result;
+	}
+
 	function reducer() {
 	  var scores = arguments.length <= 0 || arguments[0] === undefined ? [] : arguments[0];
 	  var action = arguments[1];
@@ -72544,6 +72656,8 @@
 	      return action.payload.scores;
 	    case 'ADD_SCORE':
 	      return [].concat(_toConsumableArray(scores), [action.payload.score]);
+	    case 'DELETE_SCORE':
+	      return deleteScore(scores, action.payload);
 	  }
 	  return scores;
 	}
@@ -72551,7 +72665,7 @@
 	exports.default = reducer;
 
 /***/ },
-/* 359 */
+/* 360 */
 /***/ function(module, exports) {
 
 	'use strict';
@@ -72562,18 +72676,11 @@
 	var defaultState = {
 	  focused: null,
 	  faqtId: null,
-	  // ------------- //
-	  search: '',
+	  search: { id: null, text: '' },
 	  index: null,
 	  connected: null,
 	  broadcast: null
 	};
-
-	// but here's the thing; we want the acxtive faqt to remain in place regardless 
-	// of where the focus is; so they need to be separate
-	// so first then, 
-	// 1. rename faqtId to focused <== this will actually be the control that is focused 
-	// 2. add faqtId, and have it take over the role of focused that focused has
 
 	function reducer() {
 	  var uiState = arguments.length <= 0 || arguments[0] === undefined ? defaultState : arguments[0];
@@ -72588,7 +72695,6 @@
 	      return Object.assign({}, uiState, { connected: action.payload.connected });
 	    case 'SET_BROADCAST':
 	      return Object.assign({}, uiState, { broadcast: action.payload.broadcast });
-	    // ------------------- // 
 	    case 'SET_FOCUSED':
 	      return Object.assign({}, uiState, { focused: action.payload.focused });
 	    case 'SET_FAQTID':
