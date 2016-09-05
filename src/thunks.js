@@ -105,8 +105,9 @@ export function firebaseStuff(app, auth, db) {
 
   }
 }
-export function doSearch(text) {
+export function setSearch(text) {
   return function(dispatch, getState) {
+    if(!text) return dispatch(UI.setSearch(null))
     let search = SELECT.findSearchByText(getState(), text)
     if(!search) search = {id:null, text}
     dispatch(UI.setSearch(search))

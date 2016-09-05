@@ -12,7 +12,7 @@ function mapStateToProps(state) {
 
 function mapDispatchToProps(dispatch) {
   return {
-    onAsk          : text => dispatch(THUNK.doSearch(text)),
+    onSearchChange : text => dispatch(THUNK.setSearch(text)),
     onSaveSearch   : text => dispatch(THUNK.saveSearch(text)),
     onGotFocus     : () => dispatch(THUNK.focusSearch())
   }

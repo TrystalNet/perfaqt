@@ -50,13 +50,13 @@ export default class SearchBar extends Component {
   }
   onSuggestionsUpdateRequested = ({value, reason}) => {
     this.setState({suggestions: getSuggestions(value, this.props.searches)})
-    this.props.onAsk(value)
   }
   onSaveSearch(e) {
     this.props.onSaveSearch(this.refs.fldSearch.value)
   }
   onChange = (event, {newValue}) => {
     this.setState({value: newValue})
+    this.props.onSearchChange(newValue)
   }
   onKeyDown(e) {
     switch(e.keyCode) {
