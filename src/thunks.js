@@ -126,18 +126,17 @@ export function setBestFaqt(faqtId) {
     const uid = FBAUTH.currentUser.uid
     const state = getState()
     const search = state.ui.search
-    if(!search || !search.length) return
+    if(!search) return
 
-    let searchId
-    const Q = SELECT.findSearchByText(state, search)
-    if(Q) searchId = Q.id
-    else {
-      searchId = UNIQ.randomId(4)
-      FBDATA.ref(`searches/${uid}/${FAQID}/${searchId}`).set({text:search})
+    if(!search.id) {
+      const {text} = search
+      if(!text || !text.length) return
+      search.id = UNIQ.randomId(4)
+      FBDATA.ref(`searches/${uid}/${FAQID}/${search.id}/text`).set(text)
     }
 
-    const matchingScore = SELECT.findScore(state, searchId, faqtId)
-    const bestScore = SELECT.findBestScore(state, searchId)
+    const matchingScore = SELECT.findScore(state, search.id, faqtId)
+    const bestScore = SELECT.findBestScore(state, search.id)
     if(matchingScore && matchingScore === bestScore) return
 
     const value = bestScore ? bestScore.value + 1 : 1
@@ -147,7 +146,7 @@ export function setBestFaqt(faqtId) {
       updates[`scores/${uid}/${FAQID}/${matchingScore.id}/value`] = value
       FBDATA.ref().update(updates)
     }
-    else FBDATA.ref(`scores/${uid}/${FAQID}/${UNIQ.randomId(4)}`).set({ searchId, faqtId, value })
+    else FBDATA.ref(`scores/${uid}/${FAQID}/${UNIQ.randomId(4)}`).set({ searchId:search.id, faqtId, value })
   }  
 }
 
