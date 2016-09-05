@@ -117,7 +117,6 @@
 	    scores: (0, _scoresReducer2.default)(state.scores, action),
 	    ui: (0, _uiReducer2.default)(state.ui, action)
 	  };
-	  // if(action.type !== 'UPDATE_FAQT') console.log(action.type)
 	  return newState;
 	}
 
@@ -22765,10 +22764,8 @@
 	  var fbref = FBDATA.ref().child(path);
 	  fbref.on('child_added', function (snap) {
 	    var fbSearch = snap.val();
-	    var search = {
-	      id: snap.key,
-	      text: fbSearch.text
-	    };
+	    var text = fbSearch.text;
+	    var search = { id: snap.key, text: text };
 	    dispatch(SEARCHES.addSearch(search));
 	  });
 	  fbref.on('child_changed', function (snap) {
@@ -22819,6 +22816,7 @@
 	function doSearch(text) {
 	  return function (dispatch, getState) {
 	    var search = SELECT.findSearchByText(getState(), text);
+	    if (!search) search = { id: null, text: text };
 	    dispatch(UI.setSearch(search));
 	  };
 	}
@@ -22845,7 +22843,9 @@
 
 	      if (!text || !text.length) return;
 	      search.id = UNIQ.randomId(4);
-	      FBDATA.ref('searches/' + uid + '/' + FAQID + '/' + search.id + '/text').set(text);
+	      FBDATA.ref('searches/' + uid + '/' + FAQID + '/' + search.id + '/text').set(text).then(function () {
+	        return dispatch(UI.setSearch(search));
+	      });
 	    }
 
 	    var matchingScore = SELECT.findScore(state, search.id, faqtId);
@@ -22920,31 +22920,35 @@
 	      return score ? score.value + 1 : 1;
 	    }
 	    var faqtId = UNIQ.randomId(4);
-	    FBDATA.ref('faqts/' + uid + '/' + FAQID + '/' + faqtId).set({ text: '', draftjs: {} });
-
-	    var search = state.ui.search;
-	    if (!search) return;
-	    var searchId = getSearchId(search);
-	    if (!searchId) {
-	      searchId = UNIQ.randomId(4);
-	      FBDATA.ref('searches/' + uid + '/' + FAQID + '/' + searchId).set({ text: search });
-	    }
-	    var scoreId = UNIQ.randomId(4);
-	    var value = getScoreValue(searchId);
-	    FBDATA.ref('scores/' + uid + '/' + FAQID + '/' + scoreId).set({ searchId: searchId, faqtId: faqtId, value: value });
-
-	    dispatch(UI.setFocused(faqtId));
-	    dispatch(UI.setFaqtId(faqtId));
+	    FBDATA.ref('faqts/' + uid + '/' + FAQID + '/' + faqtId).set({ text: '', draftjs: {} }).then(function () {
+	      var search = SELECT.getSearch(state);
+	      if (search && search.text) {
+	        if (!search.id) {
+	          search.id = UNIQ.randomId(4);
+	          FBDATA.ref('searches/' + uid + '/' + FAQID + '/' + search.id).set({ text: search.text });
+	        }
+	        var scoreId = UNIQ.randomId(4);
+	        var value = getScoreValue(search.id);
+	        FBDATA.ref('scores/' + uid + '/' + FAQID + '/' + scoreId).set({ searchId: search.id, faqtId: faqtId, value: value });
+	      }
+	      dispatch(UI.setFocused(faqtId));
+	      dispatch(UI.setFaqtId(faqtId));
+	    });
 	  };
 	}
-	function saveSearch(search) {
+	function saveSearch(text) {
 	  return function (dispatch, getState) {
+	    if (!text || !text.length) return;
 	    var state = getState();
-	    if (SELECT.findSearchByText(state, search)) return;
+	    var search = SELECT.findSearchByText(state, text);
+	    if (search && search.id) return dispatch(UI.setSearch(search));
 	    var uid = FBAUTH.currentUser.uid;
 	    var id = UNIQ.randomId(4);
 	    var path = 'searches/' + uid + '/' + FAQID + '/' + id;
-	    FBDATA.ref(path).set({ text: search });
+	    FBDATA.ref(path).set({ text: text }).then(function (x) {
+	      search = { id: id, text: text };
+	      dispatch(UI.setSearch(search));
+	    });
 	  };
 	}
 
@@ -52318,8 +52322,8 @@
 	    onAsk: function onAsk(search) {
 	      return dispatch(THUNK.doSearch(search));
 	    },
-	    onSaveSearch: function onSaveSearch(search) {
-	      return dispatch(THUNK.saveSearch(search));
+	    onSaveSearch: function onSaveSearch(text) {
+	      return dispatch(THUNK.saveSearch(text));
 	    },
 	    onGotFocus: function onGotFocus() {
 	      return dispatch(THUNK.focusSearch());
@@ -52363,8 +52367,12 @@
 	function getSuggestions(value, searches) {
 	  var inputValue = value.trim().toLowerCase();
 	  var inputLength = inputValue.length;
-	  return inputLength === 0 ? [] : searches.filter(function (search) {
-	    return search.text.toLowerCase().slice(0, inputLength) === inputValue;
+	  if (!inputLength) return [];
+	  return searches.filter(function (search) {
+	    var FUCK = search.text || '';
+	    var THIS = FUCK.toLowerCase();
+	    var SHIT = THIS.slice(0, inputLength);
+	    return SHIT === inputValue;
 	  });
 	}
 
@@ -52430,9 +52438,7 @@
 	  _createClass(SearchBar, [{
 	    key: 'onSaveSearch',
 	    value: function onSaveSearch(e) {
-	      var search = this.refs.fldSearch.value;
-	      if (!search || !search.length) return;
-	      this.props.onSaveSearch(search);
+	      this.props.onSaveSearch(this.refs.fldSearch.value);
 	    }
 	  }, {
 	    key: 'onKeyDown',
