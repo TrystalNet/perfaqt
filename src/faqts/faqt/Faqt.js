@@ -2,6 +2,7 @@ import React, { Component } from 'react';
 import { connect } from 'react-redux'
 import MyEditor from './Editor'
 import TagsEditor from './TagsEditor'
+import ScoreButton from './ScoreButton'
 
 const S0 = {backgroundColor:'paleblue',marginBottom:5, padding:1}
 const style0 = {
@@ -29,11 +30,6 @@ const TagsControl = ({isActive, tags, onSave}) => {
   return isActive 
     ? <TagsEditor {...{tags, onSave}} />
     : null
-}
-
-const ScoreButton = ({score}) => {
-  if(!score) return null
-  return <button>{score.value}</button>
 }
 
 class Faqt extends Component {

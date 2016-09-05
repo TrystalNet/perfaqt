@@ -82,6 +82,7 @@ function initScores(dispatch, faqId) {
     dispatch(SCORES.addScore(score))
   })
   fbref.on('child_changed', snap => dispatch(SCORES.updateScore(snap.key, {value:snap.val().value})))
+  fbref.on('child_removed', snap => dispatch(SCORES.deleteScore(snap.key)))
 }
 export function firebaseStuff(app, auth, db) {
   FBAUTH = auth
@@ -237,5 +238,11 @@ export function saveSearch(search) {
   }
 }
 
-// now we need to add the full text search functionality back into the mix.....
+export function deleteScore(scoreId) {
+  return function(dispatch, getState) {
+    const uid = FBAUTH.currentUser.uid
+    const path = `scores/${uid}/${FAQID}/${scoreId}`
+    FBDATA.ref(path).remove()
+  }
+}
 
