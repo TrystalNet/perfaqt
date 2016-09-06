@@ -54647,7 +54647,6 @@
 	  overflowY: 'auto'
 	};
 	var BEIGE = {
-	  backgroundColor: 'beige',
 	  maxHeight: '50vh'
 	};
 
@@ -72310,7 +72309,7 @@
 
 	function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
 
-	var S1 = {};
+	var S1 = { marginBottom: 20 };
 
 	var EditToolbar = function (_Component) {
 	  _inherits(EditToolbar, _Component);
@@ -72345,35 +72344,6 @@
 	          _react2.default.createElement(
 	            _reactBootstrap.ButtonGroup,
 	            null,
-	            _react2.default.createElement(
-	              _reactBootstrap.Button,
-	              null,
-	              '1'
-	            ),
-	            _react2.default.createElement(
-	              _reactBootstrap.Button,
-	              null,
-	              '2'
-	            ),
-	            _react2.default.createElement(
-	              _reactBootstrap.Button,
-	              null,
-	              '3'
-	            )
-	          ),
-	          _react2.default.createElement(
-	            _reactBootstrap.ButtonGroup,
-	            null,
-	            _react2.default.createElement(
-	              _reactBootstrap.Button,
-	              null,
-	              'A'
-	            ),
-	            _react2.default.createElement(
-	              _reactBootstrap.Button,
-	              null,
-	              'B'
-	            ),
 	            _react2.default.createElement(
 	              _reactBootstrap.Button,
 	              { onClick: function onClick() {
