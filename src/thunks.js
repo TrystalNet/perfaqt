@@ -40,10 +40,15 @@ export function logout() {
     FBAUTH.signOut()
   }
 }
+
+export function closeItDown() {
+}
+
+const faqtsPath = (uid,faqId) => `faqts/${uid}/${faqId}`
+const faqtsRef = (uid, faqId) => FBDATA.ref().child(faqtsPath(uid, faqId))
+
 function initFaqts(dispatch, faqId) {
-  const uid = FBAUTH.currentUser.uid
-  const path = `faqts/${uid}/${faqId}`
-  const fbref = FBDATA.ref().child(path)
+  const fbref = faqtsRef(FBAUTH.currentUser.uid, faqId)
   let defaultTime = new Date(2016,1,1).getTime()  // temporary solution to support legacy faqts
   fbref.on('child_added', snap => {
     const {text, draftjs, tags, created} = snap.val()
