@@ -21,7 +21,6 @@ const style0A = {
   overflowY:'auto'
 }
 const BEIGE = {
-  backgroundColor : 'beige',
   maxHeight : '50vh'
 }
 

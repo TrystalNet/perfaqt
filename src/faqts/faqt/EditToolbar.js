@@ -5,8 +5,7 @@ import {
 } from 'react-bootstrap'
 import LinkForm from './LinkForm'
 
-
-const S1 = {  }
+const S1 = { marginBottom:20 }
 
 class EditToolbar extends Component {
   constructor(props) {
@@ -15,24 +14,17 @@ class EditToolbar extends Component {
       showLink:false
     }
   }
-  render() {
+   render() {
     const {active, onSaveLink} = this.props
     if(!active) return null
-    return <div style={S1}>
-      <ButtonToolbar>
+     return <div style={S1}>
+       <ButtonToolbar>
         <ButtonGroup> 
-          <Button>1</Button>
-          <Button>2</Button>
-          <Button>3</Button>
-        </ButtonGroup>
-        <ButtonGroup> 
-          <Button>A</Button>
-          <Button>B</Button>
           <Button onClick={()=>this.setState({showLink:!this.state.showLink})}><Glyphicon glyph="link" /></Button>
-        </ButtonGroup>
-      </ButtonToolbar>
-      <LinkForm active={this.state.showLink} onSaveLink={onSaveLink} />
-    </div>
-  }
+         </ButtonGroup>
+       </ButtonToolbar>
+       <LinkForm active={this.state.showLink} onSaveLink={onSaveLink} />
+     </div>
+   }
 }
 export default EditToolbar
