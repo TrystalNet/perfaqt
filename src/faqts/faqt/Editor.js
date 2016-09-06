@@ -3,8 +3,10 @@ import {
   Editor, EditorState, 
   convertFromRaw, convertToRaw,
   getDefaultKeyBinding, KeyBindingUtil,
-  RichUtils 
+  RichUtils, Entity, Modifier,
+  CompositeDecorator
 } from 'draft-js'
+import EditToolbar from './EditToolbar'
 
 const {hasCommandModifier} = KeyBindingUtil
 
@@ -14,11 +16,6 @@ function myKeyBindingFn(e) {
     e.stopPropagation()
     return 'save-and-exit'
   }
-  // if(e.keyCode === 13) {
-  //   e.preventDefault()
-  //   e.stopPropagation()
-  //   return 'split-block'
-  // }
   return getDefaultKeyBinding(e)
 }
 
@@ -43,6 +40,33 @@ function convertToText(rawDraftContentState) {
   return rawDraftContentState.blocks.map(block => block.text).join('\n')
 }
 
+function findLinkEntities(contentBlock, callback) {
+  contentBlock.findEntityRanges(
+    character => {
+      const entityKey = character.getEntity();
+      return entityKey !== null && Entity.get(entityKey).getType() === 'LINK'
+    },
+    callback
+  );
+}
+
+const styles = {
+  link: {
+    color: '#3b5998',
+    textDecoration: 'underline'
+  }
+}
+
+function navigate(url) {
+  window.open(url, '_blank')
+}
+
+const Link = props => {
+  const {href} = Entity.get(props.entityKey).getData();
+  return <a href={href} style={styles.link} onClick={()=>navigate(href)}>{props.children}</a>
+}
+//  
+
 class MyEditor extends Component {
   constructor(props) {
     super(props)
@@ -56,8 +80,9 @@ class MyEditor extends Component {
       contentState = convertFromRaw(draftjs)
     }
 
-    const editorState = EditorState.createWithContent(contentState)
-    this.state = {editorState: editorState}
+    const decorator = new CompositeDecorator([{strategy:findLinkEntities, component:Link}])
+    const editorState = EditorState.createWithContent(contentState, decorator)
+    this.state = {editorState}
     this.onChange = editorState => this.setState({editorState})
   }
   saveChangesAndExit() {
@@ -86,17 +111,32 @@ class MyEditor extends Component {
     }
     return false
   }  
+  onSaveLink(href) {
+    console.log('saving the link?')
+    const oldEditorState = this.state.editorState
+    const selection = oldEditorState.getSelection()
+    if(selection.isCollapsed()) return
+    const key = Entity.create('LINK', 'MUTABLE', {href});
+    const editorState = RichUtils.toggleLink(oldEditorState, selection, key)
+    this.setState({editorState})
+  }
+
   render() {
-    return <Editor 
-      placeHolder="...faqt..."
-      handleKeyCommand={this.handleKeyCommand.bind(this)}
-      keyBindingFn={myKeyBindingFn}
-      editorState={this.state.editorState} 
-      onEscape={this.saveChangesAndExit.bind(this)}
-      onBlur={this.saveChanges.bind(this)}
-      onChange={this.onChange} />
+    const {isActive} = this.props
+    return <div>
+      <EditToolbar active={isActive} onSaveLink={href=> this.onSaveLink(href)} />
+      <Editor 
+        placeHolder="...faqt..."
+        handleKeyCommand={this.handleKeyCommand.bind(this)}
+        keyBindingFn={myKeyBindingFn}
+        editorState={this.state.editorState} 
+        onEscape={this.saveChangesAndExit.bind(this)}
+        onBlur={this.saveChanges.bind(this)}
+        onChange={this.onChange} />
+    </div>
   }  
 }
 
 export default MyEditor
 
+// working on getting links in, just about there.... looking to have them rendered
