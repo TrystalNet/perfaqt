@@ -10,7 +10,7 @@ function mapStateToProps(state, ownProps) {
   const isActive  = faqtId === state.ui.faqtId
   const focusedControl   = isActive ? state.ui.focused : null 
   const search = SELECT.getSearch(state)
-  const score = search ? SELECT.findScore(state, search.id, faqtId) : null
+  const score = search ? SELECT.findScore(state, state.ui.faqId, search.id, faqtId) : null
   return { isActive, focusedControl, text, draftjs, tags, score }
 }
 

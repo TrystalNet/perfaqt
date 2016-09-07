@@ -1,7 +1,7 @@
 const defaultState = {
   focused: null,
   faqtId: null, 
-  search:{id:null, text:''},
+  search: null,
   index: null,
   connected: null,
   broadcast: null,

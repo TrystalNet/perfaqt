@@ -50,11 +50,12 @@ function faqtsForNoSearch(state) {
   return FAQTS
 }
 
-export function findScore(state, searchId, faqtId) {
-  return searchId ? scores(state).find(score => score.searchId === searchId && score.faqtId === faqtId) : null
+export function findScore(state, faqId, searchId, faqtId) {
+  if(!searchId) return null
+  return scores(state).find(score => score.faqId === faqId && score.searchId === searchId && score.faqtId === faqtId)
 }
-export function findBestScore(state, searchId) {
-  const matches = scores(state).filter(score => score.searchId === searchId)
+export function findBestScore(state, faqId, searchId) {
+  const matches = scores(state).filter(score => score.faqId === faqId && score.searchId === searchId)
   switch(matches.length) {
     case 0: return null
     case 1: return matches[0]
@@ -72,8 +73,8 @@ export function getFaqts(state, search) {
   }
   return faqtsForNoSearch(state)
 }
-export function findSearchByText(state, text) {
-  if(_.isEmpty(text)) return null
+export function findSearchByText(state, faqId, text) {
+  if(!text) return null
   text = text.toLowerCase()
-  return searches(state).find(Q => Q.text.toLowerCase() === text)
+  return searches(state).find(search => search.faqId === faqId && search.text.toLowerCase() === text)
 }

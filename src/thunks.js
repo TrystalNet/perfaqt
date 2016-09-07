@@ -114,8 +114,10 @@ export function firebaseStuff(app, auth, db) {
 export function setSearch(text) {
   return function(dispatch, getState) {
     if(!text) return dispatch(UI.setSearch(null))
-    let search = SELECT.findSearchByText(getState(), text)
-    if(!search) search = {id:null, text}
+    const state = getState()
+    const {faqId} = state.ui
+    let search = SELECT.findSearchByText(state, faqId, text)
+    if(!search) search = {faqId, id:null, text}
     dispatch(UI.setSearch(search))
   }
 }
@@ -130,8 +132,11 @@ export function focusSearch() {
     dispatch(UI.setFocused('SEARCH'))
   }
 }
+//============== ^^^ checked for faqId support =====================//
+//============== vvv work in progress ==============================//
 export function setBestFaqt(faqtId) {
   return function(dispatch, getState, extras) {
+    console.log('newFangled setBestFaqt')
     const uid = FBAUTH.currentUser.uid
     const state = getState()
     const {search, faqId} = state.ui
@@ -139,18 +144,14 @@ export function setBestFaqt(faqtId) {
 
     if(!search.id) {
       const {text} = search
-      if(!text || !text.length) return
-      if(typeof text === 'object') throw 'text cannot be an object in setBestFaqt'
+      if(!text) return
       search.id = UNIQ.randomId(4)
-      FBDATA.ref(`searches/${uid}/${faqId}/${search.id}/text`)
-      .set(text)
+      FBDATA.ref(`searches/${uid}/${faqId}/${search.id}/text`).set(text)
       .then(() => dispatch(UI.setSearch(search)))
     }
-
-    const matchingScore = SELECT.findScore(state, search.id, faqtId)
-    const bestScore = SELECT.findBestScore(state, search.id)
+    const matchingScore = SELECT.findScore(state, faqId, search.id, faqtId)
+    const bestScore = SELECT.findBestScore(state, faqId, search.id)
     if(matchingScore && matchingScore === bestScore) return
-
     const value = bestScore ? bestScore.value + 1 : 1
 
     if(matchingScore) {
@@ -161,6 +162,10 @@ export function setBestFaqt(faqtId) {
     else FBDATA.ref(`scores/${uid}/${faqId}/${UNIQ.randomId(4)}`).set({ searchId:search.id, faqtId, value })
   }  
 }
+//============== ^^^ work in progress ==============================//
+//============== vvv not so much ===================================//
+    // to here vvv //
+    // to here ^^^ //
 export function updateTags(faqtId, tags) {
   return function(dispatch, getState) {
     const faqId = getState().ui.faqId
@@ -204,11 +209,11 @@ export function addFaqt() {
 
     function getSearchId(text) {
       if(!text || !text.length) return null
-      const search = SELECT.findSearchByText(state, text)
+      const search = SELECT.findSearchByText(state, faqId, text)
       return search ? search.id : null
     }
     function getScoreValue(searchId) {
-      const score = SELECT.findBestScore(state, searchId)
+      const score = SELECT.findBestScore(state, faqId, searchId)
       return score ? score.value + 1 : 1
     }
     const faqtId = UNIQ.randomId(4)
@@ -237,7 +242,7 @@ export function saveSearch(text) {
     if(typeof text === 'object') throw 'text cannot be an object in saveSearch'
     const state = getState()
     const faqId = state.ui.faqId
-    let search = SELECT.findSearchByText(state, text)
+    let search = SELECT.findSearchByText(state, faqId, text)
     if(search && search.id) return dispatch(UI.setSearch(search))
     search = {
       id: UNIQ.randomId(4),
