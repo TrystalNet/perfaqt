@@ -197,17 +197,11 @@ export function saveTags(faqtId, tags) {
     updateOneFaqt(faqId, faqtId, tags)
   }
 }
-//============== ^^^ checked for faqId support =====================//
-//============== vvv work in progress ==============================//
-    // to here vvv //
-    // to here ^^^ //
-//============== ^^^ work in progress ==============================//
-//============== vvv not so much ===================================//
 export function addFaqt() {
   return function(dispatch, getState) {
     const state = getState()
     const uid = FBAUTH.currentUser.uid
-    const faqId = state.ui.faqId
+    const {faqId} = state.ui
 
     function getSearchId(text) {
       if(!text || !text.length) return null
@@ -241,12 +235,12 @@ export function addFaqt() {
 export function saveSearch(text) {
   return function(dispatch, getState) {
     if(!text || !text.length) return
-    if(typeof text === 'object') throw 'text cannot be an object in saveSearch'
     const state = getState()
-    const faqId = state.ui.faqId
+    const {faqId} = state.ui
     let search = SELECT.findSearchByText(state, faqId, text)
     if(search && search.id) return dispatch(UI.setSearch(search))
     search = {
+      faqId,
       id: UNIQ.randomId(4),
       text
     }
@@ -256,13 +250,18 @@ export function saveSearch(text) {
     .then(() => dispatch(UI.setSearch(search)))
   }
 }
-
 export function deleteScore(scoreId) {
   return function(dispatch, getState) {
     const uid = FBAUTH.currentUser.uid
-    const faqId = getState().ui.faqId
+    const {faqId} = getState().ui
     const path = `scores/${uid}/${faqId}/${scoreId}`
     FBDATA.ref(path).remove()
   }
 }
+//============== ^^^ checked for faqId support =====================//
+//============== vvv work in progress ==============================//
+    // to here vvv //
+    // to here ^^^ //
+//============== ^^^ work in progress ==============================//
+//============== vvv not so much ===================================//
 
