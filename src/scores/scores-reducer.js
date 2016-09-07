@@ -1,19 +1,18 @@
-function updateScore(scores, {id, edits}) {
-  const oldVersion = scores.find(item => item.id === id)
+function updateScore(scores, {faqId, id, edits}) {
+  const oldVersion = scores.find(score => score.faqId === faqId && score.id === id)
   const newVersion = Object.assign({}, oldVersion, edits)
-  return scores.map(score => score.id !== id ? score : newVersion)
+  return scores.map(score => (score.faqId === faqId && score.id === id) ? newVersion : score)
 }
 
-function deleteScore(scores, {id}) {
-  const result = scores.filter(score => score.id !== id)
-  return result
+function deleteScore(scores, {faqId, id}) {
+  return scores.filter(score => score.faqId !== faqId || score.id !== id)
 }
 
 function reducer(scores=[], action) {
   switch(action.type) {  
-    case 'UPDATE_SCORE': return updateScore(scores, action.payload)
-    case 'LOAD_SCORES':  return action.payload.scores
+    case 'LOAD_SCORES':  return [...action.payload.scores]
     case 'ADD_SCORE':    return [...scores, action.payload.score]
+    case 'UPDATE_SCORE': return updateScore(scores, action.payload)
     case 'DELETE_SCORE': return deleteScore(scores, action.payload)
   }
   return scores

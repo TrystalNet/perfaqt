@@ -11,6 +11,66 @@ import databases from './fulltext'
 
 let FBAUTH
 let FBDATA
+const faqtsPath = (uid,faqId) => `faqts/${uid}/${faqId}`
+const faqtsRef = (uid, faqId) => FBDATA.ref().child(faqtsPath(uid, faqId))
+
+function initFaqts(dispatch, faqId) {
+  const fbref = faqtsRef(FBAUTH.currentUser.uid, faqId)
+  let defaultTime = new Date(2016,1,1).getTime()  // temporary solution to support legacy faqts
+  fbref.on('child_added', snap => {
+    const {text, draftjs, tags, created} = snap.val()
+    const when = created || defaultTime++
+    const faqt = { faqId, id: snap.key, text, draftjs, tags, created:when }
+    dispatch(FAQTS.addFaqt(faqt))
+    databases[faqId].add(faqt)
+  })
+  fbref.on('child_changed', snap => {
+    const {text, draftjs, tags, created} = snap.val() 
+    const faqt = { faqId, id: snap.key, text, draftjs, tags, created }
+    dispatch(FAQTS.updateFaqt(faqId, snap.key, {text, draftjs, tags}))
+    databases[faqId].update(faqt)
+  })
+}
+function initSearches(dispatch, faqId) {
+  const uid = FBAUTH.currentUser.uid
+  const path = `searches/${uid}/${faqId}`
+  const fbref = FBDATA.ref().child(path)
+  fbref.on('child_added', snap => {
+    const fbSearch = snap.val()
+    const text = fbSearch.text
+    const search = { faqId, id: snap.key, text }
+    dispatch(SEARCHES.addSearch(search))
+  })
+  fbref.on('child_changed', snap => {
+    console.log(faqId, snap.key, snap.val().faqts)
+  })
+}
+function initScores(dispatch, faqId) {
+  const uid = FBAUTH.currentUser.uid
+  const fbref = FBDATA.ref().child(`scores/${uid}/${faqId}`)
+  fbref.on('child_added', snap => {
+    const {faqtId, searchId, value} = snap.val()
+    const score = { faqId, id: snap.key, searchId, faqtId, value }
+    dispatch(SCORES.addScore(score))
+  })
+  fbref.on('child_changed', snap => dispatch(SCORES.updateScore(faqId, snap.key, {value:snap.val().value})))
+  fbref.on('child_removed', snap => dispatch(SCORES.deleteScore(faqId, snap.key)))
+}
+function initFullText(dispatch, faqId) {
+  databases[faqId] = lunr(function () {
+    this.field('text')
+    this.field('tags',{boost:100})
+    this.ref('id')
+  })
+  dispatch(UI.setIndex(databases[faqId]))
+}
+function updateOneFaqt(faqId, faqtId, text, draftjs) {
+  const uid = FBAUTH.currentUser.uid
+  var updates = {}
+  updates[`faqts/${uid}/${faqId}/${faqtId}/text`] = text
+  updates[`faqts/${uid}/${faqId}/${faqtId}/draftjs`] = draftjs
+  FBDATA.ref().update(updates)
+}
 
 export function login(email, password) {
   return function(dispatch, getState) {
@@ -29,62 +89,7 @@ export function logout() {
     FBAUTH.signOut()
   }
 }
-
 export function closeItDown() {
-}
-
-const faqtsPath = (uid,faqId) => `faqts/${uid}/${faqId}`
-const faqtsRef = (uid, faqId) => FBDATA.ref().child(faqtsPath(uid, faqId))
-
-function initFaqts(dispatch, faqId) {
-  const fbref = faqtsRef(FBAUTH.currentUser.uid, faqId)
-  let defaultTime = new Date(2016,1,1).getTime()  // temporary solution to support legacy faqts
-  fbref.on('child_added', snap => {
-    const {text, draftjs, tags, created} = snap.val()
-    const when = created || defaultTime++
-    const faqt = { id: snap.key, text, draftjs, tags, created:when }
-    dispatch(FAQTS.addFaqt(faqt))
-    databases[faqId].add(faqt)
-  })
-  fbref.on('child_changed', snap => {
-    const {text, draftjs, tags, created} = snap.val() 
-    const faqt = { id: snap.key, text, draftjs, tags, created }
-    dispatch(FAQTS.updateFaqt(snap.key, {text, draftjs, tags, created}))
-    databases[faqId].update(faqt)
-  })
-}
-function initSearches(dispatch, faqId) {
-  const uid = FBAUTH.currentUser.uid
-  const path = `searches/${uid}/${faqId}`
-  const fbref = FBDATA.ref().child(path)
-  fbref.on('child_added', snap => {
-    const fbSearch = snap.val()
-    const text = fbSearch.text
-    const search = { id: snap.key, text }
-    dispatch(SEARCHES.addSearch(search))
-  })
-  fbref.on('child_changed', snap => {
-    console.log(snap.key, snap.val().faqts)
-  })
-}
-function initScores(dispatch, faqId) {
-  const uid = FBAUTH.currentUser.uid
-  const fbref = FBDATA.ref().child(`scores/${uid}/${faqId}`)
-  fbref.on('child_added', snap => {
-    const {faqtId, searchId, value} = snap.val()
-    const score = { id: snap.key, searchId, faqtId, value }
-    dispatch(SCORES.addScore(score))
-  })
-  fbref.on('child_changed', snap => dispatch(SCORES.updateScore(snap.key, {value:snap.val().value})))
-  fbref.on('child_removed', snap => dispatch(SCORES.deleteScore(snap.key)))
-}
-function initFullText(dispatch, faqId) {
-  databases[faqId] = lunr(function () {
-    this.field('text')
-    this.field('tags',{boost:100})
-    this.ref('id')
-  })
-  dispatch(UI.setIndex(databases[faqId]))
 }
 export function firebaseStuff(app, auth, db) {
   FBAUTH = auth
@@ -156,13 +161,6 @@ export function setBestFaqt(faqtId) {
     else FBDATA.ref(`scores/${uid}/${faqId}/${UNIQ.randomId(4)}`).set({ searchId:search.id, faqtId, value })
   }  
 }
-function updateOneFaqt(faqId, faqtId, text, draftjs) {
-  const uid = FBAUTH.currentUser.uid
-  var updates = {}
-  updates[`faqts/${uid}/${faqId}/${faqtId}/text`] = text
-  updates[`faqts/${uid}/${faqId}/${faqtId}/draftjs`] = draftjs
-  FBDATA.ref().update(updates)
-}
 export function updateTags(faqtId, tags) {
   return function(dispatch, getState) {
     const faqId = getState().ui.faqId
@@ -198,7 +196,6 @@ export function saveTags(faqtId, tags) {
     updateOneFaqt(state.ui.faqId, faqtId, tags)
   }
 }
-
 export function addFaqt() {
   return function(dispatch, getState) {
     const state = getState()

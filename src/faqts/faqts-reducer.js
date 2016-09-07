@@ -1,5 +1,6 @@
-function updateFaqt(faqts, {faqtId, edits}) {
-  const faqt = faqts.find(F => F.id === faqtId)
+function updateFaqt(faqts, {faqId, faqtId, edits}) {
+  console.log('using faqId to update a faqt')
+  const faqt = faqts.find(F => F.faqId === faqId && F.id === faqtId)
   if(!faqt) return faqts
   if(faqt.text === edits.text && faqt.tags === edits.tags) return faqts
   return faqts.map(faqt => {
