@@ -6,7 +6,7 @@ import Faqt from './faqt'
 
 function mapStateToProps(state, ownProps) {
   const { faqtId } = ownProps
-  const { text, draftjs, tags } = SELECT.getFaqtById(state, faqtId)
+  const { text, draftjs, tags } = SELECT.getFaqtById(state, state.ui.faqId, faqtId)
   const isActive  = faqtId === state.ui.faqtId
   const focusedControl   = isActive ? state.ui.focused : null 
   const search = SELECT.getSearch(state)

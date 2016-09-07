@@ -6,7 +6,7 @@ export const fullTextIndex = state => state.ui.index
 export const getSearch = state => state.ui.search
 
 export const findFaqtByText   = (state, text) => faqts(state).find(A => A.text === text)
-export const getFaqtById      = (state, id) => faqts(state).find(A => A.id === id)
+export const getFaqtById      = (state, faqId, id) => faqts(state).find(A => A.faqId === faqId && A.id === id)
  
 function getEm(FAQTS, ids) {
   const FAQT_INDEX = _.keyBy(FAQTS, 'id')

@@ -132,8 +132,6 @@ export function focusSearch() {
     dispatch(UI.setFocused('SEARCH'))
   }
 }
-//============== ^^^ checked for faqId support =====================//
-//============== vvv work in progress ==============================//
 export function setBestFaqt(faqtId) {
   return function(dispatch, getState, extras) {
     console.log('newFangled setBestFaqt')
@@ -162,13 +160,9 @@ export function setBestFaqt(faqtId) {
     else FBDATA.ref(`scores/${uid}/${faqId}/${UNIQ.randomId(4)}`).set({ searchId:search.id, faqtId, value })
   }  
 }
-//============== ^^^ work in progress ==============================//
-//============== vvv not so much ===================================//
-    // to here vvv //
-    // to here ^^^ //
 export function updateTags(faqtId, tags) {
   return function(dispatch, getState) {
-    const faqId = getState().ui.faqId
+    const {faqId} = getState().ui
     const uid = FBAUTH.currentUser.uid
     var updates = {}
     updates[`faqts/${uid}/${faqId}/${faqtId}/tags`] = tags
@@ -179,8 +173,9 @@ export function updateTags(faqtId, tags) {
 export function updateFaqt(faqtId, text, draftjs, nextFocus) {
   return function(dispatch, getState) {
     const state = getState()
-    if(!SELECT.getFaqtById(state, faqtId)) return
-    updateOneFaqt(state.ui.faqId, faqtId, text, draftjs)
+    const {faqId} = state.ui
+    if(!SELECT.getFaqtById(state, faqId, faqtId)) return
+    updateOneFaqt(faqId, faqtId, text, draftjs)
     if(!nextFocus) return
     switch(nextFocus) {
       case 'SEARCH': 
@@ -197,10 +192,17 @@ export function updateFaqt(faqtId, text, draftjs, nextFocus) {
 export function saveTags(faqtId, tags) {
   return function(dispatch, getState) {
     const state = getState()
-    if(!SELECT.getFaqtById(state, faqtId)) return
-    updateOneFaqt(state.ui.faqId, faqtId, tags)
+    const {faqId} = state.ui
+    if(!SELECT.getFaqtById(state, faqId, faqtId)) return
+    updateOneFaqt(faqId, faqtId, tags)
   }
 }
+//============== ^^^ checked for faqId support =====================//
+//============== vvv work in progress ==============================//
+    // to here vvv //
+    // to here ^^^ //
+//============== ^^^ work in progress ==============================//
+//============== vvv not so much ===================================//
 export function addFaqt() {
   return function(dispatch, getState) {
     const state = getState()
