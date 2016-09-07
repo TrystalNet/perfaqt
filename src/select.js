@@ -9,12 +9,6 @@ export const getSearch = state => state.ui.search
 export const findFaqtByText   = (state, text) => faqts(state).find(A => A.text === text)
 export const getFaqtById      = (state, faqId, id) => faqts(state).find(A => A.faqId === faqId && A.id === id)
  
-function getEm(FAQTS, ids) {
-  const FAQT_INDEX = _.keyBy(FAQTS, 'id')
-  var result = ids.map(faqtId => FAQT_INDEX[faqtId])
-  result = result.filter(item => item)
-  return result
-}
 function faqtsForSearchIdAndText(state, faqId, search) {
   const {id, text} = search
   const SCORES = scores(state).filter(score => score.faqId === faqId)
@@ -32,7 +26,7 @@ function faqtsForSearchIdAndText(state, faqId, search) {
   const nonBestFAQTIDS = _.difference(allFAQTIDS, bestFAQTIDS)
   const unranked = _.difference(nonBestFAQTIDS, ftFAQTIDS)
 
-  return getEm(FAQTS, [...bestFAQTIDS,...ftFAQTIDS, ...unranked])
+  return [...bestFAQTIDS,...ftFAQTIDS, ...unranked]
 }
 function faqtsForSearchText(state, faqId, search) {
   const {text} = search
@@ -41,14 +35,13 @@ function faqtsForSearchText(state, faqId, search) {
   const ftIndex = ftdbs[faqId]
   const ftFAQTIDS = ftIndex ? ftIndex.search(text).map(item => item.ref) : []
   const unranked = _.difference(allFAQTIDS, ftFAQTIDS)
-  return getEm(FAQTS, [...ftFAQTIDS, ...unranked])
+  return [...ftFAQTIDS, ...unranked]
 }
 function faqtsForNoSearch(state, faqId) {
   const FAQTS = [...faqts(state).filter(faqt => faqt.faqId === faqId)]
   FAQTS.sort((a,b) => b.created - a.created)
-  return FAQTS
+  return FAQTS.map(faqt => faqt.id)
 }
-
 export function findScore(state, faqId, searchId, faqtId) {
   if(!searchId) return null
   return scores(state).find(score => score.faqId === faqId && score.searchId === searchId && score.faqtId === faqtId)
@@ -65,7 +58,7 @@ export function findBestScore(state, faqId, searchId) {
     return itemValue > accumValue ? item : accum
   })
 }
-export function getFaqts(state, faqId, search) {
+export function getFaqtIds(state, faqId, search) {
   if(search) {
     if(search.id) return faqtsForSearchIdAndText(state, faqId, search)
     if(search.text && search.text.length) return faqtsForSearchText(state, faqId, search)

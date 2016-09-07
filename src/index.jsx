@@ -8,7 +8,7 @@ import 'firebase/auth'
 import 'firebase/database'
 
 import * as THUNK from './thunks'
-import App from './app/app-container'
+import App from './app/App'
 
 import FAQTS   from './faqts/faqts-reducer'
 import SEARCHES from './searches/searches-reducer'

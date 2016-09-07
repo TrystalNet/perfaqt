@@ -115,13 +115,13 @@ export function setSearch(text) {
   return function(dispatch, getState) {
     if(!text) return dispatch(UI.setSearch(null))
     const state = getState()
-    const {faqId} = state.ui
+  const {faqId} = state.ui
     let search = SELECT.findSearchByText(state, faqId, text)
     if(!search) search = {faqId, id:null, text}
     dispatch(UI.setSearch(search))
   }
 }
-export function activateFaqt(faqtId) {
+export function activateFaqt(faqId, faqtId) {
   return function(dispatch) {
     dispatch(UI.setFocused(faqtId))
     dispatch(UI.setFaqtId(faqtId))
@@ -132,12 +132,11 @@ export function focusSearch() {
     dispatch(UI.setFocused('SEARCH'))
   }
 }
-export function setBestFaqt(faqtId) {
+export function setBestFaqt(faqId, faqtId) {
   return function(dispatch, getState, extras) {
-    console.log('newFangled setBestFaqt')
     const uid = FBAUTH.currentUser.uid
     const state = getState()
-    const {search, faqId} = state.ui
+    const {search} = state.ui
     if(!search) return
 
     if(!search.id) {
@@ -160,9 +159,8 @@ export function setBestFaqt(faqtId) {
     else FBDATA.ref(`scores/${uid}/${faqId}/${UNIQ.randomId(4)}`).set({ searchId:search.id, faqtId, value })
   }  
 }
-export function updateTags(faqtId, tags) {
+export function updateTags(faqId, faqtId, tags) {
   return function(dispatch, getState) {
-    const {faqId} = getState().ui
     const uid = FBAUTH.currentUser.uid
     var updates = {}
     updates[`faqts/${uid}/${faqId}/${faqtId}/tags`] = tags
@@ -170,10 +168,9 @@ export function updateTags(faqtId, tags) {
     dispatch(UI.setFocused('SEARCH'))
   }
 }
-export function updateFaqt(faqtId, text, draftjs, nextFocus) {
+export function updateFaqt(faqId, faqtId, text, draftjs, nextFocus) {
   return function(dispatch, getState) {
     const state = getState()
-    const {faqId} = state.ui
     if(!SELECT.getFaqtById(state, faqId, faqtId)) return
     updateOneFaqt(faqId, faqtId, text, draftjs)
     if(!nextFocus) return
