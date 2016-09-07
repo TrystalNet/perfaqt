@@ -12,8 +12,6 @@ let FBAUTH
 let FBDATA
 let FULLTEXT
 
-const FAQID = 'default'
-
 function initFullText(dispatch) {
   FULLTEXT = lunr(function () {
     this.field('text')
@@ -94,12 +92,13 @@ export function firebaseStuff(app, auth, db) {
   FBDATA = db
   return  function(dispatch, getState) {
     // FBAUTH.currentUser.uid   !!!!
+    const faqId = getState().ui.faqId
     auth.onAuthStateChanged(user => {
       if(user) {
         dispatch(UI.setConnected(true))
-        initFaqts(dispatch, FAQID)
-        initSearches(dispatch, FAQID)
-        initScores(dispatch, FAQID)
+        initFaqts(dispatch, faqId)
+        initSearches(dispatch, faqId)
+        initScores(dispatch, faqId)
       }
       else dispatch(UI.setConnected(false))
     })
@@ -133,7 +132,7 @@ export function setBestFaqt(faqtId) {
   return function(dispatch, getState, extras) {
     const uid = FBAUTH.currentUser.uid
     const state = getState()
-    const search = state.ui.search
+    const {search, faqId} = state.ui
     if(!search) return
 
     if(!search.id) {
@@ -141,7 +140,7 @@ export function setBestFaqt(faqtId) {
       if(!text || !text.length) return
       if(typeof text === 'object') throw 'text cannot be an object in setBestFaqt'
       search.id = UNIQ.randomId(4)
-      FBDATA.ref(`searches/${uid}/${FAQID}/${search.id}/text`)
+      FBDATA.ref(`searches/${uid}/${faqId}/${search.id}/text`)
       .set(text)
       .then(() => dispatch(UI.setSearch(search)))
     }
@@ -154,32 +153,34 @@ export function setBestFaqt(faqtId) {
 
     if(matchingScore) {
       var updates = {}
-      updates[`scores/${uid}/${FAQID}/${matchingScore.id}/value`] = value
+      updates[`scores/${uid}/${faqId}/${matchingScore.id}/value`] = value
       FBDATA.ref().update(updates)
     }
-    else FBDATA.ref(`scores/${uid}/${FAQID}/${UNIQ.randomId(4)}`).set({ searchId:search.id, faqtId, value })
+    else FBDATA.ref(`scores/${uid}/${faqId}/${UNIQ.randomId(4)}`).set({ searchId:search.id, faqtId, value })
   }  
 }
-function updateOneFaqt(faqtId, text, draftjs) {
+function updateOneFaqt(faqId, faqtId, text, draftjs) {
   const uid = FBAUTH.currentUser.uid
   var updates = {}
-  updates[`faqts/${uid}/${FAQID}/${faqtId}/text`] = text
-  updates[`faqts/${uid}/${FAQID}/${faqtId}/draftjs`] = draftjs
+  updates[`faqts/${uid}/${faqId}/${faqtId}/text`] = text
+  updates[`faqts/${uid}/${faqId}/${faqtId}/draftjs`] = draftjs
   FBDATA.ref().update(updates)
 }
 export function updateTags(faqtId, tags) {
   return function(dispatch, getState) {
+    const faqId = getState().ui.faqId
     const uid = FBAUTH.currentUser.uid
     var updates = {}
-    updates[`faqts/${uid}/${FAQID}/${faqtId}/tags`] = tags
+    updates[`faqts/${uid}/${faqId}/${faqtId}/tags`] = tags
     FBDATA.ref().update(updates)
     dispatch(UI.setFocused('SEARCH'))
   }
 }
 export function updateFaqt(faqtId, text, draftjs, nextFocus) {
   return function(dispatch, getState) {
-    if(!SELECT.getFaqtById(getState(), faqtId)) return
-    updateOneFaqt(faqtId, text, draftjs)
+    const state = getState()
+    if(!SELECT.getFaqtById(state, faqtId)) return
+    updateOneFaqt(state.ui.faqId, faqtId, text, draftjs)
     if(!nextFocus) return
     switch(nextFocus) {
       case 'SEARCH': 
@@ -195,8 +196,9 @@ export function updateFaqt(faqtId, text, draftjs, nextFocus) {
 }
 export function saveTags(faqtId, tags) {
   return function(dispatch, getState) {
-    if(!SELECT.getFaqtById(getState(), faqtId)) return
-    updateOneFaqt(faqtId, tags)
+    const state = getState()
+    if(!SELECT.getFaqtById(state, faqtId)) return
+    updateOneFaqt(state.ui.faqId, faqtId, tags)
   }
 }
 
@@ -204,6 +206,7 @@ export function addFaqt() {
   return function(dispatch, getState) {
     const state = getState()
     const uid = FBAUTH.currentUser.uid
+    const faqId = state.ui.faqId
 
     function getSearchId(text) {
       if(!text || !text.length) return null
@@ -216,18 +219,18 @@ export function addFaqt() {
     }
     const faqtId = UNIQ.randomId(4)
     const created = Date.now()
-    FBDATA.ref(`faqts/${uid}/${FAQID}/${faqtId}`).set({text:'', draftjs:{}, created})
+    FBDATA.ref(`faqts/${uid}/${faqId}/${faqtId}`).set({text:'', draftjs:{}, created})
     .then(() => {
       const search = SELECT.getSearch(state)
       if(search && search.text) {
         if(!search.id) {
           search.id = UNIQ.randomId(4)
           if(typeof search.text === 'object') throw 'search.text cannot be an object in addSearch'
-          FBDATA.ref(`searches/${uid}/${FAQID}/${search.id}/text`).set(search.text)
+          FBDATA.ref(`searches/${uid}/${faqId}/${search.id}/text`).set(search.text)
         }
         const scoreId = UNIQ.randomId(4)
         const value = getScoreValue(search.id)
-        FBDATA.ref(`scores/${uid}/${FAQID}/${scoreId}`).set({ searchId:search.id, faqtId, value })
+        FBDATA.ref(`scores/${uid}/${faqId}/${scoreId}`).set({ searchId:search.id, faqtId, value })
       }
       dispatch(UI.setFocused(faqtId))
       dispatch(UI.setFaqtId(faqtId))
@@ -239,6 +242,7 @@ export function saveSearch(text) {
     if(!text || !text.length) return
     if(typeof text === 'object') throw 'text cannot be an object in saveSearch'
     const state = getState()
+    const faqId = state.ui.faqId
     let search = SELECT.findSearchByText(state, text)
     if(search && search.id) return dispatch(UI.setSearch(search))
     search = {
@@ -246,7 +250,7 @@ export function saveSearch(text) {
       text
     }
     const uid = FBAUTH.currentUser.uid
-    const path = `searches/${uid}/${FAQID}/${search.id}/text`
+    const path = `searches/${uid}/${faqId}/${search.id}/text`
     FBDATA.ref(path).set(search.text)
     .then(() => dispatch(UI.setSearch(search)))
   }
@@ -255,7 +259,8 @@ export function saveSearch(text) {
 export function deleteScore(scoreId) {
   return function(dispatch, getState) {
     const uid = FBAUTH.currentUser.uid
-    const path = `scores/${uid}/${FAQID}/${scoreId}`
+    const faqId = getState().ui.faqId
+    const path = `scores/${uid}/${faqId}/${scoreId}`
     FBDATA.ref(path).remove()
   }
 }
