@@ -7,19 +7,10 @@ import * as SEARCHES from './searches/searches-actions'
 import * as SCORES from './scores/scores-actions'
 import * as UI from './ui/ui-actions'
 import lunr  from 'lunr'
+import databases from './fulltext'
 
 let FBAUTH
 let FBDATA
-let FULLTEXT
-
-function initFullText(dispatch) {
-  FULLTEXT = lunr(function () {
-    this.field('text')
-    this.field('tags',{boost:100})
-    this.ref('id')
-  })
-  dispatch(UI.setIndex(FULLTEXT))
-}
 
 export function login(email, password) {
   return function(dispatch, getState) {
@@ -53,13 +44,13 @@ function initFaqts(dispatch, faqId) {
     const when = created || defaultTime++
     const faqt = { id: snap.key, text, draftjs, tags, created:when }
     dispatch(FAQTS.addFaqt(faqt))
-    FULLTEXT.add(faqt)
+    databases[faqId].add(faqt)
   })
   fbref.on('child_changed', snap => {
     const {text, draftjs, tags, created} = snap.val() 
     const faqt = { id: snap.key, text, draftjs, tags, created }
     dispatch(FAQTS.updateFaqt(snap.key, {text, draftjs, tags, created}))
-    FULLTEXT.update(faqt)
+    databases[faqId].update(faqt)
   })
 }
 function initSearches(dispatch, faqId) {
@@ -87,6 +78,14 @@ function initScores(dispatch, faqId) {
   fbref.on('child_changed', snap => dispatch(SCORES.updateScore(snap.key, {value:snap.val().value})))
   fbref.on('child_removed', snap => dispatch(SCORES.deleteScore(snap.key)))
 }
+function initFullText(dispatch, faqId) {
+  databases[faqId] = lunr(function () {
+    this.field('text')
+    this.field('tags',{boost:100})
+    this.ref('id')
+  })
+  dispatch(UI.setIndex(databases[faqId]))
+}
 export function firebaseStuff(app, auth, db) {
   FBAUTH = auth
   FBDATA = db
@@ -99,14 +98,12 @@ export function firebaseStuff(app, auth, db) {
         initFaqts(dispatch, faqId)
         initSearches(dispatch, faqId)
         initScores(dispatch, faqId)
+        initFullText(dispatch, faqId)   // this should be shut down when auth state changes; massive hole
       }
       else dispatch(UI.setConnected(false))
     })
     const dbRefBroadcast = db.ref().child('broadcast')
     dbRefBroadcast.on('value', snap => dispatch(UI.setBroadcast(snap.val())))
-
-    initFullText(dispatch)
-
   }
 }
 export function setSearch(text) {
