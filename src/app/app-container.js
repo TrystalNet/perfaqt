@@ -4,9 +4,8 @@ import * as THUNK  from '../thunks'
 import * as SELECT from '../select'
 
 function mapStateToProps(state) {
-  const { connected } = state.ui
-  const search = state.ui.search
-  const faqts = SELECT.getFaqts(state, search) 
+  const { faqId, search, connected } = state.ui
+  const faqts = SELECT.getFaqts(state, faqId, search) 
   return { faqts, connected }
 }
 
