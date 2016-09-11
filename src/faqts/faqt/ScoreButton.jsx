@@ -2,24 +2,13 @@ import React, { Component } from 'react';
 import * as THUNK from '../../thunks'
 import { connect } from 'react-redux'
 
-const ScoreButton = ({score, onDelete}) => {
+const ScoreButton = ({score, dispatch}) => {
   if(!score) return null
-  const onClick = event => {
-    onDelete()
+  const onClick = e => {
+    e.preventDefault()
+    dispatch(THUNK.deleteScore(score.id))
   }
   return <button onClick={onClick}>{score.value}</button>
 }
 
-function mapStateToProps(state, ownProps) {
-  const { score } = ownProps
-  return { score }
-}
-
-function mapDispatchToProps(dispatch, ownProps) {
-  const { score } = ownProps
-  return { 
-    onDelete:  () => dispatch(THUNK.deleteScore(score.id))
-  }
-}
-
-export default connect(mapStateToProps, mapDispatchToProps)(ScoreButton)
+export default connect((state, ownProps) => ({score:ownProps.score}))(ScoreButton)

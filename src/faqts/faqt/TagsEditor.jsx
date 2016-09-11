@@ -1,6 +1,10 @@
 import React, { Component } from 'react';
+import { connect } from 'react-redux'
+import * as SELECT from '../../select'
 
 const S1 = { display:'flex', border:'black 0px solid', backgroundColor:'lightgrey', padding:5, paddingRight:6 }
+const S2 = {flex:0, margin:3, marginRight:8}
+const S3 = {flex:1, border: 'red 0px solid', paddingLeft:5}
 
 class TagsEditor extends Component {
   constructor(props) {
@@ -19,15 +23,20 @@ class TagsEditor extends Component {
   render() {
     const {tags} = this.props
     return <div style={S1}>
-      <div style={{flex:0, margin:3, marginRight:8}}><b>Tags:</b></div>
+      <div style={S2}><b>Tags:</b></div>
       <input 
         ref={c => this._input = c} 
         type='text' 
         value={this.state.value} 
         onChange={this.handleChange.bind(this)}
         onKeyDown={this.onKeyDown.bind(this)} 
-        style={{flex:1, border: 'red 0px solid', paddingLeft:5}}/>
+        style={S3}/>
     </div>
   }
 }
-export default TagsEditor
+const mapStateToProps = (state, ownProps) => {
+  const { ui:{faqref, faqtId} } = state
+  const { tags } = SELECT.getFaqt(state, faqref, faqtId)
+  return {tags}
+}
+export default connect(mapStateToProps)(TagsEditor)

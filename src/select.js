@@ -1,53 +1,63 @@
 import * as _ from 'lodash'
-import ftdbs from './fulltext' 
-export const faqts = state => state.faqts
-export const searches = state => state.searches 
-export const scores = state => state.scores
-export const fullTextIndex = state => state.ui.index
-export const getSearch = state => state.ui.search
+import ftdbs, {dbForFaqref} from './fulltext' 
 
-export const findFaqtByText   = (state, text) => faqts(state).find(A => A.text === text)
-export const getFaqtById      = (state, faqId, id) => faqts(state).find(A => A.faqId === faqId && A.id === id)
- 
-function faqtsForSearchIdAndText(state, faqId, search) {
-  const {id, text} = search
-  const SCORES = scores(state).filter(score => score.faqId === faqId)
+export const getSearchesByFaqref = (state, faqref) => faqref ? state.searches.filter(search => _.isEqual(search.faqref, faqref)) : []
+export const getFaqtsByFaqref = (state, faqref)    => faqref ? state.faqts.filter(faqt => _.isEqual(faqt.faqref, faqref)) : []
+export const getScoresByFaqref = (state, faqref)   => faqref ? state.scores.filter(score => _.isEqual(score.faqref, faqref)) : []
+export const getFaqt = (state, faqref, id) => getFaqtsByFaqref(state, faqref).find(faqt => faqt.id === id)
+
+export const getActiveFaqt = state => state.ui.faqt
+export const getActiveSearch = state => state.ui.search
+export const getActiveFaqref = state => state.ui.faqref
+
+function faqtsForSavedSearch(state, search) {
+  const {faqref, id, text} = search
+  const FAQTS = getFaqtsByFaqref(state, faqref)
+  const SCORES = getScoresByFaqref(state, faqref)
   const bestFAQTIDS = _.chain(SCORES)
     .filter(score => score.searchId === id)   
     .orderBy('value','desc')              
     .map(score => score.faqtId)              
     .value()                              
 
-  const ftIndex = ftdbs[faqId]
+  const ftIndex = dbForFaqref(faqref)
   const ftFAQTIDS = ftIndex ? _.difference(ftIndex.search(text).map(item => item.ref), bestFAQTIDS) : []
 
-  const FAQTS = faqts(state).filter(faqt=> faqt.faqId === faqId)
-  const allFAQTIDS = _.map(FAQTS, 'id')
+  const allFAQTIDS = _.map(getFaqtsByFaqref(state, faqref), 'id')
   const nonBestFAQTIDS = _.difference(allFAQTIDS, bestFAQTIDS)
   const unranked = _.difference(nonBestFAQTIDS, ftFAQTIDS)
 
-  return [...bestFAQTIDS,...ftFAQTIDS, ...unranked]
+  const faqtIndex = _.keyBy(FAQTS, 'id')
+  return [...bestFAQTIDS,...ftFAQTIDS, ...unranked].map(id => faqtIndex[id])
 }
-function faqtsForSearchText(state, faqId, search) {
-  const {text} = search
-  const FAQTS = faqts(state).filter(faqt => faqt.faqId === faqId)
-  const allFAQTIDS = _.map(FAQTS, 'id')
-  const ftIndex = ftdbs[faqId]
+function faqtsForSearchText(state, search) {
+  const {faqref, text} = search
+  const ftIndex = dbForFaqref(faqref)
+
+  const faqts = getFaqtsByFaqref(state, faqref)
+  const faqtIndex = _.keyBy(faqts, 'id')
+  const allFAQTIDS = _.map(getFaqtsByFaqref(state, faqref), 'id')
   const ftFAQTIDS = ftIndex ? ftIndex.search(text).map(item => item.ref) : []
   const unranked = _.difference(allFAQTIDS, ftFAQTIDS)
-  return [...ftFAQTIDS, ...unranked]
+  return [...ftFAQTIDS, ...unranked].map(id => faqtIndex[id])
 }
-function faqtsForNoSearch(state, faqId) {
-  const FAQTS = [...faqts(state).filter(faqt => faqt.faqId === faqId)]
-  FAQTS.sort((a,b) => b.created - a.created)
-  return FAQTS.map(faqt => faqt.id)
+function faqtsForNoText(state, faqref) {
+  const faqts = [...getFaqtsByFaqref(state, faqref)]
+  faqts.sort((a,b) => b.created - a.created)
+  return faqts
 }
-export function findScore(state, faqId, searchId, faqtId) {
-  if(!searchId) return null
-  return scores(state).find(score => score.faqId === faqId && score.searchId === searchId && score.faqtId === faqtId)
+export function findScore(state, search, faqt) {
+  // used when showing a faqt, to show the best button with associated score and delete-score buttons 
+  if(!faqt || !faqt.id || !search || !search.id) return null
+  console.log('looking for score')
+  
+  const result = getScoresByFaqref(state, search.faqref)
+  .filter(score => score.searchId === search.id)
+  .find(score => score.faqtId === faqt.id) // max 1 match for faqt+search combo
+  return result;
 }
-export function findBestScore(state, faqId, searchId) {
-  const matches = scores(state).filter(score => score.faqId === faqId && score.searchId === searchId)
+export function findBestScore(state, faqref, searchId) {
+  const matches = getScoresByFaqref(state, faqref).filter(score => score.searchId === searchId)
   switch(matches.length) {
     case 0: return null
     case 1: return matches[0]
@@ -58,15 +68,19 @@ export function findBestScore(state, faqId, searchId) {
     return itemValue > accumValue ? item : accum
   })
 }
-export function getFaqtIds(state, faqId, search) {
-  if(search) {
-    if(search.id) return faqtsForSearchIdAndText(state, faqId, search)
-    if(search.text && search.text.length) return faqtsForSearchText(state, faqId, search)
-  }
-  return faqtsForNoSearch(state, faqId)
+export function getFaqtsForSearch(state, search) {
+  if(!search || !search.faqref) return []
+  const {faqref, id, text} = search
+  let result = []
+  if(id) result = faqtsForSavedSearch(state, search)
+  else if(text) result = faqtsForSearchText(state, search)
+  else result = faqtsForNoText(state, faqref)
+  return result.slice(0,5)
 }
-export function findSearchByText(state, faqId, text) {
+export function findSearchByText(state, faqref, text) {
   if(!text) return null
   text = text.toLowerCase()
-  return searches(state).find(search => search.faqId === faqId && search.text.toLowerCase() === text)
+  return getSearchesByFaqref(state, faqref)
+  .find(search => text === search.text.toLowerCase())
 }
+

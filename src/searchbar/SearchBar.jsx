@@ -1,8 +1,24 @@
 import React, { Component } from 'react';
+import { connect } from 'react-redux'
 import Autosuggest from 'react-autosuggest'
-// import IsolatedScroll from 'react-isolated-scroll'
+import LogoutButton from './LogoutButton'
+import BroadcastView from './BroadcastView'
+import Logo from './Logo'
+import * as SELECT from '../select'
+import * as THUNK  from '../thunks'
 
-import {COL0WIDTH} from '../constants'
+const S0 = {
+  backgroundColor:'#f2f2f2', 
+  display:'flex', 
+  paddingTop:20, paddingBottom:20,
+  alignItems:'center', 
+  borderBottom: 'lightgray 1px solid'
+}
+const S1 = {
+  flex:1,
+  textAlign:'right', 
+  marginRight:10
+}
 
 function getSuggestions(value, searches) {
   const inputValue = value.trim().toLowerCase()
@@ -11,37 +27,7 @@ function getSuggestions(value, searches) {
   return searches.filter(search => inputValue === (search.text || '').toLowerCase().slice(0, inputLength))
 }
 
-const styleSearchBar = {
-  backgroundColor:'#f2f2f2', 
-  display:'flex', 
-  paddingTop:20, paddingBottom:20,
-  alignItems:'center', 
-  borderBottom: 'lightgray 1px solid'
-}
-const stylePerfaqt = {
-  width:COL0WIDTH,
-  fontSize:35,
-  textAlign: 'center',
-  border:'lightgray 0px solid'
-}
-const styleSearchField = {
-  fontSize:18,
-  paddingLeft:10,
-  width:550
-}
-const styleKeepButton = {
-  marginRight:20
-}
-const styleSearchOption = {
-  border: 'purple 3px solid',
-  backgroundColor:'orange'
-}
-const styleRight = {
-  flex:1,
-  textAlign:'right', 
-  marginRight:10
-}
-export default class SearchBar extends Component {
+class SearchBar extends Component {
   constructor(props) {
     super()
     this.state = {
@@ -49,20 +35,26 @@ export default class SearchBar extends Component {
        suggestions: getSuggestions('', props.searches)
     }
   }
-  onSuggestionsUpdateRequested = ({value, reason}) => {
-    this.setState({suggestions: getSuggestions(value, this.props.searches)})
+  onSuggestionsUpdateRequested({value, reason}) {
+    const suggestions = getSuggestions(value, this.props.searches)
+    this.setState({suggestions})
   }
   onSaveSearch(e) {
-    this.props.onSaveSearch(this.refs.fldSearch.value)
+    const {faqref, dispatch} = this.props
+    dispatch(THUNK.saveSearch(faqref, this.refs.fldSearch.value))
   }
-  onChange = (event, {newValue}) => {
+  onChange(event, {newValue}) {
+    const {faqref, dispatch} = this.props
     this.setState({value: newValue})
-    this.props.onSearchChange(newValue)
+    dispatch(THUNK.setSearch(faqref, newValue))
   }
   onKeyDown(e) {
     switch(e.keyCode) {
       case 13:
-        this.props.onSaveSearch(this.state.value)
+        const FUCK = this.props.faqref
+        const SHIT = this.state.value
+        const BULLSHIT = THUNK.saveSearch(FUCK, SHIT)
+        this.props.dispatch(BULLSHIT)
         break
       default: return      
     }
@@ -77,30 +69,33 @@ export default class SearchBar extends Component {
   }
   render() {
     const { value, suggestions } = this.state
+    const { dispatch } = this.props
     const inputProps = {
       placeholder: 'Type a search',
       value,
       onKeyDown: this.onKeyDown.bind(this),
-      onChange:this.onChange
+      onChange:this.onChange.bind(this)
     }
-    const {
-      search, searches, broadcast, 
-      onLogout, onGotFocus
-    } = this.props
-    return (
-      <div id='searchesContainer' style={styleSearchBar} onFocus={onGotFocus}>
-        <div id='perfaqt' style={stylePerfaqt}>per<span style={{color:'blue'}}>faq</span>t</div>
-        <Autosuggest 
-          ref='fldSearch'
-          suggestions={suggestions} 
-          onSuggestionsUpdateRequested={this.onSuggestionsUpdateRequested}
-          getSuggestionValue={search => search.text}
-          renderSuggestion={search => <span>{search.text}</span>}
-          inputProps={inputProps}/>
-        <div style={styleRight}></div>
-        <div style={{marginRight:15, color:'red', fontSize:'small'}}>{broadcast}</div>
-        <button onClick={onLogout}>sign out</button>
-      </div>
-    )
+    return <div id='searchesContainer' style={S0} onFocus={e => dispatch(THUNK.focusSearch())}>
+      <Logo />
+      <Autosuggest 
+        ref='fldSearch'
+        suggestions={suggestions} 
+        onSuggestionsUpdateRequested={this.onSuggestionsUpdateRequested.bind(this)}
+        getSuggestionValue={search => search.text}
+        renderSuggestion={search => <span>{search.text}</span>}
+        inputProps={inputProps}/>
+      <div style={S1}></div>
+      <BroadcastView />
+      <LogoutButton />
+    </div>
   }
 }
+
+function mapStateToProps(state) {
+  const { faqref, focused, search } = state.ui
+  const searches = SELECT.getSearchesByFaqref(state, faqref)
+  const isFocus = focused === 'SEARCH'
+  return { faqref, searches, search, isFocus,  }
+}
+export default connect(mapStateToProps)(SearchBar)

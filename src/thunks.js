@@ -5,24 +5,44 @@ import * as SELECT from './select'
 import * as FAQTS from './faqts/faqts-actions'
 import * as SEARCHES from './searches/searches-actions'
 import * as SCORES from './scores/scores-actions'
-import * as UI from './ui/ui-actions'
+import {updateUI} from './reducer'
 import lunr  from 'lunr'
-import databases from './fulltext'
+import databases,{dbForFaqref} from './fulltext'
 
 let FBAUTH
 let FBDATA
 const faqtsPath = (uid,faqId) => `faqts/${uid}/${faqId}`
 const faqtsRef = (uid, faqId) => FBDATA.ref().child(faqtsPath(uid, faqId))
 
-function initFaqts(dispatch, faqId) {
-  const fbref = faqtsRef(FBAUTH.currentUser.uid, faqId)
+function remapScoreSearchIds(faqref, searches, scores) {
+  const {uid, faqId} = faqref
+  const {key, remaps} = searches.reduce(({key, remaps}, {text,id}) => {
+    text = text.toLowerCase().trim()
+    const existing = key[text.toLowerCase()]
+    if(!key[text]) key[text] = id
+    else remaps[id] = existing
+    return {key, remaps}
+  }, {key:{}, remaps:{}})
+
+
+  const badScores = scores.filter(score => remaps[score.searchId])
+  const updates = {}
+  badScores.forEach(badScore => updates[`scores/${uid}/${faqId}/${badScore.id}/searchId`] = remaps[badScore.searchId])
+  Object.keys(remaps).forEach(badSearchId => updates[`searches/${uid}/${faqId}/${badSearchId}`] = null)
+  console.log(updates)
+  //FBDATA.ref().update(updates)
+}
+
+function initFaqts(dispatch, faqref) {
+  const {uid, faqId} = faqref
+  const fbref = faqtsRef(uid, faqId)
   let defaultTime = new Date(2016,1,1).getTime()  // temporary solution to support legacy faqts
   fbref.on('child_added', snap => {
     const {text, draftjs, tags, created} = snap.val()
     const when = created || defaultTime++
-    const faqt = { faqId, id: snap.key, text, draftjs, tags, created:when }
+    const faqt = { faqref, id: snap.key, text, draftjs, tags, created:when }
     dispatch(FAQTS.addFaqt(faqt))
-    databases[faqId].add(faqt)
+    dbForFaqref(faqref).add(faqt)
   })
   fbref.on('child_changed', snap => {
     const {text, draftjs, tags, created} = snap.val() 
@@ -31,41 +51,42 @@ function initFaqts(dispatch, faqId) {
     databases[faqId].update(faqt)
   })
 }
-function initSearches(dispatch, faqId) {
-  const uid = FBAUTH.currentUser.uid
-  const path = `searches/${uid}/${faqId}`
-  const fbref = FBDATA.ref().child(path)
+function initSearches(dispatch, faqref) {
+  const {uid, faqId} = faqref
+  const fbref = FBDATA.ref().child(`searches/${uid}/${faqId}`)
   fbref.on('child_added', snap => {
     const fbSearch = snap.val()
     const text = fbSearch.text
-    const search = { faqId, id: snap.key, text }
+    const search = { faqref, id: snap.key, text }
     dispatch(SEARCHES.addSearch(search))
   })
   fbref.on('child_changed', snap => {
     console.log(faqId, snap.key, snap.val().faqts)
   })
 }
-function initScores(dispatch, faqId) {
-  const uid = FBAUTH.currentUser.uid
+function initScores(dispatch, faqref) {
+  const{uid, faqId} = faqref
   const fbref = FBDATA.ref().child(`scores/${uid}/${faqId}`)
   fbref.on('child_added', snap => {
     const {faqtId, searchId, value} = snap.val()
-    const score = { faqId, id: snap.key, searchId, faqtId, value }
+    const score = { faqref, id: snap.key, searchId, faqtId, value }
     dispatch(SCORES.addScore(score))
   })
-  fbref.on('child_changed', snap => dispatch(SCORES.updateScore(faqId, snap.key, {value:snap.val().value})))
-  fbref.on('child_removed', snap => dispatch(SCORES.deleteScore(faqId, snap.key)))
+  fbref.on('child_changed', snap => dispatch(SCORES.updateScore(faqref, snap.key, {value:snap.val().value})))
+  fbref.on('child_removed', snap => dispatch(SCORES.deleteScore(faqref, snap.key)))
 }
-function initFullText(dispatch, faqId) {
-  databases[faqId] = lunr(function () {
+function initFullText(dispatch, faqref) {
+  const {uid, faqId} = faqref
+  const dbkey = `${uid}-${faqId}`
+  databases[dbkey] = lunr(function () {
     this.field('text')
     this.field('tags',{boost:100})
     this.ref('id')
   })
-  dispatch(UI.setIndex(databases[faqId]))
+  dispatch(updateUI({index:databases[dbkey]}))
 }
-function updateOneFaqt(faqId, faqtId, text, draftjs) {
-  const uid = FBAUTH.currentUser.uid
+function updateOneFaqt(faqref, faqtId, text, draftjs) {
+  const {uid, faqId} = faqref
   var updates = {}
   updates[`faqts/${uid}/${faqId}/${faqtId}/text`] = text
   updates[`faqts/${uid}/${faqId}/${faqtId}/draftjs`] = draftjs
@@ -91,47 +112,57 @@ export function logout() {
 }
 export function closeItDown() {
 }
+
 export function firebaseStuff(app, auth, db) {
   FBAUTH = auth
   FBDATA = db
   return  function(dispatch, getState) {
-    // FBAUTH.currentUser.uid   !!!!
-    const faqId = getState().ui.faqId
     auth.onAuthStateChanged(user => {
       if(user) {
-        dispatch(UI.setConnected(true))
-        initFaqts(dispatch, faqId)
-        initSearches(dispatch, faqId)
-        initScores(dispatch, faqId)
-        initFullText(dispatch, faqId)   // this should be shut down when auth state changes; massive hole
+        const {uid} = user
+        dispatch(updateUI({uid}))
+        const faqref = {uid, faqId: 'default'}
+        initFaqts(dispatch, faqref)
+        initSearches(dispatch, faqref)
+        initScores(dispatch, faqref)
+        initFullText(dispatch, faqref)   // this should be shut down when auth state changes; massive hole
+        const search = {faqref, id:null, text:null}
+        dispatch(updateUI({faqref,search}))
       }
-      else dispatch(UI.setConnected(false))
+      else {
+        dispatch(updateUI({faq:null}))
+        dispatch(updateUI({uid:null}))
+      }
     })
     const dbRefBroadcast = db.ref().child('broadcast')
-    dbRefBroadcast.on('value', snap => dispatch(UI.setBroadcast(snap.val())))
+    dbRefBroadcast.on('value', snap => dispatch(updateUI({broadcast:snap.val()})))
   }
 }
-export function setSearch(text) {
+export function setSearch(faqref, text) {
   return function(dispatch, getState) {
-    if(!text) return dispatch(UI.setSearch(null))
-    const state = getState()
-  const {faqId} = state.ui
-    let search = SELECT.findSearchByText(state, faqId, text)
-    if(!search) search = {faqId, id:null, text}
-    dispatch(UI.setSearch(search))
+    if(!text) return dispatch(updateUI({search:{faqref, id:null, text:null}}))
+    let search = SELECT.findSearchByText(getState(), faqref, text)
+    if(!search) search = {faqref, id:null, text}
+    dispatch(updateUI({search}))
   }
 }
 export function activateFaqt(faqId, faqtId) {
   return function(dispatch) {
-    dispatch(UI.setFocused(faqtId))
-    dispatch(UI.setFaqtId(faqtId))
+    dispatch(updateUI({focused:faqtId, faqtId}))
   }
 }
 export function focusSearch() {
   return function(dispatch) {
-    dispatch(UI.setFocused('SEARCH'))
+    dispatch(updateUI({focused:'SEARCH'}))
   }
 }
+export function cleanUp() {
+  return (dispatch, getState, extras) => {
+    const {searches, scores, ui:{faqref}} = getState()
+    remapScoreSearchIds(faqref, searches, scores)
+  } 
+}
+
 export function setBestFaqt(faqId, faqtId) {
   return function(dispatch, getState, extras) {
     const uid = FBAUTH.currentUser.uid
@@ -144,7 +175,7 @@ export function setBestFaqt(faqId, faqtId) {
       if(!text) return
       search.id = UNIQ.randomId(4)
       FBDATA.ref(`searches/${uid}/${faqId}/${search.id}/text`).set(text)
-      .then(() => dispatch(UI.setSearch(search)))
+      .then(() => dispatch(updateUI({search})))
     }
     const matchingScore = SELECT.findScore(state, faqId, search.id, faqtId)
     const bestScore = SELECT.findBestScore(state, faqId, search.id)
@@ -159,54 +190,43 @@ export function setBestFaqt(faqId, faqtId) {
     else FBDATA.ref(`scores/${uid}/${faqId}/${UNIQ.randomId(4)}`).set({ searchId:search.id, faqtId, value })
   }  
 }
-export function updateTags(faqId, faqtId, tags) {
+
+// the full text index is the last objstacle
+
+export function updateFaqt(faqref, faqtId, text, draftjs, nextFocus) {
   return function(dispatch, getState) {
-    const uid = FBAUTH.currentUser.uid
+    const state = getState()
+    if(!SELECT.getFaqt(state, faqref, faqtId)) return
+    updateOneFaqt(faqref, faqtId, text, draftjs)
+    if(!nextFocus) return
+    switch(nextFocus) {
+      case 'SEARCH': return dispatch(updateUI({faqtId:null, focused:'SEARCH'}))
+      case 'nothing': return dispatch(updateUI({faqtId:null, focused:null}))
+    }
+  }
+}
+export function updateTags(faqref, faqtId, tags) {
+  return function(dispatch, getState) {
+    const {uid, faqId} = faqref
     var updates = {}
     updates[`faqts/${uid}/${faqId}/${faqtId}/tags`] = tags
     FBDATA.ref().update(updates)
-    dispatch(UI.setFocused('SEARCH'))
+    dispatch(updateUI({focused:'SEARCH'}))
   }
 }
-export function updateFaqt(faqId, faqtId, text, draftjs, nextFocus) {
+
+export function addFaqt(faqref) {
   return function(dispatch, getState) {
     const state = getState()
-    if(!SELECT.getFaqtById(state, faqId, faqtId)) return
-    updateOneFaqt(faqId, faqtId, text, draftjs)
-    if(!nextFocus) return
-    switch(nextFocus) {
-      case 'SEARCH': 
-        dispatch(UI.setFaqtId(null))
-        dispatch(UI.setFocused('SEARCH'))
-        return
-      case 'nothing': 
-        dispatch(UI.setFaqtId(null))
-        dispatch(UI.setFocused(null))
-        return 
-    }
-  }
-}
-export function saveTags(faqtId, tags) {
-  return function(dispatch, getState) {
-    const state = getState()
-    const {faqId} = state.ui
-    if(!SELECT.getFaqtById(state, faqId, faqtId)) return
-    updateOneFaqt(faqId, faqtId, tags)
-  }
-}
-export function addFaqt() {
-  return function(dispatch, getState) {
-    const state = getState()
-    const uid = FBAUTH.currentUser.uid
-    const {faqId} = state.ui
+    const {uid,faqId} = faqref
 
     function getSearchId(text) {
       if(!text || !text.length) return null
-      const search = SELECT.findSearchByText(state, faqId, text)
+      const search = SELECT.findSearchByText(state, faqref, text)
       return search ? search.id : null
     }
     function getScoreValue(searchId) {
-      const score = SELECT.findBestScore(state, faqId, searchId)
+      const score = SELECT.findBestScore(state, faqref, searchId)
       return score ? score.value + 1 : 1
     }
     const faqtId = UNIQ.randomId(4)
@@ -224,27 +244,24 @@ export function addFaqt() {
         const value = getScoreValue(search.id)
         FBDATA.ref(`scores/${uid}/${faqId}/${scoreId}`).set({ searchId:search.id, faqtId, value })
       }
-      dispatch(UI.setFocused(faqtId))
-      dispatch(UI.setFaqtId(faqtId))
+      dispatch(updateUI({focused:faqtId, faqtId}))
     })
   }
 }
-export function saveSearch(text) {
+export function saveSearch(faqref, text) {
   return function(dispatch, getState) {
     if(!text || !text.length) return
     const state = getState()
-    const {faqId} = state.ui
-    let search = SELECT.findSearchByText(state, faqId, text)
-    if(search && search.id) return dispatch(UI.setSearch(search))
+    let search = SELECT.findSearchByText(state, faqref, text)
+    if(search && search.id) return dispatch(updateUI({search}))
     search = {
-      faqId,
       id: UNIQ.randomId(4),
-      text
+      faqref, text
     }
-    const uid = FBAUTH.currentUser.uid
+    const {uid,faqId} = faqref
     const path = `searches/${uid}/${faqId}/${search.id}/text`
     FBDATA.ref(path).set(search.text)
-    .then(() => dispatch(UI.setSearch(search)))
+    .then(() => dispatch(updateUI({search})))
   }
 }
 export function deleteScore(scoreId) {

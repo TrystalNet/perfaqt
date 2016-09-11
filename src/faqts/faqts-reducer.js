@@ -1,19 +1,24 @@
-function updateFaqt(faqts, {faqId, faqtId, edits}) {
-  console.log('using faqId to update a faqt')
-  const faqt = faqts.find(F => F.faqId === faqId && F.id === faqtId)
+import * as SELECT from '../select'
+import {toFaqtRef} from '../select'
+import _ from 'lodash'
+
+function updateFaqt(faqts, {faqref, faqtId, edits}) {
+  const faqt = SELECT.getFaqt(faqref, faqtId)
   if(!faqt) return faqts
   if(faqt.text === edits.text && faqt.tags === edits.tags) return faqts
   return faqts.map(faqt => {
-    if(faqt.id !== faqtId) return faqt
+    if(!_.isEqual(toFaqtRef(faqt)))
+    if( faqt.id !== faqtId) return faqt
     return Object.assign({}, faqt, edits)
   })
 }
 
-// switch to using an object here
 function addFaqt(faqts, action) {
-  const newFaqt = action.payload.faqt
-  const alreadyThere = faqts.find(faqt => faqt.id === newFaqt.id)
-  return alreadyThere ? faqts : [...faqts, newFaqt]
+  const {faqt} = action.payload
+  const {faqref, id} = faqt
+  const alreadyThere = faqts.find(faqt => _.isEqual(faqt.faqref, faqref) && faqt.id === id)
+  if(alreadyThere) return faqts
+  return [...faqts, Object.assign({}, faqt)]
 }
 
 function reducer(faqts=[], action) {
