@@ -15,10 +15,10 @@ const S2 = {
   textAlign:'right'
 }
 
-const MenuBar = ({faqref, searches, scores, dispatch}) => {
+const MenuBar = ({search, dispatch}) => {
   const onAddFaqt = e => {
     e.preventDefault()
-    dispatch(THUNK.addFaqt(faqref))
+    dispatch(THUNK.addFaqt(search))
   }
   const onCleanUp = e => {
     e.preventDefault()
@@ -34,5 +34,5 @@ const MenuBar = ({faqref, searches, scores, dispatch}) => {
   </div>
 }
 
-const mapStateToProps = ({ui:{faqref}}) => ({ faqref })
+const mapStateToProps = ({ui:{faqref,search}}) => ({ faqref,search })
 export default connect(mapStateToProps)(MenuBar)

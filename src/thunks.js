@@ -213,33 +213,33 @@ export function updateTags(faqref, faqtId, tags) {
   }
 }
 
-export function addFaqt(faqref) {
+export function addFaqt(search) {
   return function(dispatch, getState) {
     const state = getState()
-    const {uid,faqId} = faqref
+    if(!search) return
+    const {faqref,faqref:{uid,faqId}} = search
 
     function getSearchId(text) {
       if(!text || !text.length) return null
       const search = SELECT.findSearchByText(state, faqref, text)
       return search ? search.id : null
     }
-    function getScoreValue(searchId) {
-      const score = SELECT.findBestScore(state, faqref, searchId)
+    function getScoreValue(search) {
+      const score = SELECT.findBestScore(state, search)
       return score ? score.value + 1 : 1
     }
     const faqtId = UNIQ.randomId(4)
     const created = Date.now()
     FBDATA.ref(`faqts/${uid}/${faqId}/${faqtId}`).set({text:'', draftjs:{}, created})
     .then(() => {
-      const search = SELECT.getSearch(state)
-      if(search && search.text) {
+      if(search.text) {
         if(!search.id) {
           search.id = UNIQ.randomId(4)
           if(typeof search.text === 'object') throw 'search.text cannot be an object in addSearch'
           FBDATA.ref(`searches/${uid}/${faqId}/${search.id}/text`).set(search.text)
         }
         const scoreId = UNIQ.randomId(4)
-        const value = getScoreValue(search.id)
+        const value = getScoreValue(search)
         FBDATA.ref(`scores/${uid}/${faqId}/${scoreId}`).set({ searchId:search.id, faqtId, value })
       }
       dispatch(updateUI({focused:faqtId, faqtId}))
