@@ -120,14 +120,13 @@ export function firebaseStuff(app, auth, db) {
     auth.onAuthStateChanged(user => {
       if(user) {
         const {uid} = user
-        dispatch(updateUI({uid}))
         const faqref = {uid, faqId: 'default'}
+        const search = {faqref, id:null, text:null}
+        dispatch(updateUI({uid, faqref, search}))
         initFaqts(dispatch, faqref)
         initSearches(dispatch, faqref)
         initScores(dispatch, faqref)
         initFullText(dispatch, faqref)   // this should be shut down when auth state changes; massive hole
-        const search = {faqref, id:null, text:null}
-        dispatch(updateUI({faqref,search}))
       }
       else {
         dispatch(updateUI({faq:null}))
@@ -163,12 +162,12 @@ export function cleanUp() {
   } 
 }
 
-export function setBestFaqt(faqId, faqtId) {
+export function setBestFaqt(faqref, faqt) {
   return function(dispatch, getState, extras) {
-    const uid = FBAUTH.currentUser.uid
     const state = getState()
     const {search} = state.ui
     if(!search) return
+    const {uid, faqId} = faqref
 
     if(!search.id) {
       const {text} = search
@@ -177,8 +176,8 @@ export function setBestFaqt(faqId, faqtId) {
       FBDATA.ref(`searches/${uid}/${faqId}/${search.id}/text`).set(text)
       .then(() => dispatch(updateUI({search})))
     }
-    const matchingScore = SELECT.findScore(state, faqId, search.id, faqtId)
-    const bestScore = SELECT.findBestScore(state, faqId, search.id)
+    const matchingScore = SELECT.findScore(state, search, faqt)
+    const bestScore = SELECT.findBestScore(state, search)
     if(matchingScore && matchingScore === bestScore) return
     const value = bestScore ? bestScore.value + 1 : 1
 
@@ -187,11 +186,9 @@ export function setBestFaqt(faqId, faqtId) {
       updates[`scores/${uid}/${faqId}/${matchingScore.id}/value`] = value
       FBDATA.ref().update(updates)
     }
-    else FBDATA.ref(`scores/${uid}/${faqId}/${UNIQ.randomId(4)}`).set({ searchId:search.id, faqtId, value })
+    else FBDATA.ref(`scores/${uid}/${faqId}/${UNIQ.randomId(4)}`).set({ searchId:search.id, faqtId:faqt.id, value })
   }  
 }
-
-// the full text index is the last objstacle
 
 export function updateFaqt(faqref, faqtId, text, draftjs, nextFocus) {
   return function(dispatch, getState) {

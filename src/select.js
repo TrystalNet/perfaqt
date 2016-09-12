@@ -56,8 +56,9 @@ export function findScore(state, search, faqt) {
   .find(score => score.faqtId === faqt.id) // max 1 match for faqt+search combo
   return result;
 }
-export function findBestScore(state, faqref, searchId) {
-  const matches = getScoresByFaqref(state, faqref).filter(score => score.searchId === searchId)
+export function findBestScore(state, search) {
+  const {faqref, id} = search
+  const matches = getScoresByFaqref(state, faqref).filter(score => score.searchId === id)
   switch(matches.length) {
     case 0: return null
     case 1: return matches[0]
