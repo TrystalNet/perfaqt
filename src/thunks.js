@@ -45,10 +45,10 @@ function initFaqts(dispatch, faqref) {
     dbForFaqref(faqref).add(faqt)
   })
   fbref.on('child_changed', snap => {
-    const {text, draftjs, tags, created} = snap.val() 
-    const faqt = { faqId, id: snap.key, text, draftjs, tags, created }
-    dispatch(FAQTS.updateFaqt(faqId, snap.key, {text, draftjs, tags}))
-    databases[faqId].update(faqt)
+    const {text, draftjs, tags, created} = snap.val()
+    const faqt = { faqref, id: snap.key, text, draftjs, tags, created }
+    dispatch(FAQTS.replaceFaqt(faqt))
+    dbForFaqref(faqref).update(faqt)
   })
 }
 function initSearches(dispatch, faqref) {
@@ -190,8 +190,9 @@ export function setBestFaqt(faqref, faqt) {
   }  
 }
 
-export function updateFaqt(faqref, faqtId, text, draftjs, nextFocus) {
+export function updateFaqt(faqt, text, draftjs, nextFocus) {
   return function(dispatch, getState) {
+    const {faqref,id:faqtId} = faqt
     const state = getState()
     if(!SELECT.getFaqt(state, faqref, faqtId)) return
     updateOneFaqt(faqref, faqtId, text, draftjs)

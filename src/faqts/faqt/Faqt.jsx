@@ -31,7 +31,7 @@ const TagsControl = ({isActive, tags, onSave}) => (isActive ? <TagsEditor {...{t
 const Faqt = ({faqt, isActive, score, dispatch})  => {
   const {faqref, faqtId, text, draftjs, tags} = faqt
   const onFocus = e => dispatch(THUNK.activateFaqt(faqt))
-  const onSave = (text, draftjs, nextFocus) => dispatch(THUNK.updateFaqt(faqref, faqtId, text, draftjs, nextFocus))
+  const onSave = (text, draftjs, nextFocus) => dispatch(THUNK.updateFaqt(faqt, text, draftjs, nextFocus))
   const onSetBest = () => dispatch(THUNK.setBestFaqt(faqref, faqt))
   const onSaveTags = tags => dispatch(THUNK.updateTags(faqref, faqtId, tags))
   const style = isActive ? Object.assign({},style0A,BEIGE) : style0A
