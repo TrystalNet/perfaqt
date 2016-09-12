@@ -6,7 +6,7 @@ const ScoreButton = ({score, dispatch}) => {
   if(!score) return null
   const onClick = e => {
     e.preventDefault()
-    dispatch(THUNK.deleteScore(score.id))
+    dispatch(THUNK.deleteScore(score))
   }
   return <button onClick={onClick}>{score.value}</button>
 }

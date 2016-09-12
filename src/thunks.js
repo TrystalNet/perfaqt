@@ -73,7 +73,7 @@ function initScores(dispatch, faqref) {
     dispatch(SCORES.addScore(score))
   })
   fbref.on('child_changed', snap => dispatch(SCORES.updateScore(faqref, snap.key, {value:snap.val().value})))
-  fbref.on('child_removed', snap => dispatch(SCORES.deleteScore(faqref, snap.key)))
+  fbref.on('child_removed', snap => dispatch(SCORES.deleteScore({faqref, id:snap.key})))
 }
 function initFullText(dispatch, faqref) {
   const {uid, faqId} = faqref
@@ -262,11 +262,11 @@ export function saveSearch(faqref, text) {
     .then(() => dispatch(updateUI({search})))
   }
 }
-export function deleteScore(scoreId) {
+export function deleteScore(score) {
   return function(dispatch, getState) {
-    const uid = FBAUTH.currentUser.uid
-    const {faqId} = getState().ui
-    const path = `scores/${uid}/${faqId}/${scoreId}`
+    const {faqref} = score
+    const {uid,faqId} = faqref
+    const path = `scores/${uid}/${faqId}/${score.id}`
     FBDATA.ref(path).remove()
   }
 }
