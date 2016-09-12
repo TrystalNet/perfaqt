@@ -120,7 +120,8 @@ export function firebaseStuff(app, auth, db) {
     auth.onAuthStateChanged(user => {
       if(user) {
         const {uid} = user
-        const faqref = {uid, faqId: 'default'}
+        // const faqref = {uid, faqId: 'default'}
+        const faqref = {uid, faqId: 'test'}
         const search = {faqref, id:null, text:null}
         dispatch(updateUI({uid, faqref, search}))
         initFaqts(dispatch, faqref)
