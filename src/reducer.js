@@ -29,7 +29,6 @@ function reducer(state={}, action) {
     scores    : SCORES(state.scores, action),
   }
   const ui = UI(state.ui, action)
-  // console.log(ui)
   newState.ui = ui
   return newState
 }

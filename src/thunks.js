@@ -113,6 +113,23 @@ export function logout() {
 export function closeItDown() {
 }
 
+export function openFaq(faqref) {
+  return function(dispatch) {
+    initFaqts(dispatch, faqref)
+    initSearches(dispatch, faqref)
+    initScores(dispatch, faqref)
+    initFullText(dispatch, faqref)   // this should be shut down when auth state changes; massive hole
+    return faqref
+  }
+}
+
+export function setActiveFaq(faqref) {
+  return function(dispatch) {
+    const search = {faqref, id:null, text:null}
+    dispatch(updateUI({faqref, search}))
+  }
+}
+
 export function firebaseStuff(app, auth, db) {
   FBAUTH = auth
   FBDATA = db
@@ -120,14 +137,10 @@ export function firebaseStuff(app, auth, db) {
     auth.onAuthStateChanged(user => {
       if(user) {
         const {uid} = user
-        // const faqref = {uid, faqId: 'default'}
-        const faqref = {uid, faqId: 'test'}
-        const search = {faqref, id:null, text:null}
-        dispatch(updateUI({uid, faqref, search}))
-        initFaqts(dispatch, faqref)
-        initSearches(dispatch, faqref)
-        initScores(dispatch, faqref)
-        initFullText(dispatch, faqref)   // this should be shut down when auth state changes; massive hole
+        dispatch(updateUI({uid}))
+        const faqrefTest = dispatch(openFaq({uid, faqId:'test'}))
+        const faqrefDefault = dispatch(openFaq({uid, faqId: 'default'}))
+        dispatch(setActiveFaq(faqrefDefault))
       }
       else {
         dispatch(updateUI({faq:null}))

@@ -76,7 +76,7 @@ export function getFaqtsForSearch(state, search) {
   if(id) result = faqtsForSavedSearch(state, search)
   else if(text) result = faqtsForSearchText(state, search)
   else result = faqtsForNoText(state, faqref)
-  return result.slice(0,5)
+  return result.slice(0,10)
 }
 export function findSearchByText(state, faqref, text) {
   if(!text) return null
