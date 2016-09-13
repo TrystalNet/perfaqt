@@ -26,14 +26,15 @@ const BEIGE = {
   maxHeight : '50vh'
 }
 
-const TagsControl = ({isActive, tags, onSave}) => (isActive ? <TagsEditor {...{tags, onSave}} /> : null)
+const TagsControl = ({isActive, tags, onSave}) => {
+  return (isActive ? <TagsEditor {...{tags, onSave}} /> : null)
+}
 
 const Faqt = ({faqt, isActive, score, dispatch})  => {
   const {faqref, faqtId, text, draftjs, tags} = faqt
   const onFocus = e => dispatch(THUNK.activateFaqt(faqt))
   const onSave = (text, draftjs, nextFocus) => dispatch(THUNK.updateFaqt(faqt, text, draftjs, nextFocus))
   const onSetBest = () => dispatch(THUNK.setBestFaqt(faqref, faqt))
-  const onSaveTags = tags => dispatch(THUNK.updateTags(faqref, faqtId, tags))
   const style = isActive ? Object.assign({},style0A,BEIGE) : style0A
   return <div style={S0}>
     <div /* ref='container'*/ style={style0}>
@@ -45,7 +46,7 @@ const Faqt = ({faqt, isActive, score, dispatch})  => {
         <ScoreButton {...{score}} />
       </div>
     </div>
-    <TagsControl {...{isActive, tags, onSave:onSaveTags}} />
+    <TagsControl {...{isActive}} />
   </div>
 }
 

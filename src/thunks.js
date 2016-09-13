@@ -161,9 +161,13 @@ export function setSearch(faqref, text) {
     dispatch(updateUI({search}))
   }
 }
-export function activateFaqt(faqId, faqtId) {
+export function activateFaqt(faqt) {
   return function(dispatch) {
-    dispatch(updateUI({focused:faqtId, faqtId}))
+    const edits = {
+      faqt, 
+      focused:faqt.id, 
+      fldTags:faqt.tags}
+    dispatch(updateUI(edits))
   }
 }
 export function focusSearch() {
@@ -219,9 +223,9 @@ export function updateFaqt(faqt, text, draftjs, nextFocus) {
     }
   }
 }
-export function updateTags(faqref, faqtId, tags) {
+export function updateTags(faqt, tags) {
   return function(dispatch, getState) {
-    const {uid, faqId} = faqref
+    const {faqref:{uid,faqId}, id:faqtId} = faqt
     var updates = {}
     updates[`faqts/${uid}/${faqId}/${faqtId}/tags`] = tags
     FBDATA.ref().update(updates)

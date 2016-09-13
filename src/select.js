@@ -2,7 +2,7 @@ import * as _ from 'lodash'
 import ftdbs, {dbForFaqref} from './fulltext' 
 
 export const getSearchesByFaqref = (state, faqref) => faqref ? state.searches.filter(search => _.isEqual(search.faqref, faqref)) : []
-export const getFaqtsByFaqref = (state, faqref)    => faqref ? state.faqts.filter(faqt => _.isEqual(faqt.faqref, faqref)) : []
+export const getFaqtsByFaqref = (state, faqref)    => (faqref && state.faqts) ? state.faqts.filter(faqt => _.isEqual(faqt.faqref, faqref)) : []
 export const getScoresByFaqref = (state, faqref)   => faqref ? state.scores.filter(score => _.isEqual(score.faqref, faqref)) : []
 export const getFaqt = (state, faqref, id) => getFaqtsByFaqref(state, faqref).find(faqt => faqt.id === id)
 
