@@ -39,7 +39,6 @@ const MenuBar = ({search, faqrefs, dispatch}) => {
            faqrefs.map(faqref => {
              const {uid,faqId} = faqref
              const key = `${uid}-${faqId}`
-             console.log(key) 
              return <button key={key} onClick={e => setFaq(e, faqref)}>{faqId}</button>
            })
         }
