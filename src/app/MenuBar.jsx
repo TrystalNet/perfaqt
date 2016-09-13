@@ -12,10 +12,13 @@ const S1 = {
 }
 const S2 = {
   flex:1,
-  textAlign:'right'
+  textAlign:'right',
+  display:'flex'
 }
+const S3A = { flex:1, textAlign:'left' }
+const S3B = { flex:1, textAlign:'right'}
 
-const MenuBar = ({search, dispatch}) => {
+const MenuBar = ({search, faqrefs, dispatch}) => {
   const onAddFaqt = e => {
     e.preventDefault()
     dispatch(THUNK.addFaqt(search))
@@ -24,15 +27,38 @@ const MenuBar = ({search, dispatch}) => {
     e.preventDefault()
     dispatch(THUNK.cleanUp())
   }
+  const setFaq = (e, faqref) => {
+    e.preventDefault()
+    dispatch(THUNK.setActiveFaq(faqref))
+  }
   return <div style={S0}>
     <div id='toolbar' style={S1}>
       <div style={S2}>
-        <button onClick={onCleanUp}>Clean Up</button>
-        <button onClick={onAddFaqt}>Add Faqt</button>
+        <div style={S3A}>
+        {
+           faqrefs.map(faqref => {
+             const {uid,faqId} = faqref
+             const key = `${uid}-${faqId}`
+             console.log(key) 
+             return <button key={key} onClick={e => setFaq(e, faqref)}>{faqId}</button>
+           })
+        }
+        </div>
+        <div style={S3B}>
+          <button key={'cleanUp'} onClick={onCleanUp}>Clean Up</button>
+          <button key={'addFaqt'} onClick={onAddFaqt}>Add Faqt</button>
+        </div>
       </div>
     </div>
   </div>
 }
 
-const mapStateToProps = ({ui:{faqref,search}}) => ({ faqref,search })
+const mapStateToProps = ({ui:{uid, faqref, search}}) => { 
+  const faqrefs = [{uid, faqId:'default'}, {uid,faqId:'test'}]
+  return ({ faqref, search, faqrefs }) 
+}
 export default connect(mapStateToProps)(MenuBar)
+
+
+
+
