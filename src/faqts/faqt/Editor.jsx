@@ -112,7 +112,6 @@ class MyEditor extends Component {
     return false
   }  
   onSaveLink(href) {
-    console.log('saving the link?')
     const oldEditorState = this.state.editorState
     const selection = oldEditorState.getSelection()
     if(selection.isCollapsed()) return

@@ -7,9 +7,9 @@ const defaultUI = {
   faqref: null, 
   faqt: null, 
   focused: null,
-  search: null,
-  index: null,
+  search: {faqref:null, id:null, text:null},
   broadcast: null,
+  searchSuggestions: [],
   fldTags: '',
   fldEmail:'',
   fldPassword:''
@@ -21,17 +21,25 @@ function UI(uiState=defaultUI, {type, payload}) {
     default: return uiState    
   }
 }
+function FAQS(faqs=[], {type, payload}) {
+  switch(type) {
+    case 'ADD_FAQ': return [...faqs, payload]
+  }
+  return faqs  
+}
 
 function reducer(state={}, action) {
   const newState = {
     faqts     : FAQTS(state.faqts, action),
     searches  : SEARCHES(state.searches, action),
     scores    : SCORES(state.scores, action),
+    faqs      : FAQS(state.faqs, action)
   }
   const ui = UI(state.ui, action)
   newState.ui = ui
   return newState
 }
 
+export const addFaq = faqref => ({type:'ADD_FAQ', payload:faqref})
 export const updateUI = edits => ({ type: 'UPDATE_UI', payload:edits })
 export default reducer

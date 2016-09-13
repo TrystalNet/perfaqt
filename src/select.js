@@ -49,8 +49,6 @@ function faqtsForNoText(state, faqref) {
 export function findScore(state, search, faqt) {
   // used when showing a faqt, to show the best button with associated score and delete-score buttons 
   if(!faqt || !faqt.id || !search || !search.id) return null
-  console.log('looking for score')
-  
   const result = getScoresByFaqref(state, search.faqref)
   .filter(score => score.searchId === search.id)
   .find(score => score.faqtId === faqt.id) // max 1 match for faqt+search combo

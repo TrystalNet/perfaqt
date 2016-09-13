@@ -5,7 +5,7 @@ import * as SELECT from './select'
 import * as FAQTS from './faqts/faqts-actions'
 import * as SEARCHES from './searches/searches-actions'
 import * as SCORES from './scores/scores-actions'
-import {updateUI} from './reducer'
+import {updateUI, addFaq as ADDFAQ} from './reducer'
 import lunr  from 'lunr'
 import databases,{dbForFaqref} from './fulltext'
 
@@ -119,6 +119,7 @@ export function openFaq(faqref) {
     initSearches(dispatch, faqref)
     initScores(dispatch, faqref)
     initFullText(dispatch, faqref)   // this should be shut down when auth state changes; massive hole
+    dispatch(ADDFAQ(faqref))
     return faqref
   }
 }
@@ -126,7 +127,8 @@ export function openFaq(faqref) {
 export function setActiveFaq(faqref) {
   return function(dispatch) {
     const search = {faqref, id:null, text:null}
-    dispatch(updateUI({faqref, search}))
+    const action = updateUI({faqref, search})
+    dispatch(action)
   }
 }
 
@@ -138,7 +140,7 @@ export function firebaseStuff(app, auth, db) {
       if(user) {
         const {uid} = user
         dispatch(updateUI({uid}))
-        const faqrefTest = dispatch(openFaq({uid, faqId:'test'}))
+        const faqrefTest = dispatch(openFaq({uid, faqId:'work'}))
         const faqrefDefault = dispatch(openFaq({uid, faqId: 'default'}))
         dispatch(setActiveFaq(faqrefDefault))
       }

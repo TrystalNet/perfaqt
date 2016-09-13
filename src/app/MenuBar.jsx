@@ -52,9 +52,8 @@ const MenuBar = ({search, faqrefs, dispatch}) => {
   </div>
 }
 
-const mapStateToProps = ({ui:{uid, faqref, search}}) => { 
-  const faqrefs = [{uid, faqId:'default'}, {uid,faqId:'test'}]
-  return ({ faqref, search, faqrefs }) 
+const mapStateToProps = ({faqs, ui:{uid, faqref, search}}) => {
+  return { faqref, search, faqrefs:faqs } 
 }
 export default connect(mapStateToProps)(MenuBar)
 
