@@ -42,7 +42,10 @@ const Faqt = ({faqt, isActive, score, dispatch})  => {
         <MyEditor /* ref={node => this.refEdit = node}*/ {...{text, isActive, draftjs, onSave}} />
       </div>
       <div style={{display:'flex', flexDirection:'column'}}>
-        <button onClick={onSetBest}>best</button>
+        <button onClick={e => {
+           console.log('piggy')
+           onSetBest(e)
+        }}>best</button>
         <ScoreButton {...{score}} />
       </div>
     </div>

@@ -28,7 +28,14 @@ function faqtsForSavedSearch(state, search) {
   const unranked = _.difference(nonBestFAQTIDS, ftFAQTIDS)
 
   const faqtIndex = _.keyBy(FAQTS, 'id')
-  return [...bestFAQTIDS,...ftFAQTIDS, ...unranked].map(id => faqtIndex[id])
+
+  const faqts1 = bestFAQTIDS.map(id => faqtIndex[id])
+  const faqts2 = ftFAQTIDS.map(id => faqtIndex[id])
+  const faqts3 = unranked.map(id => faqtIndex[id])
+
+  faqts3.sort((a,b) => (b.rank || 0) - (a.rank || 0))
+
+  return [...faqts1, ...faqts2, ...faqts3]
 }
 function faqtsForSearchText(state, search) {
   const {faqref, text} = search
@@ -39,11 +46,14 @@ function faqtsForSearchText(state, search) {
   const allFAQTIDS = _.map(getFaqtsByFaqref(state, faqref), 'id')
   const ftFAQTIDS = ftIndex ? ftIndex.search(text).map(item => item.ref) : []
   const unranked = _.difference(allFAQTIDS, ftFAQTIDS)
-  return [...ftFAQTIDS, ...unranked].map(id => faqtIndex[id])
+  const faqts1 = ftFAQTIDS.map(id => faqtIndex[id])
+  const faqts2 = unranked.map(id => faqtIndex[id])
+  faqts2.sort((a,b) => (b.rank || 0) - (a.rank || 0))
+  return [...faqts1, ...faqts2]
 }
 function faqtsForNoText(state, faqref) {
   const faqts = [...getFaqtsByFaqref(state, faqref)]
-  faqts.sort((a,b) => b.created - a.created)
+  faqts.sort((a,b) => (b.rank || 0) - (a.rank || 0))
   return faqts
 }
 export function findScore(state, search, faqt) {
@@ -54,18 +64,15 @@ export function findScore(state, search, faqt) {
   .find(score => score.faqtId === faqt.id) // max 1 match for faqt+search combo
   return result;
 }
+export function getBestFaqtByRank(state, faqref) {
+  return _.maxBy(getFaqtsByFaqref(state, faqref), 'rank') || null
+}
+
 export function findBestScore(state, search) {
-  const {faqref, id} = search
-  const matches = getScoresByFaqref(state, faqref).filter(score => score.searchId === id)
-  switch(matches.length) {
-    case 0: return null
-    case 1: return matches[0]
-  }
-  return matches.reduce((accum, item) => {
-    const accumValue = accum.value || 0
-    const itemValue = item.value || 0
-    return itemValue > accumValue ? item : accum
-  })
+  const {faqref, id:searchId} = search
+  if(!search || !search.text) return null
+  const matches = getScoresByFaqref(state, faqref).filter(score => score.searchId === searchId)
+  return _.maxBy(matches, 'value') || null
 }
 export function getFaqtsForSearch(state, search) {
   if(!search || !search.faqref) return []
