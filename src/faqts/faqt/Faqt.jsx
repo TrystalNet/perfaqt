@@ -26,10 +26,6 @@ const BEIGE = {
   maxHeight : '50vh'
 }
 
-const TagsControl = ({isActive, tags, onSave}) => {
-  return (isActive ? <TagsEditor {...{tags, onSave}} /> : null)
-}
-
 const Faqt = ({faqt, isActive, score, dispatch})  => {
   const {faqref, faqtId, text, draftjs, tags} = faqt
   const onFocus = e => dispatch(THUNK.activateFaqt(faqt))
@@ -42,14 +38,11 @@ const Faqt = ({faqt, isActive, score, dispatch})  => {
         <MyEditor /* ref={node => this.refEdit = node}*/ {...{text, isActive, draftjs, onSave}} />
       </div>
       <div style={{display:'flex', flexDirection:'column'}}>
-        <button onClick={e => {
-           console.log('piggy')
-           onSetBest(e)
-        }}>best</button>
+        <button onClick={e => onSetBest(e)}>best</button>
         <ScoreButton {...{score}} />
       </div>
     </div>
-    <TagsControl {...{isActive}} />
+    <TagsEditor {...{faqt}} />
   </div>
 }
 

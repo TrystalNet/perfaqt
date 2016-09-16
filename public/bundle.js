@@ -22617,6 +22617,7 @@
 	Object.defineProperty(exports, "__esModule", {
 	  value: true
 	});
+	exports.deleteScore = exports.updateFaqtRank = undefined;
 
 	var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol ? "symbol" : typeof obj; };
 
@@ -22636,7 +22637,6 @@
 	exports.updateTags = updateTags;
 	exports.addFaqt = addFaqt;
 	exports.saveSearch = saveSearch;
-	exports.deleteScore = deleteScore;
 
 	var _jquery = __webpack_require__(194);
 
@@ -22680,24 +22680,94 @@
 
 	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
+	function _defineProperty(obj, key, value) { if (key in obj) { Object.defineProperty(obj, key, { value: value, enumerable: true, configurable: true, writable: true }); } else { obj[key] = value; } return obj; }
+
 	var FBAUTH = void 0;
 	var FBDATA = void 0;
-	var faqtsPath = function faqtsPath(uid, faqId) {
-	  return 'faqts/' + uid + '/' + faqId;
+	var faqPath = function faqPath(_ref) {
+	  var uid = _ref.uid;
+	  var faqId = _ref.faqId;
+	  return uid + '/' + faqId;
 	};
-	var faqtsRef = function faqtsRef(uid, faqId) {
-	  return FBDATA.ref().child(faqtsPath(uid, faqId));
+
+	var faqtsPath = function faqtsPath(faqref) {
+	  return 'faqts/' + faqPath(faqref);
+	};
+	var faqtsRef = function faqtsRef(faqref) {
+	  return FBDATA.ref().child(faqtsPath(faqref));
+	};
+	var faqtPath = function faqtPath(_ref2) {
+	  var faqref = _ref2.faqref;
+	  var id = _ref2.id;
+	  return faqtsPath(faqref) + '/' + id;
+	};
+	var faqtPropPath = function faqtPropPath(faqt, propname) {
+	  return faqtPath(faqt) + '/' + propname;
+	};
+	var faqtTagsPath = function faqtTagsPath(faqt) {
+	  return faqtPropPath(faqt, 'tags');
+	};
+	var faqtTextPath = function faqtTextPath(faqt) {
+	  return faqtPropPath(faqt, 'text');
+	};
+	var faqtDraftjsPath = function faqtDraftjsPath(faqt) {
+	  return faqtPropPath(faqt, 'draftjs');
+	};
+	var faqtUpdatedPath = function faqtUpdatedPath(faqt) {
+	  return faqtPropPath(faqt, 'updated');
+	};
+	var faqtRankPath = function faqtRankPath(faqt) {
+	  return faqtPropPath(faqt, 'rank');
+	};
+
+	var scoresPath = function scoresPath(faqref) {
+	  return 'scores/' + faqPath(faqref);
+	};
+	var scoresRef = function scoresRef(faqref) {
+	  return FBDATA.ref().child(scoresPath(faqref));
+	};
+	var scorePath = function scorePath(_ref3) {
+	  var faqref = _ref3.faqref;
+	  var id = _ref3.id;
+	  return scoresPath(faqref) + '/' + id;
+	};
+	var scorePropPath = function scorePropPath(score, propname) {
+	  return scorePath(score) + '/' + propname;
+	};
+	var scoreSearchIdPath = function scoreSearchIdPath(score) {
+	  return scorePropPath(score, 'searchId');
+	};
+	var scoreValuePath = function scoreValuePath(score) {
+	  return scorePropPath(score, 'value');
+	};
+
+	var searchesPath = function searchesPath(faqref) {
+	  return 'searches/' + faqPath(faqref);
+	};
+	var searchesRef = function searchesRef(faqref) {
+	  return FBDATA.ref().child(searchesPath(faqref));
+	};
+	var searchPath = function searchPath(_ref4) {
+	  var faqref = _ref4.faqref;
+	  var id = _ref4.id;
+	  return searchesPath(faqref) + '/' + id;
+	};
+	var searchPropPath = function searchPropPath(search, propname) {
+	  return searchPath(search) + '/' + propname;
+	};
+	var searchTextPath = function searchTextPath(search) {
+	  return searchPropPath(search, 'text');
 	};
 
 	function remapScoreSearchIds(faqref, searches, scores) {
 	  var uid = faqref.uid;
 	  var faqId = faqref.faqId;
 
-	  var _searches$reduce = searches.reduce(function (_ref, _ref2) {
-	    var key = _ref.key;
-	    var remaps = _ref.remaps;
-	    var text = _ref2.text;
-	    var id = _ref2.id;
+	  var _searches$reduce = searches.reduce(function (_ref5, _ref6) {
+	    var key = _ref5.key;
+	    var remaps = _ref5.remaps;
+	    var text = _ref6.text;
+	    var id = _ref6.id;
 
 	    text = text.toLowerCase().trim();
 	    var existing = key[text.toLowerCase()];
@@ -22708,26 +22778,21 @@
 	  var key = _searches$reduce.key;
 	  var remaps = _searches$reduce.remaps;
 
-
 	  var badScores = scores.filter(function (score) {
 	    return remaps[score.searchId];
 	  });
 	  var updates = {};
 	  badScores.forEach(function (badScore) {
-	    return updates['scores/' + uid + '/' + faqId + '/' + badScore.id + '/searchId'] = remaps[badScore.searchId];
+	    return updates[scoreSearchIdPath(badScore)] = remaps[badScore.searchId];
 	  });
 	  Object.keys(remaps).forEach(function (badSearchId) {
-	    return updates['searches/' + uid + '/' + faqId + '/' + badSearchId] = null;
+	    return updates[searchPath(faqref, badSearchId)] = null;
 	  });
 	  console.log(updates);
 	  //FBDATA.ref().update(updates)
 	}
-
-	function initFaqts(dispatch, faqref) {
-	  var uid = faqref.uid;
-	  var faqId = faqref.faqId;
-
-	  var fbref = faqtsRef(uid, faqId);
+	function initFaqts(dispatch, getState, faqref) {
+	  var fbref = faqtsRef(faqref);
 	  var defaultTime = new Date(2016, 1, 1).getTime(); // temporary solution to support legacy faqts
 	  fbref.on('child_added', function (snap) {
 	    var _snap$val = snap.val();
@@ -22735,46 +22800,58 @@
 	    var text = _snap$val.text;
 	    var draftjs = _snap$val.draftjs;
 	    var tags = _snap$val.tags;
+	    var rank = _snap$val.rank;
 	    var created = _snap$val.created;
+	    var updated = _snap$val.updated;
 
-	    var when = created || defaultTime++;
-	    var faqt = { faqref: faqref, id: snap.key, text: text, draftjs: draftjs, tags: tags, created: when };
+	    var whenCreated = created || defaultTime++;
+	    var whenUpdated = updated || whenCreated;
+	    var faqt = {
+	      faqref: faqref, id: snap.key,
+	      text: text, draftjs: draftjs, tags: tags,
+	      rank: rank,
+	      created: whenCreated,
+	      updated: whenUpdated
+	    };
 	    dispatch(FAQTS.addFaqt(faqt));
 	    (0, _fulltext.dbForFaqref)(faqref).add(faqt);
 	  });
 	  fbref.on('child_changed', function (snap) {
+	    var _getState = getState();
+
+	    var uiFaqt = _getState.ui.faqt;
+
 	    var _snap$val2 = snap.val();
 
 	    var text = _snap$val2.text;
 	    var draftjs = _snap$val2.draftjs;
 	    var tags = _snap$val2.tags;
 	    var created = _snap$val2.created;
+	    var rank = _snap$val2.rank;
+	    var updated = _snap$val2.updated;
 
-	    var faqt = { faqref: faqref, id: snap.key, text: text, draftjs: draftjs, tags: tags, created: created };
+	    var faqt = { faqref: faqref, id: snap.key, text: text, draftjs: draftjs, tags: tags, rank: rank, updated: updated, created: created };
 	    dispatch(FAQTS.replaceFaqt(faqt));
 	    (0, _fulltext.dbForFaqref)(faqref).update(faqt);
+	    if (uiFaqt && uiFaqt.id === faqt.id) dispatch((0, _reducer.updateUI)({ faqt: faqt }));
 	  });
 	}
 	function initSearches(dispatch, faqref) {
-	  var uid = faqref.uid;
-	  var faqId = faqref.faqId;
-
-	  var fbref = FBDATA.ref().child('searches/' + uid + '/' + faqId);
+	  var fbref = searchesRef(faqref);
 	  fbref.on('child_added', function (snap) {
-	    var fbSearch = snap.val();
-	    var text = fbSearch.text;
-	    var search = { faqref: faqref, id: snap.key, text: text };
+	    var search = {
+	      faqref: faqref,
+	      id: snap.key,
+	      text: snap.val().text
+	    };
 	    dispatch(SEARCHES.addSearch(search));
 	  });
 	  fbref.on('child_changed', function (snap) {
-	    console.log(faqId, snap.key, snap.val().faqts);
+	    console.log(faqref.faqId, snap.key, snap.val().faqts);
 	  });
 	}
 	function initScores(dispatch, faqref) {
-	  var uid = faqref.uid;
-	  var faqId = faqref.faqId;
-
-	  var fbref = FBDATA.ref().child('scores/' + uid + '/' + faqId);
+	  var fbref = scoresRef(faqref);
 	  fbref.on('child_added', function (snap) {
 	    var _snap$val3 = snap.val();
 
@@ -22782,8 +22859,7 @@
 	    var searchId = _snap$val3.searchId;
 	    var value = _snap$val3.value;
 
-	    var score = { faqref: faqref, id: snap.key, searchId: searchId, faqtId: faqtId, value: value };
-	    dispatch(SCORES.addScore(score));
+	    dispatch(SCORES.addScore({ faqref: faqref, id: snap.key, searchId: searchId, faqtId: faqtId, value: value }));
 	  });
 	  fbref.on('child_changed', function (snap) {
 	    return dispatch(SCORES.updateScore(faqref, snap.key, { value: snap.val().value }));
@@ -22804,16 +22880,15 @@
 	  });
 	  dispatch((0, _reducer.updateUI)({ index: _fulltext2.default[dbkey] }));
 	}
-	function updateOneFaqt(faqref, faqtId, text, draftjs) {
-	  var uid = faqref.uid;
-	  var faqId = faqref.faqId;
+	function updateOneFaqt(faqt, text, draftjs) {
+	  var _FBDATA$ref$update;
 
-	  var updates = {};
-	  updates['faqts/' + uid + '/' + faqId + '/' + faqtId + '/text'] = text;
-	  updates['faqts/' + uid + '/' + faqId + '/' + faqtId + '/draftjs'] = draftjs;
-	  FBDATA.ref().update(updates);
+	  return FBDATA.ref().update((_FBDATA$ref$update = {}, _defineProperty(_FBDATA$ref$update, faqtTextPath(faqt), text), _defineProperty(_FBDATA$ref$update, faqtDraftjsPath(faqt), draftjs), _defineProperty(_FBDATA$ref$update, faqtUpdatedPath(faqt), Date.now()), _FBDATA$ref$update));
 	}
-
+	var updateFaqtRank = exports.updateFaqtRank = function updateFaqtRank(faqt) {
+	  var update = _defineProperty({}, faqtRankPath(faqt), Date.now());
+	  FBDATA.ref().update(update);
+	};
 	function login(email, password) {
 	  return function (dispatch, getState) {
 	    FBAUTH.signInWithEmailAndPassword(email, password).catch(function (e) {
@@ -22834,10 +22909,9 @@
 	  };
 	}
 	function closeItDown() {}
-
 	function openFaq(faqref) {
-	  return function (dispatch) {
-	    initFaqts(dispatch, faqref);
+	  return function (dispatch, getState) {
+	    initFaqts(dispatch, getState, faqref);
 	    initSearches(dispatch, faqref);
 	    initScores(dispatch, faqref);
 	    initFullText(dispatch, faqref); // this should be shut down when auth state changes; massive hole
@@ -22845,7 +22919,6 @@
 	    return faqref;
 	  };
 	}
-
 	function setActiveFaq(faqref) {
 	  return function (dispatch) {
 	    var search = { faqref: faqref, id: null, text: null };
@@ -22853,7 +22926,6 @@
 	    dispatch(action);
 	  };
 	}
-
 	function firebaseStuff(app, auth, db) {
 	  FBAUTH = auth;
 	  FBDATA = db;
@@ -22866,10 +22938,7 @@
 	        var faqrefTest = dispatch(openFaq({ uid: uid, faqId: 'work' }));
 	        var faqrefDefault = dispatch(openFaq({ uid: uid, faqId: 'default' }));
 	        dispatch(setActiveFaq(faqrefDefault));
-	      } else {
-	        dispatch((0, _reducer.updateUI)({ faq: null }));
-	        dispatch((0, _reducer.updateUI)({ uid: null }));
-	      }
+	      } else dispatch((0, _reducer.updateUI)({ faq: null, uid: null }));
 	    });
 	    var dbRefBroadcast = db.ref().child('broadcast');
 	    dbRefBroadcast.on('value', function (snap) {
@@ -22901,22 +22970,19 @@
 	}
 	function cleanUp() {
 	  return function (dispatch, getState, extras) {
-	    var _getState = getState();
+	    var _getState2 = getState();
 
-	    var searches = _getState.searches;
-	    var scores = _getState.scores;
-	    var faqref = _getState.ui.faqref;
+	    var searches = _getState2.searches;
+	    var scores = _getState2.scores;
+	    var faqref = _getState2.ui.faqref;
 
 	    remapScoreSearchIds(faqref, searches, scores);
 	  };
 	}
-
 	function setBestFaqt(faqref, faqt) {
 	  return function (dispatch, getState, extras) {
 	    var state = getState();
 	    var search = state.ui.search;
-
-	    if (!search) return;
 	    var uid = faqref.uid;
 	    var faqId = faqref.faqId;
 
@@ -22924,9 +22990,12 @@
 	    if (!search.id) {
 	      var text = search.text;
 
-	      if (!text) return;
+	      if (!text) {
+	        var promise = updateFaqtRank(faqt);
+	        return;
+	      }
 	      search.id = UNIQ.randomId(4);
-	      FBDATA.ref('searches/' + uid + '/' + faqId + '/' + search.id + '/text').set(text).then(function () {
+	      FBDATA.ref(searchTextPath(search)).set(text).then(function () {
 	        return dispatch((0, _reducer.updateUI)({ search: search }));
 	      });
 	    }
@@ -22935,11 +23004,7 @@
 	    if (matchingScore && matchingScore === bestScore) return;
 	    var value = bestScore ? bestScore.value + 1 : 1;
 
-	    if (matchingScore) {
-	      var updates = {};
-	      updates['scores/' + uid + '/' + faqId + '/' + matchingScore.id + '/value'] = value;
-	      FBDATA.ref().update(updates);
-	    } else FBDATA.ref('scores/' + uid + '/' + faqId + '/' + UNIQ.randomId(4)).set({ searchId: search.id, faqtId: faqt.id, value: value });
+	    if (matchingScore) FBDATA.ref().update(_defineProperty({}, scoreValuePath(matchingScore), value));else FBDATA.ref(scorePath({ faqref: faqref, id: UNIQ.randomId(4) })).set({ searchId: search.id, faqtId: faqt.id, value: value });
 	  };
 	}
 
@@ -22950,7 +23015,7 @@
 
 	    var state = getState();
 	    if (!SELECT.getFaqt(state, faqref, faqtId)) return;
-	    updateOneFaqt(faqref, faqtId, text, draftjs);
+	    var promise = updateOneFaqt(faqt, text, draftjs);
 	    if (!nextFocus) return;
 	    switch (nextFocus) {
 	      case 'SEARCH':
@@ -22958,6 +23023,7 @@
 	      case 'nothing':
 	        return dispatch((0, _reducer.updateUI)({ faqtId: null, focused: null }));
 	    }
+	    return promise;
 	  };
 	}
 	function updateTags(faqt, tags) {
@@ -22968,12 +23034,11 @@
 	    var faqtId = faqt.id;
 
 	    var updates = {};
-	    updates['faqts/' + uid + '/' + faqId + '/' + faqtId + '/tags'] = tags;
+	    updates[faqtTagsPath(faqt)] = tags;
 	    FBDATA.ref().update(updates);
 	    dispatch((0, _reducer.updateUI)({ focused: 'SEARCH' }));
 	  };
 	}
-
 	function addFaqt(search) {
 	  return function (dispatch, getState) {
 	    var state = getState();
@@ -22995,16 +23060,20 @@
 	    }
 	    var faqtId = UNIQ.randomId(4);
 	    var created = Date.now();
-	    FBDATA.ref('faqts/' + uid + '/' + faqId + '/' + faqtId).set({ text: '', draftjs: {}, created: created }).then(function () {
+	    var rank = created;
+	    FBDATA.ref(faqtPath({ faqref: faqref, id: faqtId })).set({ text: '', draftjs: {}, created: created, rank: rank }).then(function () {
 	      if (search.text) {
 	        if (!search.id) {
 	          search.id = UNIQ.randomId(4);
 	          if (_typeof(search.text) === 'object') throw 'search.text cannot be an object in addSearch';
-	          FBDATA.ref('searches/' + uid + '/' + faqId + '/' + search.id + '/text').set(search.text);
+	          FBDATA.ref(searchTextPath(search)).set(search.text);
 	        }
-	        var scoreId = UNIQ.randomId(4);
-	        var value = getScoreValue(search);
-	        FBDATA.ref('scores/' + uid + '/' + faqId + '/' + scoreId).set({ searchId: search.id, faqtId: faqtId, value: value });
+	        var fbScore = {
+	          searchId: search.id,
+	          faqtId: faqtId,
+	          value: getScoreValue(search)
+	        };
+	        FBDATA.ref(scorePath({ faqref: faqref, id: UNIQ.randomId(4) })).set(fbScore);
 	      }
 	      dispatch((0, _reducer.updateUI)({ focused: faqtId, faqtId: faqtId }));
 	    });
@@ -23023,28 +23092,16 @@
 	    var uid = faqref.uid;
 	    var faqId = faqref.faqId;
 
-	    var path = 'searches/' + uid + '/' + faqId + '/' + search.id + '/text';
-	    FBDATA.ref(path).set(search.text).then(function () {
+	    FBDATA.ref(searchTextPath(search)).set(search.text).then(function () {
 	      return dispatch((0, _reducer.updateUI)({ search: search }));
 	    });
 	  };
 	}
-	function deleteScore(score) {
-	  return function (dispatch, getState) {
-	    var faqref = score.faqref;
-	    var uid = faqref.uid;
-	    var faqId = faqref.faqId;
-
-	    var path = 'scores/' + uid + '/' + faqId + '/' + score.id;
-	    FBDATA.ref(path).remove();
+	var deleteScore = exports.deleteScore = function deleteScore(score) {
+	  return function () {
+	    return FBDATA.ref(scorePath(score)).remove();
 	  };
-	}
-	//============== ^^^ checked for faqId support =====================//
-	//============== vvv work in progress ==============================//
-	// to here vvv //
-	// to here ^^^ //
-	//============== ^^^ work in progress ==============================//
-	//============== vvv not so much ===================================//
+	};
 
 /***/ },
 /* 194 */
@@ -49926,6 +49983,7 @@
 	});
 	exports.getActiveFaqref = exports.getActiveSearch = exports.getActiveFaqt = exports.getFaqt = exports.getScoresByFaqref = exports.getFaqtsByFaqref = exports.getSearchesByFaqref = undefined;
 	exports.findScore = findScore;
+	exports.getBestFaqtByRank = getBestFaqtByRank;
 	exports.findBestScore = findBestScore;
 	exports.getFaqtsForSearch = getFaqtsForSearch;
 	exports.findSearchByText = findSearchByText;
@@ -49998,9 +50056,22 @@
 	  var unranked = _.difference(nonBestFAQTIDS, ftFAQTIDS);
 
 	  var faqtIndex = _.keyBy(FAQTS, 'id');
-	  return [].concat(_toConsumableArray(bestFAQTIDS), _toConsumableArray(ftFAQTIDS), _toConsumableArray(unranked)).map(function (id) {
+
+	  var faqts1 = bestFAQTIDS.map(function (id) {
 	    return faqtIndex[id];
 	  });
+	  var faqts2 = ftFAQTIDS.map(function (id) {
+	    return faqtIndex[id];
+	  });
+	  var faqts3 = unranked.map(function (id) {
+	    return faqtIndex[id];
+	  });
+
+	  faqts3.sort(function (a, b) {
+	    return (b.rank || 0) - (a.rank || 0);
+	  });
+
+	  return [].concat(_toConsumableArray(faqts1), _toConsumableArray(faqts2), _toConsumableArray(faqts3));
 	}
 	function faqtsForSearchText(state, search) {
 	  var faqref = search.faqref;
@@ -50015,14 +50086,21 @@
 	    return item.ref;
 	  }) : [];
 	  var unranked = _.difference(allFAQTIDS, ftFAQTIDS);
-	  return [].concat(_toConsumableArray(ftFAQTIDS), _toConsumableArray(unranked)).map(function (id) {
+	  var faqts1 = ftFAQTIDS.map(function (id) {
 	    return faqtIndex[id];
 	  });
+	  var faqts2 = unranked.map(function (id) {
+	    return faqtIndex[id];
+	  });
+	  faqts2.sort(function (a, b) {
+	    return (b.rank || 0) - (a.rank || 0);
+	  });
+	  return [].concat(_toConsumableArray(faqts1), _toConsumableArray(faqts2));
 	}
 	function faqtsForNoText(state, faqref) {
 	  var faqts = [].concat(_toConsumableArray(getFaqtsByFaqref(state, faqref)));
 	  faqts.sort(function (a, b) {
-	    return b.created - a.created;
+	    return (b.rank || 0) - (a.rank || 0);
 	  });
 	  return faqts;
 	}
@@ -50036,24 +50114,19 @@
 	  }); // max 1 match for faqt+search combo
 	  return result;
 	}
+	function getBestFaqtByRank(state, faqref) {
+	  return _.maxBy(getFaqtsByFaqref(state, faqref), 'rank') || null;
+	}
+
 	function findBestScore(state, search) {
 	  var faqref = search.faqref;
-	  var id = search.id;
+	  var searchId = search.id;
 
+	  if (!search || !search.text) return null;
 	  var matches = getScoresByFaqref(state, faqref).filter(function (score) {
-	    return score.searchId === id;
+	    return score.searchId === searchId;
 	  });
-	  switch (matches.length) {
-	    case 0:
-	      return null;
-	    case 1:
-	      return matches[0];
-	  }
-	  return matches.reduce(function (accum, item) {
-	    var accumValue = accum.value || 0;
-	    var itemValue = item.value || 0;
-	    return itemValue > accumValue ? item : accum;
-	  });
+	  return _.maxBy(matches, 'value') || null;
 	}
 	function getFaqtsForSearch(state, search) {
 	  if (!search || !search.faqref) return [];
@@ -54932,19 +55005,11 @@
 	  maxHeight: '50vh'
 	};
 
-	var TagsControl = function TagsControl(_ref) {
+	var Faqt = function Faqt(_ref) {
+	  var faqt = _ref.faqt;
 	  var isActive = _ref.isActive;
-	  var tags = _ref.tags;
-	  var onSave = _ref.onSave;
-
-	  return isActive ? _react2.default.createElement(_TagsEditor2.default, { tags: tags, onSave: onSave }) : null;
-	};
-
-	var Faqt = function Faqt(_ref2) {
-	  var faqt = _ref2.faqt;
-	  var isActive = _ref2.isActive;
-	  var score = _ref2.score;
-	  var dispatch = _ref2.dispatch;
+	  var score = _ref.score;
+	  var dispatch = _ref.dispatch;
 	  var faqref = faqt.faqref;
 	  var faqtId = faqt.faqtId;
 	  var text = faqt.text;
@@ -54977,13 +55042,15 @@
 	        { style: { display: 'flex', flexDirection: 'column' } },
 	        _react2.default.createElement(
 	          'button',
-	          { onClick: onSetBest },
+	          { onClick: function onClick(e) {
+	              return onSetBest(e);
+	            } },
 	          'best'
 	        ),
 	        _react2.default.createElement(_ScoreButton2.default, { score: score })
 	      )
 	    ),
-	    _react2.default.createElement(TagsControl, { isActive: isActive })
+	    _react2.default.createElement(_TagsEditor2.default, { faqt: faqt })
 	  );
 	};
 
@@ -91503,10 +91570,12 @@
 	var S3 = { flex: 1, border: 'red 0px solid', paddingLeft: 5 };
 
 	var TagsEditor = function TagsEditor(_ref) {
+	  var isActive = _ref.isActive;
 	  var fldTags = _ref.fldTags;
 	  var faqt = _ref.faqt;
 	  var dispatch = _ref.dispatch;
 
+	  if (!isActive) return null;
 	  var handleChange = function handleChange(e) {
 	    e.preventDefault();
 	    dispatch((0, _reducer.updateUI)({ fldTags: e.target.value }));
@@ -91536,12 +91605,14 @@
 	      style: S3 })
 	  );
 	};
-	var mapStateToProps = function mapStateToProps(state, ownProps) {
+	var mapStateToProps = function mapStateToProps(state, _ref2) {
+	  var ownerFaqt = _ref2.faqt;
 	  var _state$ui = state.ui;
 	  var faqt = _state$ui.faqt;
 	  var fldTags = _state$ui.fldTags;
 
-	  return { faqt: faqt, fldTags: fldTags };
+	  var isActive = faqt === ownerFaqt;
+	  return { isActive: isActive, faqt: faqt, fldTags: fldTags };
 	};
 	exports.default = (0, _reactRedux.connect)(mapStateToProps)(TagsEditor);
 

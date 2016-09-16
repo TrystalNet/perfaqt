@@ -52,7 +52,7 @@ function remapScoreSearchIds(faqref, searches, scores) {
   console.log(updates)
   //FBDATA.ref().update(updates)
 }
-function initFaqts(dispatch, faqref) {
+function initFaqts(dispatch, getState, faqref) {
   const fbref = faqtsRef(faqref)
   let defaultTime = new Date(2016,1,1).getTime()  // temporary solution to support legacy faqts
   fbref.on('child_added', snap => {
@@ -70,10 +70,12 @@ function initFaqts(dispatch, faqref) {
     dbForFaqref(faqref).add(faqt)
   })
   fbref.on('child_changed', snap => {
+    const {ui:{faqt:uiFaqt}} = getState()
     const {text, draftjs, tags, created, rank, updated} = snap.val()
     const faqt = { faqref, id: snap.key, text, draftjs, tags, rank, updated, created }
     dispatch(FAQTS.replaceFaqt(faqt))
     dbForFaqref(faqref).update(faqt)
+    if(uiFaqt && uiFaqt.id === faqt.id) dispatch(updateUI({faqt}))
   })
 }
 function initSearches(dispatch, faqref) {
@@ -140,8 +142,8 @@ export function logout() {
 export function closeItDown() {
 }
 export function openFaq(faqref) {
-  return function(dispatch) {
-    initFaqts(dispatch, faqref)
+  return function(dispatch, getState) {
+    initFaqts(dispatch, getState, faqref)
     initSearches(dispatch, faqref)
     initScores(dispatch, faqref)
     initFullText(dispatch, faqref)   // this should be shut down when auth state changes; massive hole

@@ -8,7 +8,8 @@ const S1 = { display:'flex', border:'black 0px solid', backgroundColor:'lightgre
 const S2 = {flex:0, margin:3, marginRight:8}
 const S3 = {flex:1, border: 'red 0px solid', paddingLeft:5}
 
-const TagsEditor = ({fldTags, faqt, dispatch}) => {
+const TagsEditor = ({isActive, fldTags, faqt, dispatch}) => {
+  if(!isActive) return null
   const handleChange = e => {
     e.preventDefault()
     dispatch(updateUI({fldTags:e.target.value}))
@@ -28,8 +29,9 @@ const TagsEditor = ({fldTags, faqt, dispatch}) => {
       style={S3}/>
   </div>
 }
-const mapStateToProps = (state, ownProps) => {
+const mapStateToProps = (state, {faqt:ownerFaqt}) => {
   const {ui:{faqt, fldTags}} = state
-  return {faqt, fldTags}
+  const isActive = faqt === ownerFaqt
+  return {isActive, faqt, fldTags}
 }
 export default connect(mapStateToProps)(TagsEditor)
