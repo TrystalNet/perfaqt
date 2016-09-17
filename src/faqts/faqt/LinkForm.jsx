@@ -1,31 +1,32 @@
 import React, { Component } from 'react';
+import { connect } from 'react-redux'
 import {
   Form, FormGroup, FormControl, ControlLabel
 } from 'react-bootstrap'
+import * as THUNK from '../../thunks'
 
-class LinkForm extends Component {
-  constructor(props) {
-    super(props)
-    this.state = { value:'' }
-  }
-  handleChange(e) {
-    this.setState({value:e.target.value})
-  }
-  onSubmit(e) {
+function LinkForm({value, active, onSaveLink, dispatch}) {
+  if(!active) return null
+  const onSubmit = e => {
     e.preventDefault()
     e.stopPropagation()
-    if(this.props.onSaveLink) this.props.onSaveLink(this.state.value)
+    dispatch(THUNK.setActiveField(null))
+    onSaveLink(value)
   }
-  render() {
-    const {active} = this.props
-    if(!active) return null
-    return <Form inline onSubmit={this.onSubmit.bind(this)} >
-      <FormGroup bsSize='small'>
-        <ControlLabel>Link:</ControlLabel>&nbsp;&nbsp;
-        <FormControl type='text' value={this.state.value} placeholder='link' onChange={this.handleChange.bind(this)}/>
-      </FormGroup>
-    </Form>
+  const onChange = e => {
+    e.preventDefault()
+    e.stopPropagation()
+    dispatch(THUNK.updateActiveField(e.target.value))
   }
+  return <Form inline onSubmit={onSubmit} >
+    <FormGroup bsSize='small'>
+      <ControlLabel>Link:</ControlLabel>&nbsp;&nbsp;
+      <input type='text' value={value} onChange={onChange} />
+    </FormGroup>
+  </Form>
 }
 
-export default LinkForm
+function mapStateToProps({ui:{activeField:{fldName,tmpValue}}}) {
+  return fldName === 'fldLink' ? {value:tmpValue, active:true} : {value:'', active:false}
+}
+export default connect(mapStateToProps)(LinkForm)

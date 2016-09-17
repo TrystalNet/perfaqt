@@ -12,13 +12,25 @@ const defaultUI = {
   searchSuggestions: [],
   fldTags: '',
   fldEmail:'',
-  fldPassword:''
+  fldPassword:'',
+
+  activeField: {
+    fldName:null,
+    tmpValue:null
+  }
 }
 
 function UI(uiState=defaultUI, {type, payload}) {
   switch(type) {
-    case 'UPDATE_UI': return Object.assign({}, uiState, payload)
-    default: return uiState    
+    case 'UPDATE_UI': 
+      return Object.assign({}, uiState, payload)
+
+    case 'UPDATE_ACTIVEFIELD':
+      const activeField = Object.assign({}, uiState.activeField, payload)
+      return Object.assign({}, uiState, {activeField})
+
+    default: 
+      return uiState    
   }
 }
 function FAQS(faqs=[], {type, payload}) {
@@ -29,7 +41,6 @@ function FAQS(faqs=[], {type, payload}) {
 }
 
 function reducer(state={}, action) {
-  console.log(action)
   const newState = {
     faqts     : FAQTS(state.faqts, action),
     searches  : SEARCHES(state.searches, action),
@@ -42,4 +53,5 @@ function reducer(state={}, action) {
 
 export const addFaq = faqref => ({type:'ADD_FAQ', payload:faqref})
 export const updateUI = edits => ({ type: 'UPDATE_UI', payload:edits })
+export const updateTmpvalue = value => ({ type:'UPDATE_ACTIVEFIELD', payload:value })
 export default reducer

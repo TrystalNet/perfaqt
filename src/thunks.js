@@ -273,3 +273,41 @@ export const focusSearch = () => dispatch => dispatch(updateUI({focused:'SEARCH'
 export const deleteScore = score => () => FBDATA.ref(scorePath(score)).remove()
 export const activateFaqt = ({id,tags}) => dispatch => dispatch(updateUI({faqtId:id,focused:id,fldTags:tags}))
 export const setActiveFaq = faqref => dispatch => dispatch(updateUI({faqref, search:{faqref, id:null, text:null}}))
+
+export const saveActiveField = () => {
+  return (dispatch, getState) => {
+    const {ui:{activeField:{fldName, tmpValue}}} = getState()
+    if(!fldName) return
+    console.log(`do something with ${tmpValue} for field ${fldName}`)
+  }
+}
+export const resetActiveField = () => {
+  return (dispatch, getState) => {
+    const {ui:{activeField:{fldName, tmpValue}}} = getState()
+    dispatch(updateUI({activeField:{fldName, tmpValue:''}}))
+  }
+}
+export const updateActiveField = tmpValue => {
+  return (dispatch, getState) => {
+    const {ui:{activeField:{fldName}}} = getState()
+    dispatch(updateUI({activeField:{fldName, tmpValue}}))
+  }
+}
+export const setActiveField = fldName => {
+  return (dispatch, getState) => {
+    dispatch(saveActiveField())
+    dispatch(updateUI({activeField:{fldName, tmpValue:''}}))
+  }
+}
+export const toggleActiveField = fldName => {
+  return (dispatch, getState) => {
+    dispatch(saveActiveField())
+    const isShowing = fldName === getState().ui.activeField.fldName
+    dispatch(setActiveField(isShowing ? null : fldName))
+  }
+}
+
+
+
+
+
