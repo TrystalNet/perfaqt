@@ -1,5 +1,6 @@
 import $ from 'jquery'
 import _ from 'lodash'
+import {Entity} from 'draft-js'
 import * as UNIQ from '@trystal/uniq-ish'
 import * as SELECT from './select'
 import * as FAQTS from './faqts/faqts-actions'
@@ -293,10 +294,27 @@ export const updateActiveField = tmpValue => {
     dispatch(updateUI({activeField:{fldName, tmpValue}}))
   }
 }
+function getActiveLink({ui:{editorState}}) {
+  if(!editorState) return ''
+  const {focusKey, focusOffset} = editorState.getSelection()
+  const block = editorState.getCurrentContent().blockMap.get(focusKey)
+  const entityKey = block.getEntityAt(focusOffset)
+  if(!entityKey) return ''
+  const {type, mutability, data} = Entity.get(entityKey)
+  return type === 'LINK' ? data.href : ''
+}
+
+function getTmpValue(state, fldName) {
+  if(!fldName) return null
+  if(fldName !== 'fldLink') return ''
+  return getActiveLink(state)
+}
+
 export const setActiveField = fldName => {
   return (dispatch, getState) => {
     dispatch(saveActiveField())
-    dispatch(updateUI({activeField:{fldName, tmpValue:''}}))
+    const tmpValue = getTmpValue(getState(), fldName)
+    dispatch(updateUI({activeField:{fldName, tmpValue}}))
   }
 }
 export const toggleActiveField = fldName => {
@@ -306,7 +324,17 @@ export const toggleActiveField = fldName => {
     dispatch(setActiveField(isShowing ? null : fldName))
   }
 }
+export const setDraftjs = editorState => {
+  return (dispatch, getState) => {
+    dispatch(updateUI({editorState}))
+  }
+}
 
+export const logit = message => {
+  return (dispatch, getState, whatever) => {
+    console.log(message)
+  }
+}
 
 
 

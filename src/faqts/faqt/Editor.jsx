@@ -1,4 +1,5 @@
 import React, { Component } from 'react';
+import { connect } from 'react-redux'
 import {
   Editor, EditorState, 
   convertFromRaw, convertToRaw,
@@ -7,6 +8,7 @@ import {
   CompositeDecorator
 } from 'draft-js'
 import EditToolbar from './EditToolbar'
+import * as THUNK from '../../thunks'
 
 const {hasCommandModifier} = KeyBindingUtil
 
@@ -83,7 +85,10 @@ class MyEditor extends Component {
     const decorator = new CompositeDecorator([{strategy:findLinkEntities, component:Link}])
     const editorState = EditorState.createWithContent(contentState, decorator)
     this.state = {editorState}
-    this.onChange = editorState => this.setState({editorState})
+    this.onChange = editorState => {
+      this.setState({editorState})
+      props.dispatch(THUNK.setDraftjs(editorState))
+    }
   }
   saveChangesAndExit() {
     const editorState = this.state.editorState
@@ -136,6 +141,6 @@ class MyEditor extends Component {
   }  
 }
 
-export default MyEditor
+export default connect()(MyEditor)
 
 // working on getting links in, just about there.... looking to have them rendered
