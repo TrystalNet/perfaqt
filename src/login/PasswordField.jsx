@@ -12,7 +12,7 @@ const PasswordField = ({fldPassword, dispatch}) => {
   }
   return <div style={S1}>
     <div style={S2}>password:</div>
-    <input type='text' value={fldPassword} onChange={onChange} />
+    <input type='password' value={fldPassword} onChange={onChange} />
   </div>
 }
 
