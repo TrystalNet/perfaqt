@@ -5,7 +5,7 @@ import SCORES    from './scores/scores-reducer'
 const defaultUI = {
   uid: null,
   faqref: null, 
-  faqt: null, 
+  faqtId: null, 
   focused: null,
   search: {faqref:null, id:null, text:null},
   broadcast: null,
@@ -29,14 +29,14 @@ function FAQS(faqs=[], {type, payload}) {
 }
 
 function reducer(state={}, action) {
+  console.log(action)
   const newState = {
     faqts     : FAQTS(state.faqts, action),
     searches  : SEARCHES(state.searches, action),
     scores    : SCORES(state.scores, action),
     faqs      : FAQS(state.faqs, action)
   }
-  const ui = UI(state.ui, action)
-  newState.ui = ui
+  newState.ui = UI(state.ui, action)
   return newState
 }
 

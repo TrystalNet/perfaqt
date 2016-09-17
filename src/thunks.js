@@ -75,7 +75,7 @@ function initFaqts(dispatch, getState, faqref) {
     const faqt = { faqref, id: snap.key, text, draftjs, tags, rank, updated, created }
     dispatch(FAQTS.replaceFaqt(faqt))
     dbForFaqref(faqref).update(faqt)
-    if(uiFaqt && uiFaqt.id === faqt.id) dispatch(updateUI({faqt}))
+    if(uiFaqt && uiFaqt.id === faqt.id) dispatch(updateUI({faqtId:faqt.id}))
   })
 }
 function initSearches(dispatch, faqref) {
@@ -118,27 +118,6 @@ function updateOneFaqt(faqt, text, draftjs) {
     [faqtUpdatedPath(faqt)]: Date.now()
   })
 }
-export const updateFaqtRank = faqt => {
-  const update = {[faqtRankPath(faqt)]: Date.now()}
-  FBDATA.ref().update(update)
-}
-export function login(email, password) {
-  return function(dispatch, getState) {
-    FBAUTH.signInWithEmailAndPassword(email, password)
-    .catch(e => alert(e.message))
-  }
-}
-export function signup(email, password) {
-  return function(dispatch, getState) {
-    FBAUTH.createUserWithEmailAndPassword(email, password)
-    .catch(e => alert(e.message))
-  }
-}
-export function logout() {
-  return function(dispatch, getState) {
-    FBAUTH.signOut()
-  }
-}
 export function closeItDown() {
 }
 export function openFaq(faqref) {
@@ -149,13 +128,6 @@ export function openFaq(faqref) {
     initFullText(dispatch, faqref)   // this should be shut down when auth state changes; massive hole
     dispatch(ADDFAQ(faqref))
     return faqref
-  }
-}
-export function setActiveFaq(faqref) {
-  return function(dispatch) {
-    const search = {faqref, id:null, text:null}
-    const action = updateUI({faqref, search})
-    dispatch(action)
   }
 }
 export function firebaseStuff(app, auth, db) {
@@ -184,20 +156,7 @@ export function setSearch(faqref, text) {
     dispatch(updateUI({search}))
   }
 }
-export function activateFaqt(faqt) {
-  return function(dispatch) {
-    const edits = {
-      faqt, 
-      focused:faqt.id, 
-      fldTags:faqt.tags}
-    dispatch(updateUI(edits))
-  }
-}
-export function focusSearch() {
-  return function(dispatch) {
-    dispatch(updateUI({focused:'SEARCH'}))
-  }
-}
+
 export function cleanUp() {
   return (dispatch, getState, extras) => {
     const {searches, scores, ui:{faqref}} = getState()
@@ -305,4 +264,12 @@ export function saveSearch(faqref, text) {
     .then(() => dispatch(updateUI({search})))
   }
 }
+export const updateFaqtRank = faqt => FBDATA.ref().update({[faqtRankPath(faqt)]: Date.now()})
+export const signup = (email, password) => () => FBAUTH.createUserWithEmailAndPassword(email, password).catch(e => alert(e.message))
+export const login = (email, password) => () => FBAUTH.signInWithEmailAndPassword(email, password).catch(e => alert(e.message))
+export const logout = () => dispatch => FBAUTH.signOut()
+
+export const focusSearch = () => dispatch => dispatch(updateUI({focused:'SEARCH'}))
 export const deleteScore = score => () => FBDATA.ref(scorePath(score)).remove()
+export const activateFaqt = ({id,tags}) => dispatch => dispatch(updateUI({faqtId:id,focused:id,fldTags:tags}))
+export const setActiveFaq = faqref => dispatch => dispatch(updateUI({faqref, search:{faqref, id:null, text:null}}))

@@ -6,7 +6,7 @@ export const getFaqtsByFaqref = (state, faqref)    => (faqref && state.faqts) ? 
 export const getScoresByFaqref = (state, faqref)   => faqref ? state.scores.filter(score => _.isEqual(score.faqref, faqref)) : []
 export const getFaqt = (state, faqref, id) => getFaqtsByFaqref(state, faqref).find(faqt => faqt.id === id)
 
-export const getActiveFaqt = state => state.ui.faqt
+export const getActiveFaqtId = state => state.ui.faqtId
 export const getActiveSearch = state => state.ui.search
 export const getActiveFaqref = state => state.ui.faqref
 

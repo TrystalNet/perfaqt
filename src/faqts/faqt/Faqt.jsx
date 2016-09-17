@@ -48,7 +48,7 @@ const Faqt = ({faqt, isActive, score, dispatch})  => {
 
 function mapStateToProps(state, ownProps) {
   const { faqt } = ownProps
-  const isActive = faqt === SELECT.getActiveFaqt(state)
+  const isActive = faqt.id === SELECT.getActiveFaqtId(state)
   const search = SELECT.getActiveSearch(state)
   const score = search ? SELECT.findScore(state, search, faqt) : null
   return { faqt, isActive, score }

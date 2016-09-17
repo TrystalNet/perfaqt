@@ -22,3 +22,7 @@ function reducer(faqts=[], action) {
 }
 
 export default reducer
+
+// for tonight: continue switching back from faqt to faqtId in the UI state
+// we are doing this because this is the only simple way the UI can know that a newly added FAQT should be active
+

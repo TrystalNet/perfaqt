@@ -29,9 +29,9 @@ const TagsEditor = ({isActive, fldTags, faqt, dispatch}) => {
       style={S3}/>
   </div>
 }
-const mapStateToProps = (state, {faqt:ownerFaqt}) => {
-  const {ui:{faqt, fldTags}} = state
-  const isActive = faqt === ownerFaqt
+const mapStateToProps = (state, {faqt}) => {
+  const {ui:{faqtId, fldTags}} = state
+  const isActive = faqtId === faqt.id
   return {isActive, faqt, fldTags}
 }
 export default connect(mapStateToProps)(TagsEditor)
