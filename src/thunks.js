@@ -272,26 +272,13 @@ export const logout = () => dispatch => FBAUTH.signOut()
 
 export const focusSearch = () => dispatch => dispatch(updateUI({focused:'SEARCH'}))
 export const deleteScore = score => () => FBDATA.ref(scorePath(score)).remove()
-export const activateFaqt = ({id,tags}) => dispatch => dispatch(updateUI({faqtId:id,focused:id,fldTags:tags}))
+export const activateFaqt = ({id,tags}) => dispatch => dispatch(updateUI({faqtId:id,focused:id}))
 export const setActiveFaq = faqref => dispatch => dispatch(updateUI({faqref, search:{faqref, id:null, text:null}}))
 
 export const saveActiveField = () => {
   return (dispatch, getState) => {
     const {ui:{activeField:{fldName, tmpValue}}} = getState()
     if(!fldName) return
-    console.log(`do something with ${tmpValue} for field ${fldName}`)
-  }
-}
-export const resetActiveField = () => {
-  return (dispatch, getState) => {
-    const {ui:{activeField:{fldName, tmpValue}}} = getState()
-    dispatch(updateUI({activeField:{fldName, tmpValue:''}}))
-  }
-}
-export const updateActiveField = tmpValue => {
-  return (dispatch, getState) => {
-    const {ui:{activeField:{fldName}}} = getState()
-    dispatch(updateUI({activeField:{fldName, tmpValue}}))
   }
 }
 function getActiveLink({ui:{editorState}}) {
@@ -303,18 +290,39 @@ function getActiveLink({ui:{editorState}}) {
   const {type, mutability, data} = Entity.get(entityKey)
   return type === 'LINK' ? data.href : ''
 }
-
-function getTmpValue(state, fldName) {
+function getActiveTags({faqts, ui}, faqtId) {
+  if(!faqtId) return '';
+  const faqt = faqts.find(item => item.id === faqtId)
+  return faqt ? faqt.tags : ''
+}
+function getTmpValue(state, {fldName,objectId}) {
   if(!fldName) return null
-  if(fldName !== 'fldLink') return ''
-  return getActiveLink(state)
+  switch(fldName) {
+    case 'fldLink':return getActiveLink(state);
+    case 'fldTags': return getActiveTags(state, objectId);
+    default: return ''
+  }
 }
 
-export const setActiveField = fldName => {
+export const resetActiveField = () => {
+  return (dispatch, getState) => {
+    const {ui:{activeField:{fldName, objectId}}} = getState()
+    const tmpValue = getTmpValue(getState(), {fldName,objectId} )
+    dispatch(updateUI({activeField:{fldName, objectId, tmpValue:''}}))
+  }
+}
+export const updateActiveField = (tmpValue) => {
+  return (dispatch, getState) => {
+    const {ui:{activeField:{fldName, objectId}}} = getState()
+    dispatch(updateUI({activeField:{fldName, objectId, tmpValue}}))
+  }
+}
+
+export const setActiveField = ({fldName, objectId}) => {
   return (dispatch, getState) => {
     dispatch(saveActiveField())
-    const tmpValue = getTmpValue(getState(), fldName)
-    dispatch(updateUI({activeField:{fldName, tmpValue}}))
+    const tmpValue = getTmpValue(getState(), {fldName,objectId})
+    dispatch(updateUI({activeField:{fldName, objectId, tmpValue}}))
   }
 }
 export const toggleActiveField = fldName => {

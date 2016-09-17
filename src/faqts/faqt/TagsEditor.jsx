@@ -8,30 +8,34 @@ const S1 = { display:'flex', border:'black 0px solid', backgroundColor:'lightgre
 const S2 = {flex:0, margin:3, marginRight:8}
 const S3 = {flex:1, border: 'red 0px solid', paddingLeft:5}
 
-const TagsEditor = ({isActive, fldTags, faqt, dispatch}) => {
+const TagsEditor = ({isActive, value, faqt, dispatch}) => {
   if(!isActive) return null
+  const onFocus = e => dispatch(THUNK.setActiveField({fldName:'fldTags', objectId:faqt.id}))
   const handleChange = e => {
     e.preventDefault()
-    dispatch(updateUI({fldTags:e.target.value}))
+    dispatch(THUNK.updateActiveField(e.target.value))
   }
   const onKeyDown = e => {
     if(e.keyCode !== 13) return
     e.preventDefault()
-    dispatch(THUNK.updateTags(faqt, fldTags))
+    dispatch(THUNK.saveActiveField())
   }
   return <div style={S1}>
     <div style={S2}><b>Tags:</b></div>
     <input 
       type='text' 
-      value={fldTags || ''} 
+      value={value || ''} 
       onChange={handleChange}
       onKeyDown={onKeyDown} 
+      onFocus={onFocus}
       style={S3}/>
   </div>
 }
 const mapStateToProps = (state, {faqt}) => {
-  const {ui:{faqtId, fldTags}} = state
+  const {ui:{faqtId, activeField}} = state
   const isActive = faqtId === faqt.id
-  return {isActive, faqt, fldTags}
+  const isHot = isActive && activeField.fldName === 'fldTags' && activeField.objectId === faqtId 
+  const value = isHot ? activeField.tmpValue : faqt.tags
+  return {isActive, faqt, value}
 }
 export default connect(mapStateToProps)(TagsEditor)

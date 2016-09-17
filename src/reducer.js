@@ -10,11 +10,10 @@ const defaultUI = {
   search: {faqref:null, id:null, text:null},
   broadcast: null,
   searchSuggestions: [],
-  fldTags: '',
   fldEmail:'',
   fldPassword:'',
-
   activeField: {
+    objectId: null,
     fldName:null,
     tmpValue:null
   }
