@@ -11,6 +11,8 @@ import EditToolbar from './EditToolbar'
 import * as THUNK from '../../thunks'
 
 const {hasCommandModifier} = KeyBindingUtil
+const s1a = {padding:10, backgroundColor:'whitesmoke'}
+const s1b = Object.assign({}, s1a, { border:'lightgrey 1px solid' })
 
 function myKeyBindingFn(e) {
   if(e.keyCode === 13 && e.shiftKey) {
@@ -127,9 +129,12 @@ class MyEditor extends Component {
 
   render() {
     const {isActive} = this.props
+    const style = isActive ? s1b : s1a
     return <div>
       <EditToolbar active={isActive} onSaveLink={href=> this.onSaveLink(href)} />
-      <Editor 
+      <div style={style}>
+      <Editor
+        style={style} 
         placeHolder="...faqt..."
         handleKeyCommand={this.handleKeyCommand.bind(this)}
         keyBindingFn={myKeyBindingFn}
@@ -137,6 +142,7 @@ class MyEditor extends Component {
         onEscape={this.saveChangesAndExit.bind(this)}
         onBlur={this.saveChanges.bind(this)}
         onChange={this.onChange} />
+        </div>
     </div>
   }  
 }

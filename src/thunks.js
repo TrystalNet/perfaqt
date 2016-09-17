@@ -329,7 +329,7 @@ export const toggleActiveField = fldName => {
   return (dispatch, getState) => {
     dispatch(saveActiveField())
     const isShowing = fldName === getState().ui.activeField.fldName
-    dispatch(setActiveField(isShowing ? null : fldName))
+    dispatch(setActiveField({fldName:isShowing ? null : fldName}))
   }
 }
 export const setDraftjs = editorState => {
