@@ -22621,8 +22621,8 @@
 
 	var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol ? "symbol" : typeof obj; };
 
-	exports.closeItDown = closeItDown;
 	exports.openFaq = openFaq;
+	exports.closeFaq = closeFaq;
 	exports.firebaseStuff = firebaseStuff;
 	exports.setSearch = setSearch;
 	exports.cleanUp = cleanUp;
@@ -22787,50 +22787,52 @@
 	  console.log(updates);
 	  //FBDATA.ref().update(updates)
 	}
-	function initFaqts(dispatch, getState, faqref) {
-	  var fbref = faqtsRef(faqref);
-	  var defaultTime = new Date(2016, 1, 1).getTime(); // temporary solution to support legacy faqts
-	  fbref.on('child_added', function (snap) {
-	    var _snap$val = snap.val();
+	function initFaqts(faqref) {
+	  return function (dispatch, getState) {
+	    var fbref = faqtsRef(faqref);
+	    var defaultTime = new Date(2016, 1, 1).getTime(); // temporary solution to support legacy faqts
+	    fbref.on('child_added', function (snap) {
+	      var _snap$val = snap.val();
 
-	    var text = _snap$val.text;
-	    var draftjs = _snap$val.draftjs;
-	    var tags = _snap$val.tags;
-	    var rank = _snap$val.rank;
-	    var created = _snap$val.created;
-	    var updated = _snap$val.updated;
+	      var text = _snap$val.text;
+	      var draftjs = _snap$val.draftjs;
+	      var tags = _snap$val.tags;
+	      var rank = _snap$val.rank;
+	      var created = _snap$val.created;
+	      var updated = _snap$val.updated;
 
-	    var whenCreated = created || defaultTime++;
-	    var whenUpdated = updated || whenCreated;
-	    var faqt = {
-	      faqref: faqref, id: snap.key,
-	      text: text, draftjs: draftjs, tags: tags,
-	      rank: rank,
-	      created: whenCreated,
-	      updated: whenUpdated
-	    };
-	    dispatch(FAQTS.addFaqt(faqt));
-	    (0, _fulltext.dbForFaqref)(faqref).add(faqt);
-	  });
-	  fbref.on('child_changed', function (snap) {
-	    var _getState = getState();
+	      var whenCreated = created || defaultTime++;
+	      var whenUpdated = updated || whenCreated;
+	      var faqt = {
+	        faqref: faqref, id: snap.key,
+	        text: text, draftjs: draftjs, tags: tags,
+	        rank: rank,
+	        created: whenCreated,
+	        updated: whenUpdated
+	      };
+	      dispatch(FAQTS.addFaqt(faqt));
+	      (0, _fulltext.dbForFaqref)(faqref).add(faqt);
+	    });
+	    fbref.on('child_changed', function (snap) {
+	      var _getState = getState();
 
-	    var uiFaqt = _getState.ui.faqt;
+	      var uiFaqt = _getState.ui.faqt;
 
-	    var _snap$val2 = snap.val();
+	      var _snap$val2 = snap.val();
 
-	    var text = _snap$val2.text;
-	    var draftjs = _snap$val2.draftjs;
-	    var tags = _snap$val2.tags;
-	    var created = _snap$val2.created;
-	    var rank = _snap$val2.rank;
-	    var updated = _snap$val2.updated;
+	      var text = _snap$val2.text;
+	      var draftjs = _snap$val2.draftjs;
+	      var tags = _snap$val2.tags;
+	      var created = _snap$val2.created;
+	      var rank = _snap$val2.rank;
+	      var updated = _snap$val2.updated;
 
-	    var faqt = { faqref: faqref, id: snap.key, text: text, draftjs: draftjs, tags: tags, rank: rank, updated: updated, created: created };
-	    dispatch(FAQTS.replaceFaqt(faqt));
-	    (0, _fulltext.dbForFaqref)(faqref).update(faqt);
-	    if (uiFaqt && uiFaqt.id === faqt.id) dispatch((0, _reducer.updateUI)({ faqtId: faqt.id }));
-	  });
+	      var faqt = { faqref: faqref, id: snap.key, text: text, draftjs: draftjs, tags: tags, rank: rank, updated: updated, created: created };
+	      dispatch(FAQTS.replaceFaqt(faqt));
+	      (0, _fulltext.dbForFaqref)(faqref).update(faqt);
+	      if (uiFaqt && uiFaqt.id === faqt.id) dispatch((0, _reducer.updateUI)({ faqtId: faqt.id }));
+	    });
+	  };
 	}
 	function initSearches(dispatch, faqref) {
 	  var fbref = searchesRef(faqref);
@@ -22881,15 +22883,35 @@
 
 	  return FBDATA.ref().update((_FBDATA$ref$update = {}, _defineProperty(_FBDATA$ref$update, faqtTextPath(faqt), text), _defineProperty(_FBDATA$ref$update, faqtDraftjsPath(faqt), draftjs), _defineProperty(_FBDATA$ref$update, faqtUpdatedPath(faqt), Date.now()), _FBDATA$ref$update));
 	}
-	function closeItDown() {}
 	function openFaq(faqref) {
 	  return function (dispatch, getState) {
-	    initFaqts(dispatch, getState, faqref);
+	    dispatch(initFaqts(faqref));
 	    initSearches(dispatch, faqref);
 	    initScores(dispatch, faqref);
 	    initFullText(dispatch, faqref); // this should be shut down when auth state changes; massive hole
 	    dispatch((0, _reducer.addFaq)(faqref));
 	    return faqref;
+	  };
+	}
+	var denit = function denit(ref) {
+	  for (var _len = arguments.length, handlers = Array(_len > 1 ? _len - 1 : 0), _key = 1; _key < _len; _key++) {
+	    handlers[_key - 1] = arguments[_key];
+	  }
+
+	  return handlers.forEach(function (handler) {
+	    return ref.off(handler);
+	  });
+	};
+
+	function closeFaq(faqref) {
+	  return function (dispatch, getState) {
+	    console.log('closing faqref' + (faqref.uid + '-' + faqref.faqId));
+	    denit(faqtsRef(faqref), 'child_added', 'child_changed');
+	    denit(searchesRef(faqref), 'child_added', 'child_changed');
+	    denit(scoresRef(faqref), 'child_added', 'child_changed', 'child_removed');
+	    denit(FBDATA.ref().child('broadcast'), 'value');
+	    (0, _fulltext.removeFTDB)(faqref);
+	    dispatch((0, _reducer.removeFaq)(faqref));
 	  };
 	}
 	function firebaseStuff(app, auth, db) {
@@ -22904,7 +22926,12 @@
 	        var faqrefTest = dispatch(openFaq({ uid: uid, faqId: 'work' }));
 	        var faqrefDefault = dispatch(openFaq({ uid: uid, faqId: 'default' }));
 	        dispatch(setActiveFaq(faqrefDefault));
-	      } else dispatch((0, _reducer.updateUI)({ faq: null, uid: null }));
+	      } else {
+	        dispatch((0, _reducer.updateUI)({ faq: null, uid: null }));
+	        getState().faqs.forEach(function (faqref) {
+	          return dispatch(closeFaq(faqref));
+	        });
+	      }
 	    });
 	    var dbRefBroadcast = db.ref().child('broadcast');
 	    dbRefBroadcast.on('value', function (snap) {
@@ -67625,6 +67652,9 @@
 	var dbForFaqref = exports.dbForFaqref = function dbForFaqref(faqref) {
 	  return databases[dbkey(faqref)];
 	};
+	var removeFTDB = exports.removeFTDB = function removeFTDB(faqref) {
+	  return delete databases[dbkey(faqref)];
+	};
 
 	exports.default = databases;
 
@@ -67706,7 +67736,11 @@
 	Object.defineProperty(exports, "__esModule", {
 	  value: true
 	});
-	exports.updateTmpvalue = exports.updateUI = exports.addFaq = undefined;
+	exports.updateTmpvalue = exports.updateUI = exports.addFaq = exports.removeFaq = undefined;
+
+	var _lodash = __webpack_require__(195);
+
+	var _lodash2 = _interopRequireDefault(_lodash);
 
 	var _faqtsReducer = __webpack_require__(331);
 
@@ -67768,10 +67802,17 @@
 	  switch (type) {
 	    case 'ADD_FAQ':
 	      return [].concat(_toConsumableArray(faqs), [payload]);
+	    case 'DELETE_FAQ':
+	      return faqs.filter(function (faqref) {
+	        return !_lodash2.default.isEqual(faqref, payload);
+	      });
 	  }
 	  return faqs;
 	}
 
+	function showStatus(state) {
+	  console.log(state.faqts.length + ' faqts, ' + state.scores.length + ' scores, ' + state.searches.length + ' searches');
+	}
 	function reducer() {
 	  var state = arguments.length <= 0 || arguments[0] === undefined ? {} : arguments[0];
 	  var action = arguments[1];
@@ -67783,9 +67824,13 @@
 	    faqs: FAQS(state.faqs, action)
 	  };
 	  newState.ui = UI(state.ui, action);
+	  // showStatus(newState)
 	  return newState;
 	}
 
+	var removeFaq = exports.removeFaq = function removeFaq(faqref) {
+	  return { type: 'DELETE_FAQ', payload: faqref };
+	};
 	var addFaq = exports.addFaq = function addFaq(faqref) {
 	  return { type: 'ADD_FAQ', payload: faqref };
 	};
@@ -67850,6 +67895,11 @@
 	      return faqts.map(function (faqt) {
 	        return same(faqt, action.payload) ? action.payload : faqt;
 	      });
+	    case 'DELETE_FAQ':
+	      return faqts.filter(function (faqt) {
+	        return !_lodash2.default.isEqual(faqt.faqref, action.payload);
+	      });
+	    // case 'REMOVE_FAQT': return faqts.filter(faqt => !same(faqt, action.payload))
 	  }
 	  return faqts;
 	}
@@ -67861,13 +67911,19 @@
 
 /***/ },
 /* 332 */
-/***/ function(module, exports) {
+/***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
 	Object.defineProperty(exports, "__esModule", {
 	  value: true
 	});
+
+	var _lodash = __webpack_require__(195);
+
+	var _lodash2 = _interopRequireDefault(_lodash);
+
+	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 	function _toConsumableArray(arr) { if (Array.isArray(arr)) { for (var i = 0, arr2 = Array(arr.length); i < arr.length; i++) { arr2[i] = arr[i]; } return arr2; } else { return Array.from(arr); } }
 
@@ -67880,6 +67936,10 @@
 	      return action.payload.searches;
 	    case 'ADD_SEARCH':
 	      return [].concat(_toConsumableArray(searches), [action.payload.search]);
+	    case 'DELETE_FAQ':
+	      return searches.filter(function (search) {
+	        return !_lodash2.default.isEqual(search.faqref, action.payload);
+	      });
 	  }
 	  return searches;
 	}
@@ -67936,6 +67996,10 @@
 	    case 'DELETE_SCORE':
 	      return scores.filter(function (score) {
 	        return !same(score, action.payload);
+	      });
+	    case 'DELETE_FAQ':
+	      return scores.filter(function (score) {
+	        return !_lodash2.default.isEqual(score.faqref, action.payload);
 	      });
 	  }
 	  return scores;
@@ -92048,7 +92112,7 @@
 	      { style: S2 },
 	      'password:'
 	    ),
-	    _react2.default.createElement('input', { type: 'text', value: fldPassword, onChange: onChange })
+	    _react2.default.createElement('input', { type: 'password', value: fldPassword, onChange: onChange })
 	  );
 	};
 

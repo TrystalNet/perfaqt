@@ -6,9 +6,9 @@ import * as SELECT from './select'
 import * as FAQTS from './faqts/faqts-actions'
 import * as SEARCHES from './searches/searches-actions'
 import * as SCORES from './scores/scores-actions'
-import {updateUI, addFaq as ADDFAQ} from './reducer'
+import {updateUI, addFaq as ADDFAQ, removeFaq as REMFAQ} from './reducer'
 import lunr  from 'lunr'
-import databases,{dbForFaqref} from './fulltext'
+import databases,{dbForFaqref, removeFTDB} from './fulltext'
 
 let FBAUTH
 let FBDATA
@@ -53,31 +53,33 @@ function remapScoreSearchIds(faqref, searches, scores) {
   console.log(updates)
   //FBDATA.ref().update(updates)
 }
-function initFaqts(dispatch, getState, faqref) {
-  const fbref = faqtsRef(faqref)
-  let defaultTime = new Date(2016,1,1).getTime()  // temporary solution to support legacy faqts
-  fbref.on('child_added', snap => {
-    const {text, draftjs, tags, rank, created, updated} = snap.val()
-    const whenCreated = created || defaultTime++
-    const whenUpdated = updated || whenCreated
-    const faqt = { 
-      faqref, id: snap.key, 
-      text, draftjs, tags,
-      rank,  
-      created:whenCreated, 
-      updated: whenUpdated 
-    }
-    dispatch(FAQTS.addFaqt(faqt))
-    dbForFaqref(faqref).add(faqt)
-  })
-  fbref.on('child_changed', snap => {
-    const {ui:{faqt:uiFaqt}} = getState()
-    const {text, draftjs, tags, created, rank, updated} = snap.val()
-    const faqt = { faqref, id: snap.key, text, draftjs, tags, rank, updated, created }
-    dispatch(FAQTS.replaceFaqt(faqt))
-    dbForFaqref(faqref).update(faqt)
-    if(uiFaqt && uiFaqt.id === faqt.id) dispatch(updateUI({faqtId:faqt.id}))
-  })
+function initFaqts(faqref) {
+  return (dispatch, getState) => {
+    const fbref = faqtsRef(faqref)
+    let defaultTime = new Date(2016,1,1).getTime()  // temporary solution to support legacy faqts
+    fbref.on('child_added', snap => {
+      const {text, draftjs, tags, rank, created, updated} = snap.val()
+      const whenCreated = created || defaultTime++
+      const whenUpdated = updated || whenCreated
+      const faqt = { 
+        faqref, id: snap.key, 
+        text, draftjs, tags,
+        rank,  
+        created:whenCreated, 
+        updated: whenUpdated 
+      }
+      dispatch(FAQTS.addFaqt(faqt))
+      dbForFaqref(faqref).add(faqt)
+    })
+    fbref.on('child_changed', snap => {
+      const {ui:{faqt:uiFaqt}} = getState()
+      const {text, draftjs, tags, created, rank, updated} = snap.val()
+      const faqt = { faqref, id: snap.key, text, draftjs, tags, rank, updated, created }
+      dispatch(FAQTS.replaceFaqt(faqt))
+      dbForFaqref(faqref).update(faqt)
+      if(uiFaqt && uiFaqt.id === faqt.id) dispatch(updateUI({faqtId:faqt.id}))
+    })
+  }
 }
 function initSearches(dispatch, faqref) {
   const fbref = searchesRef(faqref) 
@@ -119,16 +121,27 @@ function updateOneFaqt(faqt, text, draftjs) {
     [faqtUpdatedPath(faqt)]: Date.now()
   })
 }
-export function closeItDown() {
-}
 export function openFaq(faqref) {
   return function(dispatch, getState) {
-    initFaqts(dispatch, getState, faqref)
+    dispatch(initFaqts(faqref))
     initSearches(dispatch, faqref)
     initScores(dispatch, faqref)
     initFullText(dispatch, faqref)   // this should be shut down when auth state changes; massive hole
     dispatch(ADDFAQ(faqref))
     return faqref
+  }
+}
+const denit = (ref, ...handlers) => handlers.forEach(handler => ref.off(handler))
+
+export function closeFaq(faqref) {
+  return function(dispatch, getState) {
+    console.log('closing faqref' + `${faqref.uid}-${faqref.faqId}`)
+    denit(faqtsRef(faqref),'child_added','child_changed')
+    denit(searchesRef(faqref), 'child_added', 'child_changed')
+    denit(scoresRef(faqref), 'child_added', 'child_changed', 'child_removed')
+    denit(FBDATA.ref().child('broadcast'),'value')
+    removeFTDB(faqref)
+    dispatch(REMFAQ(faqref))
   }
 }
 export function firebaseStuff(app, auth, db) {
@@ -143,7 +156,10 @@ export function firebaseStuff(app, auth, db) {
         const faqrefDefault = dispatch(openFaq({uid, faqId: 'default'}))
         dispatch(setActiveFaq(faqrefDefault))
       }
-      else dispatch(updateUI({faq:null, uid:null}))
+      else {
+        dispatch(updateUI({faq:null, uid:null}))
+        getState().faqs.forEach(faqref => dispatch(closeFaq(faqref)))
+      }
     })
     const dbRefBroadcast = db.ref().child('broadcast')
     dbRefBroadcast.on('value', snap => dispatch(updateUI({broadcast:snap.val()})))

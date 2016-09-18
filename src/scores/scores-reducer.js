@@ -15,6 +15,7 @@ function reducer(scores=[], action) {
     case 'ADD_SCORE':    return [...scores, action.payload.score]
     case 'UPDATE_SCORE': return updateScore(scores, action.payload)
     case 'DELETE_SCORE': return scores.filter(score => !same(score, action.payload))
+    case 'DELETE_FAQ'  : return scores.filter(score => !_.isEqual(score.faqref, action.payload))
   }
   return scores
 }

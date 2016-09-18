@@ -1,6 +1,7 @@
 const databases = {}
 
 export const dbkey = ({uid,faqId}) => `${uid}-${faqId}`
-export const dbForFaqref = faqref => databases[dbkey(faqref)] 
+export const dbForFaqref = faqref => databases[dbkey(faqref)]
+export const removeFTDB = faqref => delete databases[dbkey(faqref)] 
 
 export default databases
