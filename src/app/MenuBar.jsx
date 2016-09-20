@@ -19,21 +19,26 @@ const S2 = {
 const S3A = { flex:1, textAlign:'left' }
 const S3B = { flex:1, textAlign:'right'}
 
-const MenuBar = ({search, faqrefs, dispatch}) => {
+function ButtonBar({dispatch, faqref, search}) {
+  if(!faqref || faqref.isRO) return null
+  return <div style={S3B}>
+    <button key={'cleanUp'} onClick={e=>dispatch(THUNK.cleanUp())}>Clean Up</button>
+    <button key={'addFaqt'} onClick={e=>dispatch(THUNK.addFaqt(search))}>Add Faqt</button>
+  </div>
+}
+
+const MenuBar = ({search, faqref, faqrefs, dispatch}) => {
   return <div style={S0}>
     <div id='toolbar' style={S1}>
       <div style={S2}>
         <FaqBar />
-        <div style={S3B}>
-          <button key={'cleanUp'} onClick={e=>dispatch(THUNK.cleanUp())}>Clean Up</button>
-          <button key={'addFaqt'} onClick={e=>dispatch(THUNK.addFaqt(search))}>Add Faqt</button>
-        </div>
+        <ButtonBar {...{dispatch, faqref, search}}/>
       </div>
     </div>
   </div>
 }
 
 const mapStateToProps = ({faqs, ui:{uid, faqref, search}}) => {
-  return { faqref, search, faqrefs:faqs } 
+  return { search, faqref, faqrefs:faqs } 
 }
 export default connect(mapStateToProps)(MenuBar)

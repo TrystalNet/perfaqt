@@ -127,21 +127,28 @@ class MyEditor extends Component {
     this.setState({editorState})
   }
 
+  onClick(e) {
+    if(this.props.isActive) return
+    console.log('ok, good to here')
+  }
+
   render() {
     const {isActive} = this.props
+    const isHot = isActive
     const style = isActive ? s1b : s1a
     return <div>
       <EditToolbar active={isActive} onSaveLink={href=> this.onSaveLink(href)} />
-      <div style={style}>
-      <Editor
-        style={style} 
-        placeHolder="...faqt..."
-        handleKeyCommand={this.handleKeyCommand.bind(this)}
-        keyBindingFn={myKeyBindingFn}
-        editorState={this.state.editorState} 
-        onEscape={this.saveChangesAndExit.bind(this)}
-        onBlur={this.saveChanges.bind(this)}
-        onChange={this.onChange} />
+      <div style={style} onClick={this.props.onClick}>
+        <Editor
+          style={style} 
+          placeHolder="...faqt..."
+          handleKeyCommand={this.handleKeyCommand.bind(this)}
+          keyBindingFn={myKeyBindingFn}
+          editorState={this.state.editorState} 
+          onEscape={this.saveChangesAndExit.bind(this)}
+          onBlur={this.saveChanges.bind(this)}
+          readOnly={!isHot}
+          onChange={this.onChange} />
         </div>
     </div>
   }  
@@ -149,4 +156,5 @@ class MyEditor extends Component {
 
 export default connect()(MyEditor)
 
+// onFocus={e => { console.log('focused on the editor'); e.preventDefault(); e.stopPropagation(); }}
 // working on getting links in, just about there.... looking to have them rendered

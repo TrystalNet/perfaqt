@@ -22617,7 +22617,7 @@
 	Object.defineProperty(exports, "__esModule", {
 	  value: true
 	});
-	exports.logit = exports.setDraftjs = exports.toggleActiveField = exports.setActiveField = exports.updateActiveField = exports.resetActiveField = exports.saveActiveField = exports.setActiveFaq = exports.activateFaqt = exports.deleteScore = exports.focusSearch = exports.logout = exports.login = exports.signup = exports.updateFaqtRank = undefined;
+	exports.logit = exports.setDraftjs = exports.toggleActiveField = exports.setActiveField = exports.updateActiveField = exports.resetActiveField = exports.saveActiveField = exports.activateFaqt = exports.setActiveFaq = exports.deleteScore = exports.focusSearch = exports.logout = exports.login = exports.signup = exports.updateFaqtRank = undefined;
 
 	var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol ? "symbol" : typeof obj; };
 
@@ -22925,6 +22925,7 @@
 	        dispatch((0, _reducer.updateUI)({ uid: uid }));
 	        var faqrefTest = dispatch(openFaq({ uid: uid, faqId: 'work' }));
 	        var faqrefDefault = dispatch(openFaq({ uid: uid, faqId: 'default' }));
+	        var perfaqtHelp = dispatch(openFaq({ uid: 'perfaqt', faqId: 'help', isRO: true }));
 	        dispatch(setActiveFaq(faqrefDefault));
 	      } else {
 	        dispatch((0, _reducer.updateUI)({ faq: null, uid: null }));
@@ -23110,16 +23111,16 @@
 	    return FBDATA.ref(scorePath(score)).remove();
 	  };
 	};
+	var setActiveFaq = exports.setActiveFaq = function setActiveFaq(faqref) {
+	  return function (dispatch) {
+	    return dispatch((0, _reducer.updateUI)({ faqref: faqref, search: { faqref: faqref, id: null, text: null } }));
+	  };
+	};
 	var activateFaqt = exports.activateFaqt = function activateFaqt(_ref7) {
 	  var id = _ref7.id;
 	  var tags = _ref7.tags;
 	  return function (dispatch) {
 	    return dispatch((0, _reducer.updateUI)({ faqtId: id, focused: id }));
-	  };
-	};
-	var setActiveFaq = exports.setActiveFaq = function setActiveFaq(faqref) {
-	  return function (dispatch) {
-	    return dispatch((0, _reducer.updateUI)({ faqref: faqref, search: { faqref: faqref, id: null, text: null } }));
 	  };
 	};
 
@@ -70090,11 +70091,11 @@
 
 	var _FaqtList2 = _interopRequireDefault(_FaqtList);
 
-	var _LoginPage = __webpack_require__(614);
+	var _LoginPage = __webpack_require__(616);
 
 	var _LoginPage2 = _interopRequireDefault(_LoginPage);
 
-	var _MenuBar = __webpack_require__(619);
+	var _MenuBar = __webpack_require__(621);
 
 	var _MenuBar2 = _interopRequireDefault(_MenuBar);
 
@@ -72456,6 +72457,10 @@
 
 	var _Faqt2 = _interopRequireDefault(_Faqt);
 
+	var _FaqtRO = __webpack_require__(614);
+
+	var _FaqtRO2 = _interopRequireDefault(_FaqtRO);
+
 	function _interopRequireWildcard(obj) { if (obj && obj.__esModule) { return obj; } else { var newObj = {}; if (obj != null) { for (var key in obj) { if (Object.prototype.hasOwnProperty.call(obj, key)) newObj[key] = obj[key]; } } newObj.default = obj; return newObj; } }
 
 	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
@@ -72463,8 +72468,23 @@
 	var s1 = { paddingLeft: _constants.COL0WIDTH, overflowY: 'auto' };
 	var s2 = { paddingTop: 10, width: 600 };
 
-	var FaqtList = function FaqtList(_ref) {
-	  var faqts = _ref.faqts;
+	// VERSIONS OF FAQTS TO POSSIBLY SHOW
+	// 1. READONLY, NOTACTIVE
+	// 2. READONLY, ACTIVE
+	// 3. READWRITE, NOTACTIVE
+	// 4. READWRITE, ACTIVE, NOT EDITING
+	// 5. READWRITE, ACTIVE, EDITING
+
+	var getVersion = function getVersion(_ref) {
+	  var faqref = _ref.faqref;
+	  var id = _ref.id;
+
+	  if (faqref.isRO) return 'RO';
+	  return 'RW';
+	};
+
+	var FaqtList = function FaqtList(_ref2) {
+	  var faqts = _ref2.faqts;
 	  return _react2.default.createElement(
 	    'div',
 	    { id: 'faqtsContainer', style: s1 },
@@ -72472,7 +72492,11 @@
 	      'div',
 	      { style: s2 },
 	      faqts.map(function (faqt) {
-	        return _react2.default.createElement(_Faqt2.default, { key: faqt.id, faqt: faqt });
+	        switch (getVersion(faqt)) {
+	          case 'RW':
+	            return _react2.default.createElement(_Faqt2.default, { key: faqt.id, faqt: faqt });
+	        }
+	        return _react2.default.createElement(_FaqtRO2.default, { key: faqt.id, faqt: faqt });
 	      })
 	    )
 	  );
@@ -72555,7 +72579,7 @@
 	  var tags = faqt.tags;
 
 	  var onFocus = function onFocus(e) {
-	    return dispatch(THUNK.activateFaqt(faqt));
+	    return faqt.faqref.isRO ? null : dispatch(THUNK.activateFaqt(faqt));
 	  };
 	  var onSave = function onSave(text, draftjs, nextFocus) {
 	    return dispatch(THUNK.updateFaqt(faqt, text, draftjs, nextFocus));
@@ -72564,6 +72588,10 @@
 	    return dispatch(THUNK.setBestFaqt(faqref, faqt));
 	  };
 	  var style = isActive ? Object.assign({}, style0A, BEIGE) : style0A;
+	  var onEditClick = function onEditClick(e) {
+	    if (!isActive) dispatch(THUNK.activateFaqt(faqt));
+	  };
+	  if (faqref.isRO) console.log('showing an RO FAQT!!!!');
 	  return _react2.default.createElement(
 	    'div',
 	    { style: S0 },
@@ -72573,7 +72601,7 @@
 	      _react2.default.createElement(
 	        'div',
 	        { style: style, onFocus: onFocus },
-	        _react2.default.createElement(_Editor2.default /* ref={node => this.refEdit = node}*/, { text: text, isActive: isActive, draftjs: draftjs, onSave: onSave })
+	        _react2.default.createElement(_Editor2.default /* ref={node => this.refEdit = node}*/, { text: text, isActive: isActive, draftjs: draftjs, onSave: onSave, onClick: onEditClick })
 	      ),
 	      _react2.default.createElement(
 	        'div',
@@ -72781,12 +72809,19 @@
 	      this.setState({ editorState: editorState });
 	    }
 	  }, {
+	    key: 'onClick',
+	    value: function onClick(e) {
+	      if (this.props.isActive) return;
+	      console.log('ok, good to here');
+	    }
+	  }, {
 	    key: 'render',
 	    value: function render() {
 	      var _this2 = this;
 
 	      var isActive = this.props.isActive;
 
+	      var isHot = isActive;
 	      var style = isActive ? s1b : s1a;
 	      return _react2.default.createElement(
 	        'div',
@@ -72796,7 +72831,7 @@
 	          } }),
 	        _react2.default.createElement(
 	          'div',
-	          { style: style },
+	          { style: style, onClick: this.props.onClick },
 	          _react2.default.createElement(_draftJs.Editor, {
 	            style: style,
 	            placeHolder: '...faqt...',
@@ -72805,6 +72840,7 @@
 	            editorState: this.state.editorState,
 	            onEscape: this.saveChangesAndExit.bind(this),
 	            onBlur: this.saveChanges.bind(this),
+	            readOnly: !isHot,
 	            onChange: this.onChange })
 	        )
 	      );
@@ -72816,6 +72852,7 @@
 
 	exports.default = (0, _reactRedux.connect)()(MyEditor);
 
+	// onFocus={e => { console.log('focused on the editor'); e.preventDefault(); e.stopPropagation(); }}
 	// working on getting links in, just about there.... looking to have them rendered
 
 /***/ },
@@ -91843,25 +91880,221 @@
 	  value: true
 	});
 
+	var _react = __webpack_require__(1);
+
+	var _react2 = _interopRequireDefault(_react);
+
+	var _reactRedux = __webpack_require__(164);
+
+	var _Editor = __webpack_require__(615);
+
+	var _Editor2 = _interopRequireDefault(_Editor);
+
+	var _select = __webpack_require__(325);
+
+	var SELECT = _interopRequireWildcard(_select);
+
+	var _thunks = __webpack_require__(193);
+
+	var THUNK = _interopRequireWildcard(_thunks);
+
+	function _interopRequireWildcard(obj) { if (obj && obj.__esModule) { return obj; } else { var newObj = {}; if (obj != null) { for (var key in obj) { if (Object.prototype.hasOwnProperty.call(obj, key)) newObj[key] = obj[key]; } } newObj.default = obj; return newObj; } }
+
+	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+	var S0 = { marginBottom: 5, padding: 1 };
+	var style0 = {
+	  backgroundColor: 'azure',
+	  display: 'flex',
+	  paddingTop: 5,
+	  paddingBottom: 5,
+	  borderBottom: 'lightgrey 1px solid'
+	};
+	var style0A = {
+	  flex: 1,
+	  minWidth: 0,
+	  marginRight: 5,
+	  overflowX: 'auto',
+	  maxHeight: '15vh',
+	  overflowY: 'auto'
+	};
+	var BEIGE = {
+	  maxHeight: '50vh'
+	};
+
+	var FaqtRO = function FaqtRO(_ref) {
+	  var faqt = _ref.faqt;
+	  var isActive = _ref.isActive;
+	  var score = _ref.score;
+	  var dispatch = _ref.dispatch;
+	  var faqref = faqt.faqref;
+	  var faqtId = faqt.faqtId;
+	  var text = faqt.text;
+	  var draftjs = faqt.draftjs;
+	  var tags = faqt.tags;
+
+	  var style = isActive ? Object.assign({}, style0A, BEIGE) : style0A;
+	  return _react2.default.createElement(
+	    'div',
+	    { style: S0 },
+	    _react2.default.createElement(
+	      'div',
+	      { style: style0 },
+	      _react2.default.createElement(
+	        'div',
+	        { style: style },
+	        _react2.default.createElement(_Editor2.default, { text: text, draftjs: draftjs })
+	      )
+	    )
+	  );
+	};
+
+	function mapStateToProps(state, ownProps) {
+	  var faqt = ownProps.faqt;
+
+	  var isActive = faqt.id === SELECT.getActiveFaqtId(state);
+	  var search = SELECT.getActiveSearch(state);
+	  var score = search ? SELECT.findScore(state, search, faqt) : null;
+	  return { faqt: faqt, isActive: isActive, score: score };
+	}
+
+	exports.default = (0, _reactRedux.connect)(mapStateToProps)(FaqtRO);
+
+/***/ },
+/* 615 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+
+	Object.defineProperty(exports, "__esModule", {
+	  value: true
+	});
+
 	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 
 	var _react = __webpack_require__(1);
 
 	var _react2 = _interopRequireDefault(_react);
 
-	var _LoginButton = __webpack_require__(615);
+	var _draftJs = __webpack_require__(197);
+
+	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+	function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
+
+	function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
+
+	var s1a = { padding: 10, backgroundColor: 'whitesmoke' };
+	var s1b = Object.assign({}, s1a, { border: 'lightgrey 1px solid' });
+
+	function buildBlock(text) {
+	  return {
+	    type: 'unstyled',
+	    text: text
+	  };
+	}
+	function buildRawDraftContentState(text) {
+	  var block = buildBlock(text);
+	  return {
+	    blocks: [block],
+	    entityMap: {}
+	  };
+	}
+	function buildContentState(text) {
+	  var rawState = buildRawDraftContentState(text);
+	  return (0, _draftJs.convertFromRaw)(rawState);
+	}
+	function findLinkEntities(contentBlock, callback) {
+	  contentBlock.findEntityRanges(function (character) {
+	    var entityKey = character.getEntity();
+	    return entityKey !== null && _draftJs.Entity.get(entityKey).getType() === 'LINK';
+	  }, callback);
+	}
+
+	var styles = {
+	  link: {
+	    color: '#3b5998',
+	    textDecoration: 'underline'
+	  }
+	};
+	var Link = function Link(props) {
+	  var _Entity$get$getData = _draftJs.Entity.get(props.entityKey).getData();
+
+	  var href = _Entity$get$getData.href;
+
+	  return _react2.default.createElement(
+	    'a',
+	    { href: href, style: styles.link, onClick: function onClick() {
+	        return window.open(href, '_blank');
+	      } },
+	    props.children
+	  );
+	};
+
+	var EditorRO = function (_Component) {
+	  _inherits(EditorRO, _Component);
+
+	  function EditorRO(props) {
+	    _classCallCheck(this, EditorRO);
+
+	    var _this = _possibleConstructorReturn(this, Object.getPrototypeOf(EditorRO).call(this, props));
+
+	    var contentState = buildContentState(props.text);
+	    if (props.draftjs) {
+	      var draftjs = props.draftjs;
+	      if (!draftjs.blocks) draftjs.blocks = [{ type: 'unstyled', text: props.text }];
+	      if (!draftjs.entityMap) draftjs.entityMap = {};
+	      contentState = (0, _draftJs.convertFromRaw)(draftjs);
+	    }
+	    var decorator = new _draftJs.CompositeDecorator([{ strategy: findLinkEntities, component: Link }]);
+	    var editorState = _draftJs.EditorState.createWithContent(contentState, decorator);
+	    _this.state = { editorState: editorState };
+	    return _this;
+	  }
+
+	  _createClass(EditorRO, [{
+	    key: 'render',
+	    value: function render() {
+	      return _react2.default.createElement(_draftJs.Editor, { style: s1a, editorState: this.state.editorState, readOnly: true });
+	    }
+	  }]);
+
+	  return EditorRO;
+	}(_react.Component);
+
+	exports.default = EditorRO;
+
+/***/ },
+/* 616 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+
+	Object.defineProperty(exports, "__esModule", {
+	  value: true
+	});
+
+	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+
+	var _react = __webpack_require__(1);
+
+	var _react2 = _interopRequireDefault(_react);
+
+	var _LoginButton = __webpack_require__(617);
 
 	var _LoginButton2 = _interopRequireDefault(_LoginButton);
 
-	var _SignupButton = __webpack_require__(616);
+	var _SignupButton = __webpack_require__(618);
 
 	var _SignupButton2 = _interopRequireDefault(_SignupButton);
 
-	var _EmailField = __webpack_require__(617);
+	var _EmailField = __webpack_require__(619);
 
 	var _EmailField2 = _interopRequireDefault(_EmailField);
 
-	var _PasswordField = __webpack_require__(618);
+	var _PasswordField = __webpack_require__(620);
 
 	var _PasswordField2 = _interopRequireDefault(_PasswordField);
 
@@ -91925,7 +92158,7 @@
 	exports.default = LoginPage;
 
 /***/ },
-/* 615 */
+/* 617 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -91975,7 +92208,7 @@
 	exports.default = (0, _reactRedux.connect)(mapStateToProps)(LoginButton);
 
 /***/ },
-/* 616 */
+/* 618 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -92025,7 +92258,7 @@
 	exports.default = (0, _reactRedux.connect)(mapStateToProps)(SignupButton);
 
 /***/ },
-/* 617 */
+/* 619 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -92074,7 +92307,7 @@
 	exports.default = (0, _reactRedux.connect)(mapStateToProps)(EmailField);
 
 /***/ },
-/* 618 */
+/* 620 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -92123,7 +92356,7 @@
 	exports.default = (0, _reactRedux.connect)(mapStateToProps)(PasswordField);
 
 /***/ },
-/* 619 */
+/* 621 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -92144,7 +92377,7 @@
 
 	var THUNK = _interopRequireWildcard(_thunks);
 
-	var _FaqBar = __webpack_require__(620);
+	var _FaqBar = __webpack_require__(622);
 
 	var _FaqBar2 = _interopRequireDefault(_FaqBar);
 
@@ -92167,10 +92400,37 @@
 	var S3A = { flex: 1, textAlign: 'left' };
 	var S3B = { flex: 1, textAlign: 'right' };
 
-	var MenuBar = function MenuBar(_ref) {
-	  var search = _ref.search;
-	  var faqrefs = _ref.faqrefs;
+	function ButtonBar(_ref) {
 	  var dispatch = _ref.dispatch;
+	  var faqref = _ref.faqref;
+	  var search = _ref.search;
+
+	  if (!faqref || faqref.isRO) return null;
+	  return _react2.default.createElement(
+	    'div',
+	    { style: S3B },
+	    _react2.default.createElement(
+	      'button',
+	      { key: 'cleanUp', onClick: function onClick(e) {
+	          return dispatch(THUNK.cleanUp());
+	        } },
+	      'Clean Up'
+	    ),
+	    _react2.default.createElement(
+	      'button',
+	      { key: 'addFaqt', onClick: function onClick(e) {
+	          return dispatch(THUNK.addFaqt(search));
+	        } },
+	      'Add Faqt'
+	    )
+	  );
+	}
+
+	var MenuBar = function MenuBar(_ref2) {
+	  var search = _ref2.search;
+	  var faqref = _ref2.faqref;
+	  var faqrefs = _ref2.faqrefs;
+	  var dispatch = _ref2.dispatch;
 
 	  return _react2.default.createElement(
 	    'div',
@@ -92182,42 +92442,25 @@
 	        'div',
 	        { style: S2 },
 	        _react2.default.createElement(_FaqBar2.default, null),
-	        _react2.default.createElement(
-	          'div',
-	          { style: S3B },
-	          _react2.default.createElement(
-	            'button',
-	            { key: 'cleanUp', onClick: function onClick(e) {
-	                return dispatch(THUNK.cleanUp());
-	              } },
-	            'Clean Up'
-	          ),
-	          _react2.default.createElement(
-	            'button',
-	            { key: 'addFaqt', onClick: function onClick(e) {
-	                return dispatch(THUNK.addFaqt(search));
-	              } },
-	            'Add Faqt'
-	          )
-	        )
+	        _react2.default.createElement(ButtonBar, { dispatch: dispatch, faqref: faqref, search: search })
 	      )
 	    )
 	  );
 	};
 
-	var mapStateToProps = function mapStateToProps(_ref2) {
-	  var faqs = _ref2.faqs;
-	  var _ref2$ui = _ref2.ui;
-	  var uid = _ref2$ui.uid;
-	  var faqref = _ref2$ui.faqref;
-	  var search = _ref2$ui.search;
+	var mapStateToProps = function mapStateToProps(_ref3) {
+	  var faqs = _ref3.faqs;
+	  var _ref3$ui = _ref3.ui;
+	  var uid = _ref3$ui.uid;
+	  var faqref = _ref3$ui.faqref;
+	  var search = _ref3$ui.search;
 
-	  return { faqref: faqref, search: search, faqrefs: faqs };
+	  return { search: search, faqref: faqref, faqrefs: faqs };
 	};
 	exports.default = (0, _reactRedux.connect)(mapStateToProps)(MenuBar);
 
 /***/ },
-/* 620 */
+/* 622 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';

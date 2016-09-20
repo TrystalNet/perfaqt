@@ -154,6 +154,7 @@ export function firebaseStuff(app, auth, db) {
         dispatch(updateUI({uid}))
         const faqrefTest = dispatch(openFaq({uid, faqId:'work'}))
         const faqrefDefault = dispatch(openFaq({uid, faqId: 'default'}))
+        const perfaqtHelp = dispatch(openFaq({uid:'perfaqt', faqId: 'help', isRO:true}))
         dispatch(setActiveFaq(faqrefDefault))
       }
       else {
@@ -288,8 +289,8 @@ export const logout = () => dispatch => FBAUTH.signOut()
 
 export const focusSearch = () => dispatch => dispatch(updateUI({focused:'SEARCH'}))
 export const deleteScore = score => () => FBDATA.ref(scorePath(score)).remove()
-export const activateFaqt = ({id,tags}) => dispatch => dispatch(updateUI({faqtId:id,focused:id}))
 export const setActiveFaq = faqref => dispatch => dispatch(updateUI({faqref, search:{faqref, id:null, text:null}}))
+export const activateFaqt = ({id,tags}) => dispatch => dispatch(updateUI({faqtId:id,focused:id}))
 
 export const saveActiveField = () => {
   return (dispatch, getState) => {
