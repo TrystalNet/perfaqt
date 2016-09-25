@@ -17,8 +17,10 @@ function reducer(faqts=[], action) {
     case 'LOAD_FAQTS': return action.payload.faqts
     case 'ADD_FAQT': return addFaqt(faqts, action)
     case 'REPLACE_FAQT': return faqts.map(faqt => same(faqt, action.payload) ? action.payload : faqt )
+
+    // 
     case 'DELETE_FAQ'  : return faqts.filter(faqt => !_.isEqual(faqt.faqref, action.payload))
-   // case 'REMOVE_FAQT': return faqts.filter(faqt => !same(faqt, action.payload))
+    // case 'REMOVE_FAQT': return faqts.filter(faqt => !same(faqt, action.payload))
   }
   return faqts
 }

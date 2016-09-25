@@ -2,6 +2,7 @@ import _ from 'lodash'
 import FAQTS   from './faqts/faqts-reducer'
 import SEARCHES from './searches/searches-reducer'
 import SCORES    from './scores/scores-reducer'
+import NEWSCORES    from './scores/newscores-reducer'
 
 const defaultUI = {
   uid: null,
@@ -49,6 +50,7 @@ function reducer(state={}, action) {
     faqts     : FAQTS(state.faqts, action),
     searches  : SEARCHES(state.searches, action),
     scores    : SCORES(state.scores, action),
+    newscores : NEWSCORES(state.newscores, action),
     faqs      : FAQS(state.faqs, action)
   }
   newState.ui = UI(state.ui, action)

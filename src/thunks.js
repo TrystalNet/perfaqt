@@ -6,9 +6,8 @@ import * as SELECT from './select'
 import * as FAQTS from './faqts/faqts-actions'
 import * as SEARCHES from './searches/searches-actions'
 import * as SCORES from './scores/scores-actions'
+import * as FULLTEXT from './fulltext'
 import {updateUI, addFaq as ADDFAQ, removeFaq as REMFAQ} from './reducer'
-import lunr  from 'lunr'
-import databases,{dbForFaqref, removeFTDB} from './fulltext'
 
 let FBAUTH
 let FBDATA
@@ -24,35 +23,28 @@ const faqtDraftjsPath = faqt => faqtPropPath(faqt,'draftjs')
 const faqtUpdatedPath = faqt => faqtPropPath(faqt,'updated')
 const faqtRankPath = faqt => faqtPropPath(faqt,'rank')
 
-const scoresPath = faqref => `scores/${faqPath(faqref)}`
-const scoresRef = faqref => FBDATA.ref().child(scoresPath(faqref))
-const scorePath = ({faqref, id}) => `${scoresPath(faqref)}/${id}`
-const scorePropPath = (score, propname) => `${scorePath(score)}/${propname}`
-const scoreSearchIdPath = score => scorePropPath(score,'searchId')
-const scoreValuePath = score => scorePropPath(score,'value')
+const scoresPath = (uid,faqref) => `/users/${uid}/scores/${faqPath(faqref)}`  
+const scoresRef = (uid, faqref) => FBDATA.ref().child(scoresPath(uid, faqref))
+const scorePath = (uid, {faqref, id}) => `${scoresPath(uid, faqref)}/${id}`
+const scorePropPath = (uid, score, propname) => `${scorePath(uid, score)}/${propname}`
+const scoreSearchIdPath = (uid,score) => scorePropPath(uid, score,'searchId')
+const scoreValuePath = (uid, score) => scorePropPath(score,'value')
 
-const searchesPath = faqref => `searches/${faqPath(faqref)}`
-const searchesRef = faqref => FBDATA.ref().child(searchesPath(faqref))
-const searchPath = ({faqref,id}) => `${searchesPath(faqref)}/${id}`
-const searchPropPath = (search, propname) => `${searchPath(search)}/${propname}`
-const searchTextPath = search => searchPropPath(search, 'text')
+const searchesPath = uid => `/users/${uid}/searches`
+const searchesRef = uid => FBDATA.ref().child(searchesPath(uid))
+const searchPath = (uid,id) => `${searchesPath(uid)}/${id}`
+const searchPropPath = (uid, search, propname) => `${searchPath(uid, search.id)}/${propname}`
+const searchTextPath = (uid, search) => searchPropPath(uid, search, 'text')
 
-function remapScoreSearchIds(faqref, searches, scores) {
-  const {uid, faqId} = faqref
-  const {key, remaps} = searches.reduce(({key, remaps}, {text,id}) => {
-    text = text.toLowerCase().trim()
-    const existing = key[text.toLowerCase()]
-    if(!key[text]) key[text] = id
-    else remaps[id] = existing
-    return {key, remaps}
-  }, {key:{}, remaps:{}})
-  const badScores = scores.filter(score => remaps[score.searchId])
-  const updates = {}
-  badScores.forEach(badScore => updates[scoreSearchIdPath(badScore)] = remaps[badScore.searchId])
-  Object.keys(remaps).forEach(badSearchId => updates[searchPath(faqref, badSearchId)] = null)
-  console.log(updates)
-  //FBDATA.ref().update(updates)
-}
+//
+//     -- users / $UID / scores / $FAQID / $SCOREID / {FAQTID, SEARCHID, SCORE}
+//            -- OPENING FAQ subscribes to /users/BOB/scores/FAQREF/[SCORE, SCORE, SCORE]
+//            -- IF A FAQT DIES, THEN WE JUST DELETE ALL SCORES WITH A MATCHING FAQTID
+//            -- IF A SEARCH DIES, THEN DELETE ALL SCORES WITH MATHING SEARCHID
+//
+
+const denit = (ref, ...handlers) => handlers.forEach(handler => ref.off(handler))
+
 function initFaqts(faqref) {
   return (dispatch, getState) => {
     const fbref = faqtsRef(faqref)
@@ -69,50 +61,41 @@ function initFaqts(faqref) {
         updated: whenUpdated 
       }
       dispatch(FAQTS.addFaqt(faqt))
-      dbForFaqref(faqref).add(faqt)
+      FULLTEXT.addFaqt(faqt)
     })
     fbref.on('child_changed', snap => {
       const {ui:{faqt:uiFaqt}} = getState()
       const {text, draftjs, tags, created, rank, updated} = snap.val()
       const faqt = { faqref, id: snap.key, text, draftjs, tags, rank, updated, created }
       dispatch(FAQTS.replaceFaqt(faqt))
-      dbForFaqref(faqref).update(faqt)
+      FULLTEXT.updateFaqt(faqt)
       if(uiFaqt && uiFaqt.id === faqt.id) dispatch(updateUI({faqtId:faqt.id}))
     })
   }
 }
-function initSearches(dispatch, faqref) {
-  const fbref = searchesRef(faqref) 
-  fbref.on('child_added', snap => {
-    const search = { 
-      faqref, 
-      id: snap.key, 
-      text: snap.val().text 
-    }
-    dispatch(SEARCHES.addSearch(search))
-  })
-  fbref.on('child_changed', snap => {
-    console.log(faqref.faqId, snap.key, snap.val().faqts)
-  })
+function initSearches(uid) {
+  return (dispatch, getState) => {
+    const fbref = searchesRef(uid) 
+    fbref.on('child_added', snap => {
+      const search = { 
+        id: snap.key, 
+        text: snap.val().text 
+      }
+      dispatch(SEARCHES.addSearch(search))
+    })
+    fbref.on('child_changed', snap => console.log(snap.key, snap.val()))
+  }
 }
-function initScores(dispatch, faqref) {
-  const fbref = scoresRef(faqref)
-  fbref.on('child_added', snap => {
-    const {faqtId, searchId, value} = snap.val()
-    dispatch(SCORES.addScore({ faqref, id: snap.key, searchId, faqtId, value }))
-  })
-  fbref.on('child_changed', snap => dispatch(SCORES.updateScore(faqref, snap.key, {value:snap.val().value})))
-  fbref.on('child_removed', snap => dispatch(SCORES.deleteScore({faqref, id:snap.key})))
-}
-function initFullText(dispatch, faqref) {
-  const {uid, faqId} = faqref
-  const dbkey = `${uid}-${faqId}`
-  databases[dbkey] = lunr(function () {
-    this.field('text')
-    this.field('tags',{boost:100})
-    this.ref('id')
-  })
-  dispatch(updateUI({index:databases[dbkey]}))
+function initScores(uid, faqref) {
+  return (dispatch,getState) => {
+    const fbref = scoresRef(uid, faqref)
+    fbref.on('child_added', snap => {
+      const {faqtId, searchId, value} = snap.val()
+      dispatch(SCORES.addScore({ faqref, id: snap.key, searchId, faqtId, value }))
+    })
+    fbref.on('child_changed', snap => dispatch(SCORES.updateScore(faqref, snap.key, {value:snap.val().value})))
+    fbref.on('child_removed', snap => dispatch(SCORES.deleteScore({faqref, id:snap.key})))
+  }
 }
 function updateOneFaqt(faqt, text, draftjs) {
   return FBDATA.ref().update({
@@ -124,24 +107,19 @@ function updateOneFaqt(faqt, text, draftjs) {
 export function openFaq(faqref) {
   return function(dispatch, getState) {
     dispatch(initFaqts(faqref))
-    initSearches(dispatch, faqref)
-    initScores(dispatch, faqref)
-    initFullText(dispatch, faqref)   // this should be shut down when auth state changes; massive hole
+    dispatch(initScores(getState().ui.uid, faqref))
     dispatch(ADDFAQ(faqref))
     return faqref
   }
 }
-const denit = (ref, ...handlers) => handlers.forEach(handler => ref.off(handler))
-
 export function closeFaq(faqref) {
   return function(dispatch, getState) {
-    console.log('closing faqref' + `${faqref.uid}-${faqref.faqId}`)
+    const state = getState()
+    const {uid} = state.ui
     denit(faqtsRef(faqref),'child_added','child_changed')
-    denit(searchesRef(faqref), 'child_added', 'child_changed')
-    denit(scoresRef(faqref), 'child_added', 'child_changed', 'child_removed')
-    denit(FBDATA.ref().child('broadcast'),'value')
-    removeFTDB(faqref)
-    dispatch(REMFAQ(faqref))
+    denit(scoresRef(uid, faqref), 'child_added', 'child_changed', 'child_removed')
+    SELECT.getFaqtsByFaqref(state, faqref).forEach(faqt => FULLTEXT.removeFaqt(faqt))
+    dispatch(REMFAQ(faqref))  // purges all affected faqts and scores
   }
 }
 export function firebaseStuff(app, auth, db) {
@@ -151,7 +129,8 @@ export function firebaseStuff(app, auth, db) {
     auth.onAuthStateChanged(user => {
       if(user) {
         const {uid} = user
-        dispatch(updateUI({uid}))
+        dispatch(updateUI({uid, index:FULLTEXT.FULLTEXT}))
+        dispatch(initSearches(uid))
         const faqrefTest = dispatch(openFaq({uid, faqId:'work'}))
         const faqrefDefault = dispatch(openFaq({uid, faqId: 'default'}))
         const perfaqtHelp = dispatch(openFaq({uid:'perfaqt', faqId: 'help', isRO:true}))
@@ -159,51 +138,54 @@ export function firebaseStuff(app, auth, db) {
       }
       else {
         dispatch(updateUI({faq:null, uid:null}))
-        getState().faqs.forEach(faqref => dispatch(closeFaq(faqref)))
+        const isPrivate = () => true
+        getState().faqs
+        .filter(faq => isPrivate())
+        .forEach(faqref => dispatch(closeFaq(faqref)))
       }
     })
     const dbRefBroadcast = db.ref().child('broadcast')
     dbRefBroadcast.on('value', snap => dispatch(updateUI({broadcast:snap.val()})))
   }
 }
-export function setSearch(faqref, text) {
+export function setSearch(text) {
   return function(dispatch, getState) {
-    if(!text) return dispatch(updateUI({search:{faqref, id:null, text:null}}))
-    let search = SELECT.findSearchByText(getState(), faqref, text)
-    if(!search) search = {faqref, id:null, text}
+    if(!text) return dispatch(updateUI({search:{id:null, text:null}}))
+    let search = SELECT.findSearchByText(getState(), text)
+    if(!search) search = {id:null, text}
     dispatch(updateUI({search}))
   }
 }
 
-export function cleanUp() {
-  return (dispatch, getState, extras) => {
-    const {searches, scores, ui:{faqref}} = getState()
-    remapScoreSearchIds(faqref, searches, scores)
-  } 
+
+function createScore(uid, searchId, faqtId, value) {
+  const id = UNIQ.randomId(4)
+  const path = scorePath(uid, {id})
+  const scoreFB = { searchId, faqtId, value }
+  FBDATA.ref(path).set(scoreFB)
 }
-export function setBestFaqt(faqref, faqt) {
+export function setBestFaqt(faqt) {
   return function(dispatch, getState, extras) {
     const state = getState()
-    const {search} = state.ui
-    const {uid, faqId} = faqref
-
+    const {uid, search} = state.ui
     if(!search.id) {
       const {text} = search
       if(!text) {
-        const promise = updateFaqtRank(faqt)
+        // const promise = updateFaqtRank(faqt)   // <=== this doesn't work either; FUDGE
         return
       }
       search.id = UNIQ.randomId(4)
-      FBDATA.ref(searchTextPath(search)).set(text)
+      FBDATA.ref(searchTextPath(uid, search)).set(text)
       .then(() => dispatch(updateUI({search})))
     }
     const matchingScore = SELECT.findScore(state, search, faqt)
     const bestScore = SELECT.findBestScore(state, search)
-    if(matchingScore && matchingScore === bestScore) return
-    const value = bestScore ? bestScore.value + 1 : 1
+    const alreadyBest = matchingScore && matchingScore === bestScore
+    if(alreadyBest) return
 
-    if(matchingScore) FBDATA.ref().update({[scoreValuePath(matchingScore)]: value})
-    else FBDATA.ref(scorePath({faqref, id:UNIQ.randomId(4)})).set({ searchId:search.id, faqtId:faqt.id, value })
+    const value = bestScore ? bestScore.value + 1 : 1
+    if(matchingScore) FBDATA.ref().update({[scoreValuePath(uid, matchingScore)]: value})
+    else createScore(uid, search.id, faqt.id, value) 
   }  
 }
 
@@ -230,15 +212,14 @@ export function updateTags(faqt, tags) {
     dispatch(updateUI({focused:'SEARCH'}))
   }
 }
-export function addFaqt(search) {
+export function addFaqt() {
   return function(dispatch, getState) {
     const state = getState()
-    if(!search) return
-    const {faqref,faqref:{uid,faqId}} = search
+    const {uid, faqref, search} = state.ui
 
     function getSearchId(text) {
       if(!text || !text.length) return null
-      const search = SELECT.findSearchByText(state, faqref, text)
+      const search = SELECT.findSearchByText(state, text)
       return search ? search.id : null
     }
     function getScoreValue(search) {
@@ -250,35 +231,34 @@ export function addFaqt(search) {
     const rank = created
     FBDATA.ref(faqtPath({faqref,id:faqtId})).set({text:'', draftjs:{}, created, rank})
     .then(() => {
-      if(search.text) {
+      if(search && search.text) {
         if(!search.id) {
           search.id = UNIQ.randomId(4)
           if(typeof search.text === 'object') throw 'search.text cannot be an object in addSearch'
-          FBDATA.ref(searchTextPath(search)).set(search.text)
+          FBDATA.ref(searchTextPath(uid, search)).set(search.text)
         }
-        const fbScore = { 
+        const scoreFB = { 
           searchId:search.id, 
           faqtId, 
           value: getScoreValue(search)
         }
-        FBDATA.ref(scorePath({faqref, id:UNIQ.randomId(4)})).set(fbScore)
+        FBDATA.ref(scorePath(uid, {faqref, id:UNIQ.randomId(4)})).set(scoreFB)
       }
       dispatch(updateUI({focused:faqtId, faqtId}))
     })
   }
 }
-export function saveSearch(faqref, text) {
+// why not one-note
+// one node is a product you have to buy from Microsoft
+export function saveSearch() {
   return function(dispatch, getState) {
-    if(!text || !text.length) return
-    const state = getState()
-    let search = SELECT.findSearchByText(state, faqref, text)
-    if(search && search.id) return dispatch(updateUI({search}))
-    search = {
+    const {uid, search:{id,text}} = getState().ui
+    if(id || !text) return
+    const search = {
       id: UNIQ.randomId(4),
-      faqref, text
+      text
     }
-    const {uid,faqId} = faqref
-    FBDATA.ref(searchTextPath(search)).set(search.text)
+    FBDATA.ref(searchTextPath(uid,search)).set(search.text)
     .then(() => dispatch(updateUI({search})))
   }
 }

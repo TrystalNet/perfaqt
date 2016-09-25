@@ -16,9 +16,7 @@ class SearchBox extends React.Component {
   onKeyDown = e => {
     const {dispatch, faqref, search} = this.props
     switch(e.keyCode) {
-      case 13:
-        dispatch(THUNK.saveSearch(faqref, search.text))
-        break
+      case 13: dispatch(THUNK.saveSearch()); break
       default: return      
     }
     e.preventDefault()
@@ -26,10 +24,9 @@ class SearchBox extends React.Component {
   }
   onChange = (e, f) => {
     const {newValue, method} = f
-    if(method !== 'type') return
+    //if(method !== 'type') return
     e.preventDefault()
-    const {dispatch, faqref} = this.props
-    dispatch(THUNK.setSearch(faqref, newValue))
+    this.props.dispatch(THUNK.setSearch(newValue))
   }
   onSuggestionsUpdateRequested = ({value, reason}) => {
     const {dispatch, searches} = this.props
@@ -66,7 +63,7 @@ class SearchBox extends React.Component {
 
 function mapStateToProps(state) {
   const { searchSuggestions:suggestions, search, faqref, focused } = state.ui
-  const searches = SELECT.getSearchesByFaqref(state, faqref)
+  const searches = SELECT.getSearches(state)
   const isFocus = focused === 'SEARCH'
   return {suggestions, faqref, search, searches, isFocus}
 }
