@@ -203,14 +203,8 @@ export function updateFaqt(faqt, text, draftjs, nextFocus) {
     return promise
   }
 }
-export function updateTags(faqt, tags) {
-  return function(dispatch, getState) {
-    const {faqref:{uid,faqId}, id:faqtId} = faqt
-    var updates = {}
-    updates[faqtTagsPath(faqt)] = tags
-    FBDATA.ref().update(updates)
-    dispatch(updateUI({focused:'SEARCH'}))
-  }
+export function saveTagsToFB(faqt, tags) {
+    if(faqt.tags !== tags) FBDATA.ref().update({[faqtTagsPath(faqt)]: tags})
 }
 export function addFaqt() {
   return function(dispatch, getState) {
@@ -272,12 +266,6 @@ export const deleteScore = score => () => FBDATA.ref(scorePath(score)).remove()
 export const setActiveFaq = faqref => dispatch => dispatch(updateUI({faqref, search:{faqref, id:null, text:null}}))
 export const activateFaqt = ({id,tags}) => dispatch => dispatch(updateUI({faqtId:id,focused:id}))
 
-export const saveActiveField = () => {
-  return (dispatch, getState) => {
-    const {ui:{activeField:{fldName, tmpValue}}} = getState()
-    if(!fldName) return
-  }
-}
 function getActiveLink({ui:{editorState}}) {
   if(!editorState) return ''
   const {focusKey, focusOffset} = editorState.getSelection()
@@ -295,9 +283,20 @@ function getActiveTags({faqts, ui}, faqtId) {
 function getTmpValue(state, {fldName,objectId}) {
   if(!fldName) return null
   switch(fldName) {
-    case 'fldLink':return getActiveLink(state);
-    case 'fldTags': return getActiveTags(state, objectId);
-    default: return ''
+    case 'fldLink': return getActiveLink(state);
+    case 'fldTags': return objectId.tags;
+    default: return '';
+  }
+}
+export const saveActiveField = () => {
+  return (dispatch, getState) => {
+    const state = getState()
+    const {ui, ui:{activeField:{fldName, objectId, tmpValue}}} = state
+    if(!fldName) return
+    switch(fldName) {
+      case 'fldTags': return saveTagsToFB(objectId, tmpValue)
+      default: throw `no luck saving ${tmpValue} into ${fldName}`
+    }
   }
 }
 

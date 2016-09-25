@@ -10,7 +10,7 @@ const S3 = {flex:1, border: 'red 0px solid', paddingLeft:5}
 
 const TagsEditor = ({isActive, value, faqt, dispatch}) => {
   if(!isActive) return null
-  const onFocus = e => dispatch(THUNK.setActiveField({fldName:'fldTags', objectId:faqt.id}))
+  const onFocus = e => dispatch(THUNK.setActiveField({fldName:'fldTags', objectId:faqt}))
   const handleChange = e => {
     e.preventDefault()
     dispatch(THUNK.updateActiveField(e.target.value))
@@ -34,7 +34,7 @@ const TagsEditor = ({isActive, value, faqt, dispatch}) => {
 const mapStateToProps = (state, {faqt}) => {
   const {ui:{faqtId, activeField}} = state
   const isActive = faqtId === faqt.id
-  const isHot = isActive && activeField.fldName === 'fldTags' && activeField.objectId === faqtId 
+  const isHot = isActive && activeField.fldName === 'fldTags' && activeField.objectId === faqt 
   const value = isHot ? activeField.tmpValue : faqt.tags
   return {isActive, faqt, value}
 }
