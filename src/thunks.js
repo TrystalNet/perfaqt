@@ -173,21 +173,34 @@ function createScore(uid, searchId, faqt, value) {
   const scoreFB = { searchId, faqtId:faqt.id, value }
   FBDATA.ref(path).set(scoreFB)
 }
+function setBestFaqtNOSEARCH(faqt) {
+  return function(dispatch, getState, extras) {
+    const state = getState()
+    const {uid} = state.ui
+
+    const matchingScore = SELECT.findScore(state, faqt)
+    const bestScore = SELECT.findBestScore(state)
+    const alreadyBest = matchingScore && matchingScore === bestScore
+    if(alreadyBest) return
+
+    const value = bestScore ? bestScore.value + 1 : 1
+    if(matchingScore) FBDATA.ref().update({[scoreValuePath(uid, matchingScore)]: value})
+    else createScore(uid, null, faqt, value) 
+  }
+}
+
 export function setBestFaqt(faqt) {
   return function(dispatch, getState, extras) {
     const state = getState()
     const {uid, search} = state.ui
     if(!search.id) {
       const {text} = search
-      if(!text) {
-        // const promise = updateFaqtRank(faqt)   // <=== this doesn't work either; FUDGE
-        return
-      }
+      if(!text) return dispatch(setBestFaqtNOSEARCH(faqt))
       search.id = UNIQ.randomId(4)
       FBDATA.ref(searchTextPath(uid, search)).set(text)
       .then(() => dispatch(updateUI({search})))
     }
-    const matchingScore = SELECT.findScore(state, search, faqt)
+    const matchingScore = SELECT.findScore(state, faqt, search)
     const bestScore = SELECT.findBestScore(state, search)
     const alreadyBest = matchingScore && matchingScore === bestScore
     if(alreadyBest) return

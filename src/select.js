@@ -19,7 +19,11 @@ export const getFaqts = state => state.faqts
 export const getSearches = state => state.searches || []
 
 export const getScores = state => [...state.scores.values()]  // here is the question....
-export const getScoresBySearch = (state, search) => getScores(state).filter(score => score.searchId === search.id)
+
+export const getScoresBySearch = (state, search) => {
+  if(search && search.text) return getScores(state).filter(score => score.searchId === search.id)
+  return getScores(state).filter(score => !score.searchId)
+}
 
 export const getActiveFaqtId = state => state.ui.faqtId
 export const getActiveSearch = state => state.ui.search
@@ -34,14 +38,9 @@ export const getActiveFaqref = state => state.ui.faqref
 // hot, warm, cold, detached
 // hot is editing, there can only be one 
 
-function getMatchingScores(state, search) {
-  const scores = getScoresBySearch(state, search)
-  return orderBy(scores, 'value', 'desc')                              
-}
 
 const scoresToFaqts = (state, scores) => scores.map(score => state.faqts.get(scoreToFaqtKey(score)))     
 export const getBestFaqtByRank = (state, faqref)  => maxBy(getFaqts(state), 'rank') || null
-export const findBestScore = (state, search) => (search && search.text) ? maxBy(getScoresBySearch(state, search), 'value') || null : null
 
 function allFaqtsByRank(state) {
   const faqts = [...getFaqts(state).values()]
@@ -49,28 +48,52 @@ function allFaqtsByRank(state) {
   return faqts// return faqts
 }
 
-function faqtsForSavedSearch(state, search) {
-  const faqtsByScore = scoresToFaqts(state, getMatchingScores(state, search))
-  const faqtsFromFullText = FULLTEXT.search(search.text).map(({ref,score}) => state.faqts.get(ref))
-  const faqtsByRank = allFaqtsByRank(state)
-  return [...(new Set([...faqtsByScore, ...faqtsFromFullText, ...faqtsByRank]))]
+
+
+export const findBestScore = (state, search) => maxBy(getScoresBySearch(state, search), 'value') || null
+
+export function findScoreNOSEARCH(state, faqt) {
+  if(!faqt) return null
+  const result = getScores(state)
+  .filter(score => !score.searchId && isEqual(score.faqref, faqt.faqref))
+  .find(score => score.faqtId === faqt.id) // max 1 match for faqt+search combo
+  return result;
 }
-export function findScore(state, search, faqt) {
+
+export function findScore(state, faqt, search) {
   // used when showing a faqt, to show the best button with associated score and delete-score buttons 
-  if(!faqt || !faqt.id || !search || !search.id) return null
+  if(!faqt) return null
+  if(!search || !search.id) return findScoreNOSEARCH(state, faqt)
   const result = getScores(state)
   .filter(score => score.searchId === search.id && isEqual(score.faqref, faqt.faqref))
   .find(score => score.faqtId === faqt.id) // max 1 match for faqt+search combo
   return result;
 }
 
+function getMatchingScores(state, search) {
+  const scores = getScoresBySearch(state, search)
+  return orderBy(scores, 'value', 'desc')                              
+}
+
+function faqtsForSavedSearch(state, search) {
+  const faqtsByScore = scoresToFaqts(state, getMatchingScores(state, search))
+  const faqtsByRank = allFaqtsByRank(state)
+  const faqtsFromFullText = FULLTEXT.search(search.text).map(({ref,score}) => state.faqts.get(ref))
+  return [...(new Set([...faqtsByScore, ...faqtsFromFullText, ...faqtsByRank]))]
+}
+
+function faqtsForNoSearch(state) {
+  const faqtsByScore = scoresToFaqts(state, getMatchingScores(state))
+  const faqtsByRank = allFaqtsByRank(state)
+  return [...(new Set([...faqtsByScore, ...faqtsByRank]))]
+}
 
 export function getFaqtsForSearch(state, search) {
   if(!search) return []
   const {id, text} = search
   let result = []
   if(id) result = faqtsForSavedSearch(state, search)
-  else result = allFaqtsByRank(state)
+  else result = faqtsForNoSearch(state) 
   return result.slice(0,10)
 }
 export function findSearchByText(state, text) {
