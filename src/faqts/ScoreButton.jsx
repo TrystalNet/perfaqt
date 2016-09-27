@@ -1,5 +1,5 @@
 import React, { Component } from 'react';
-import * as THUNK from '../../thunks'
+import * as THUNK from '../thunks'
 import { connect } from 'react-redux'
 
 const ScoreButton = ({score, dispatch}) => {

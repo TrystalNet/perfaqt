@@ -21,8 +21,9 @@ export default function SearchBar() {
   return <div id='searchesContainer' style={S0}>
     <Logo />
     <SearchBox />
-    <div style={S1}></div>
-    <BroadcastView />
+    <div style={S1}>
+      <BroadcastView />
+    </div>
     <LogoutButton />
   </div>
 }

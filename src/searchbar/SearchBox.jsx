@@ -9,14 +9,17 @@ function getSuggestions(value, searches) {
   const inputValue = value.trim().toLowerCase()
   const inputLength = inputValue.length
   if(!inputLength) return []
-  return searches.filter(search => inputValue === (search.text || '').toLowerCase().slice(0, inputLength))
+  let result = searches
+  .filter(search => inputValue === (search.text || '')
+  .slice(0, inputLength))
+  .map(search => search.text.toLowerCase())
+  return result
 }
 
 class SearchBox extends React.Component {
   onKeyDown = e => {
-    const {dispatch, faqref, search} = this.props
     switch(e.keyCode) {
-      case 13: dispatch(THUNK.saveSearch()); break
+      case 13: this.props.dispatch(THUNK.saveActiveField()); break
       default: return      
     }
     e.preventDefault()
@@ -26,14 +29,14 @@ class SearchBox extends React.Component {
     const {newValue, method} = f
     //if(method !== 'type') return
     e.preventDefault()
-    this.props.dispatch(THUNK.setSearch(newValue))
+    this.props.dispatch(THUNK.updateActiveField(newValue))
   }
   onSuggestionsUpdateRequested = ({value, reason}) => {
     const {dispatch, searches} = this.props
     const searchSuggestions = getSuggestions(value, searches)
     dispatch(updateUI({searchSuggestions}))
   }
-  onFocus= e => this.props.dispatch(THUNK.focusSearch())
+  onFocus= e => this.props.dispatch(THUNK.setActiveField({fldName:'fldSearch', objectId:null}))
 
   componentDidUpdate(prevProps) {
     if(prevProps.isFocus || !this.props.isFocus || !this.fldSearch) return
@@ -41,11 +44,12 @@ class SearchBox extends React.Component {
     input.focus()
     input.select()
   }
+
   render()  {
-    const {suggestions, search} = this.props
+    const {suggestions, text} = this.props
     const inputProps = {
       placeholder: 'Type a search',
-      value:search.text || '',
+      value:text || '',
       onKeyDown: this.onKeyDown,
       onChange:this.onChange,
       onFocus:this.onFocus
@@ -54,17 +58,22 @@ class SearchBox extends React.Component {
        ref={fld => this.fldSearch = fld}
        suggestions={suggestions} 
        onSuggestionsUpdateRequested={this.onSuggestionsUpdateRequested}
-       getSuggestionValue={search => search.text}
-       renderSuggestion={search => <span>{search.text}</span>}
+       getSuggestionValue={text => text}
+       renderSuggestion={text => <span>{text}</span>}
        inputProps={inputProps}
     />
   }
 }
 
 function mapStateToProps(state) {
-  const { searchSuggestions:suggestions, search, faqref, focused } = state.ui
+  const { searchSuggestions:suggestions, search, focused, activeField } = state.ui
+  const {fldName, objectId, tmpValue} = activeField
+  const text = fldName === 'fldSearch' ? tmpValue : search.text 
   const searches = SELECT.getSearches(state)
   const isFocus = focused === 'SEARCH'
-  return {suggestions, faqref, search, searches, isFocus}
+  return {suggestions, text, searches, isFocus}
 }
 export default connect(mapStateToProps)(SearchBox)
+
+
+// get the best button going, and i think we are good to go

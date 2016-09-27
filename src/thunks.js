@@ -28,15 +28,14 @@ const scoresRef = (uid, faqref) => FBDATA.ref().child(scoresPath(uid, faqref))
 const scorePath = (uid, {faqref, id}) => `${scoresPath(uid, faqref)}/${id}`
 const scorePropPath = (uid, score, propname) => `${scorePath(uid, score)}/${propname}`
 const scoreSearchIdPath = (uid,score) => scorePropPath(uid, score,'searchId')
-const scoreValuePath = (uid, score) => scorePropPath(score,'value')
+const scoreValuePath = (uid, score) => scorePropPath(uid, score,'value')
 
 const searchesPath = uid => `/users/${uid}/searches`
 const searchesRef = uid => FBDATA.ref().child(searchesPath(uid))
 const searchPath = (uid,id) => `${searchesPath(uid)}/${id}`
-const searchPropPath = (uid, search, propname) => `${searchPath(uid, search.id)}/${propname}`
+const searchPropPath = (uid, {id}, propname) => `${searchPath(uid, id)}/${propname}`
 const searchTextPath = (uid, search) => searchPropPath(uid, search, 'text')
 
-//
 //     -- users / $UID / scores / $FAQID / $SCOREID / {FAQTID, SEARCHID, SCORE}
 //            -- OPENING FAQ subscribes to /users/BOB/scores/FAQREF/[SCORE, SCORE, SCORE]
 //            -- IF A FAQT DIES, THEN WE JUST DELETE ALL SCORES WITH A MATCHING FAQTID
@@ -93,7 +92,7 @@ function initScores(uid, faqref) {
       const {faqtId, searchId, value} = snap.val()
       dispatch(SCORES.addScore({ faqref, id: snap.key, searchId, faqtId, value }))
     })
-    fbref.on('child_changed', snap => dispatch(SCORES.updateScore(faqref, snap.key, {value:snap.val().value})))
+    fbref.on('child_changed', snap => dispatch(SCORES.setScoreValue(snap.key, snap.val().value)))
     fbref.on('child_removed', snap => dispatch(SCORES.deleteScore({faqref, id:snap.key})))
   }
 }
@@ -118,7 +117,7 @@ export function closeFaq(faqref) {
     const {uid} = state.ui
     denit(faqtsRef(faqref),'child_added','child_changed')
     denit(scoresRef(uid, faqref), 'child_added', 'child_changed', 'child_removed')
-    SELECT.getFaqtsByFaqref(state, faqref).forEach(faqt => FULLTEXT.removeFaqt(faqt))
+    SELECT.getFaqtKeysByFaqref(state, faqref).forEach(key => FULLTEXT.removeFaqt({id:key}))
     dispatch(REMFAQ(faqref))  // purges all affected faqts and scores
   }
 }
@@ -127,7 +126,9 @@ export function firebaseStuff(app, auth, db) {
   FBDATA = db
   return  function(dispatch, getState) {
     auth.onAuthStateChanged(user => {
+      console.log('auth state change, user is ', user)
       if(user) {
+
         const {uid} = user
         dispatch(updateUI({uid, index:FULLTEXT.FULLTEXT}))
         dispatch(initSearches(uid))
@@ -150,18 +151,26 @@ export function firebaseStuff(app, auth, db) {
 }
 export function setSearch(text) {
   return function(dispatch, getState) {
-    if(!text) return dispatch(updateUI({search:{id:null, text:null}}))
-    let search = SELECT.findSearchByText(getState(), text)
-    if(!search) search = {id:null, text}
+    const search = Object.assign({}, getState().ui.search, {text})
     dispatch(updateUI({search}))
   }
 }
+export function logState() {
+  return function(dispatch, getState) {
+    console.log(getState())
+  }
+}
 
+export const deleteScore = score => (dispatch, getState) => {
+  const {uid} = getState().ui
+  return FBDATA.ref(scorePath(uid, score)).remove()
+}
 
-function createScore(uid, searchId, faqtId, value) {
+function createScore(uid, searchId, faqt, value) {
   const id = UNIQ.randomId(4)
-  const path = scorePath(uid, {id})
-  const scoreFB = { searchId, faqtId, value }
+  const {faqref} = faqt
+  const path = scorePath(uid, {faqref, id})
+  const scoreFB = { searchId, faqtId:faqt.id, value }
   FBDATA.ref(path).set(scoreFB)
 }
 export function setBestFaqt(faqt) {
@@ -185,7 +194,7 @@ export function setBestFaqt(faqt) {
 
     const value = bestScore ? bestScore.value + 1 : 1
     if(matchingScore) FBDATA.ref().update({[scoreValuePath(uid, matchingScore)]: value})
-    else createScore(uid, search.id, faqt.id, value) 
+    else createScore(uid, search.id, faqt, value) 
   }  
 }
 
@@ -242,27 +251,13 @@ export function addFaqt() {
     })
   }
 }
-// why not one-note
-// one node is a product you have to buy from Microsoft
-export function saveSearch() {
-  return function(dispatch, getState) {
-    const {uid, search:{id,text}} = getState().ui
-    if(id || !text) return
-    const search = {
-      id: UNIQ.randomId(4),
-      text
-    }
-    FBDATA.ref(searchTextPath(uid,search)).set(search.text)
-    .then(() => dispatch(updateUI({search})))
-  }
-}
+
 export const updateFaqtRank = faqt => FBDATA.ref().update({[faqtRankPath(faqt)]: Date.now()})
 export const signup = (email, password) => () => FBAUTH.createUserWithEmailAndPassword(email, password).catch(e => alert(e.message))
 export const login = (email, password) => () => FBAUTH.signInWithEmailAndPassword(email, password).catch(e => alert(e.message))
 export const logout = () => dispatch => FBAUTH.signOut()
 
 export const focusSearch = () => dispatch => dispatch(updateUI({focused:'SEARCH'}))
-export const deleteScore = score => () => FBDATA.ref(scorePath(score)).remove()
 export const setActiveFaq = faqref => dispatch => dispatch(updateUI({faqref, search:{faqref, id:null, text:null}}))
 export const activateFaqt = ({id,tags}) => dispatch => dispatch(updateUI({faqtId:id,focused:id}))
 
@@ -285,9 +280,28 @@ function getTmpValue(state, {fldName,objectId}) {
   switch(fldName) {
     case 'fldLink': return getActiveLink(state);
     case 'fldTags': return objectId.tags;
+    case 'fldSearch': return state.ui.search.text || ''
     default: return '';
   }
 }
+
+export function handleSearchRequest(text) {
+  return function(dispatch, getState) {
+    const state = getState()
+    const {ui} = state
+    const {uid, search} = ui
+    if(!text) return dispatch(updateUI({search:{id:null, text:null}}))
+
+    const foundSearch = SELECT.findSearchByText(state, text)
+    if(foundSearch) return dispatch(updateUI({search:foundSearch}))
+
+    const id = UNIQ.randomId(4)
+
+    FBDATA.ref(searchTextPath(uid, {id})).set(text)
+    .then(() => dispatch(updateUI({search:{id,text}})))
+  }
+}
+
 export const saveActiveField = () => {
   return (dispatch, getState) => {
     const state = getState()
@@ -295,6 +309,7 @@ export const saveActiveField = () => {
     if(!fldName) return
     switch(fldName) {
       case 'fldTags': return saveTagsToFB(objectId, tmpValue)
+      case 'fldSearch' : return dispatch(handleSearchRequest(tmpValue))
       default: throw `no luck saving ${tmpValue} into ${fldName}`
     }
   }
@@ -340,6 +355,13 @@ export const logit = message => {
   }
 }
 
-
-
+// why do the search results change as we type in search? 
+// because the collection of things to display is calculated at render time
+// and because the search criteria are changing, the search is recalculated
+// the search should not be recalculated except if the id has changed; 
+// BUT.... the search results collection is not being saved anywhere
+// -- this shouldn't matter; as far as the selector is concerned, the id of the search 
+// has not changed, and the search state has nto changed from text to blank, so there 
+// should be no reason to consider recalculating anything
+// so why does it?
 

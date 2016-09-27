@@ -1,4 +1,5 @@
 import lunr  from 'lunr'
+import {faqtToKey} from './select'
 
 export const FULLTEXT = lunr(function () {
   this.field('text')
@@ -6,19 +7,16 @@ export const FULLTEXT = lunr(function () {
   this.ref('id') 
 })
 
-const toId = ({faqref:{uid,faqid}, id}) => `${uid}/${faqid}/${id}`
-
 const faqtToFTFaqt = faqt => {
   const {text, tags} = faqt
   return {
-    id:toId(faqt),
+    id:faqtToKey(faqt),
     text,
-    tags,
-    faqt   // makes it easy to work with later
+    tags
   }
 }
 
 export const updateFaqt = faqt => FULLTEXT.update(faqtToFTFaqt(faqt))
 export const addFaqt    = faqt => FULLTEXT.add(faqtToFTFaqt(faqt))
-export const removeFaqt = faqt => FULLTEXT.remove(toId(faqt))
+export const removeFaqt = faqt => FULLTEXT.remove({id:faqtToKey(faqt)})
 

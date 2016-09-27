@@ -34,5 +34,26 @@ const FaqtList = ({faqts}) => <div id='faqtsContainer' style={s1}>
   </div>
 </div>
 
-const mapStateToProps = state => ({faqts:SELECT.getFaqtsForSearch(state, state.ui.search)})
+const mapStateToProps = state => {
+  // connect has the responsibility to scan for state changes
+  // seems like the searchId (or null) could be passed as a property to this control
+  // if that doesn't change, then it should short-circuit the process
+  // ----- but the question is --- how could we change this code so that it does the same short circuiting_
+  // input is state
+  // this is going to subscribe to the fact that state has changed
+  // when the state has changed, it is going to recaluate some additional state, to be passed down to the Component
+  // if that state hasn't changed, then the component update will be skipped
+  //
+  // the code below doesn't work because getFaqtsForSearch returns a new collection every time, even if nothing has 
+  // changed; so it always looks different to the control
+  // but wait; is this really true? if the new faqt collection has the same faqts, in the same order as the 
+  // old collection, does the fact that refs are different matter? yes; this is the whole point of immutability
+  // ----
+  // so what really needs to happen is that getFaqtsForSearch has to return the same faqt collection that is alrady
+  // there, and the only way to do that is to keep them around
+  // time to go back and review how the todolist works; it is filtering vs sorting, but still relevant perhaps 
+
+
+  return {faqts:SELECT.getFaqtsForSearch(state, state.ui.search)}
+}
 export default connect(mapStateToProps)(FaqtList)

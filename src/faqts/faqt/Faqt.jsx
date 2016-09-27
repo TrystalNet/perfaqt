@@ -2,7 +2,7 @@ import React, { Component } from 'react';
 import { connect } from 'react-redux'
 import MyEditor from './Editor'
 import TagsEditor from './TagsEditor'
-import ScoreButton from './ScoreButton'
+import ScoreButton from '../ScoreButton'
 import * as SELECT from '../../select'
 import * as THUNK from '../../thunks'
 
@@ -30,16 +30,16 @@ const Faqt = ({faqt, isActive, score, dispatch})  => {
   const {faqref, faqtId, text, draftjs, tags} = faqt
   const onFocus = e => faqt.faqref.isRO ? null : dispatch(THUNK.activateFaqt(faqt))
   const onSave = (text, draftjs, nextFocus) => dispatch(THUNK.updateFaqt(faqt, text, draftjs, nextFocus))
-  const onSetBest = () => dispatch(THUNK.setBestFaqt(faqref, faqt))
+  const onSetBest = () => dispatch(THUNK.setBestFaqt(faqt))
   const style = isActive ? Object.assign({},style0A,BEIGE) : style0A
   const onEditClick = e => {
     if(!isActive) dispatch(THUNK.activateFaqt(faqt))
   }
   if(faqref.isRO) console.log('showing an RO FAQT!!!!')
   return <div style={S0}>
-    <div /* ref='container'*/ style={style0}>
+    <div style={style0}>
       <div style={style} onFocus={onFocus}>
-        <MyEditor /* ref={node => this.refEdit = node}*/ {...{text, isActive, draftjs, onSave, onClick:onEditClick}} />
+        <MyEditor {...{text, isActive, draftjs, onSave, onClick:onEditClick}} />
       </div>
       <div style={{display:'flex', flexDirection:'column'}}>
         <button onClick={e => onSetBest(e)}>best</button>
