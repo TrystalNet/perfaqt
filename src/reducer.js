@@ -1,15 +1,13 @@
 import _ from 'lodash'
 import FAQTS   from './faqts/faqts-reducer'
-import SEARCHES from './searches/searches-reducer'
-import SCORES    from './scores/scores-reducer'
 
 const defaultUI = {
+  broadcast: null,
   uid: null,
   faqref: null, 
-  faqtId: null, 
+  faqtKey: null, 
   focused: null,
-  search: {id:null, text:null},
-  broadcast: null,
+  search: {text:'', scores:[]},
   searchSuggestions: [],
   fldEmail:'',
   fldPassword:'',
@@ -47,12 +45,9 @@ function showStatus(state) {
 function reducer(state={}, action) {
   const newState = {
     faqts     : FAQTS(state.faqts, action),
-    searches  : SEARCHES(state.searches, action),
-    scores    : SCORES(state.scores, action),
-    faqs      : FAQS(state.faqs, action)
+    faqs      : FAQS(state.faqs, action),
+    ui        : UI(state.ui, action)
   }
-  newState.ui = UI(state.ui, action)
-  // showStatus(newState)
   return newState
 }
 

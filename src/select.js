@@ -3,31 +3,27 @@ import {FULLTEXT} from './fulltext'
 
 export const faqToKey = ({uid,faqId}) => `${uid}/${faqId}`
 export const faqtToKey = ({faqref,id}) => `${faqToKey(faqref)}/${id}`
-export const scoreToFaqtKey = ({faqref,faqtId}) => faqtToKey({faqref,id:faqtId})
 
 export const faqrefIdMatch = (a,b) => a.id === b.id &&  isEqual(a.faqref,b.faqref)
 
 export const getFaqtKeysByFaqref = (state, faqref)  => {
   if(!faqref || !state.faqts) return [] 
   const faqKey = faqToKey(faqref) + '/'  
-  return state.faqts.keys().filter(key => key.startsWith(faqKey))
+  return [...state.faqts.keys()].filter(key => key.startsWith(faqKey))
 }
 
-export const getFaqt = (state, faqref, id) => state.faqts.get(faqtToKey({faqref,id}))
+export const getFaqtByKey = (state, faqtKey) => state.faqts.get(faqtKey)
+export const getFaqt = (state, faqref, id) => getFaqtByKey(state, faqtToKey({faqref,id}))
 
 export const getFaqts = state => state.faqts
 export const getSearches = state => state.searches || []
 
 export const getScores = state => [...state.scores.values()]  // here is the question....
 
-export const getScoresBySearch = (state, search) => {
-  if(search && search.text) return getScores(state).filter(score => score.searchId === search.id)
-  return getScores(state).filter(score => !score.searchId)
-}
-
-export const getActiveFaqtId = state => state.ui.faqtId
+export const getActiveFaqref = state => state.ui.faqref  // where new faqts will be added
+export const getActiveFaqtKey = state => state.ui.faqtKey // could be in any faq
 export const getActiveSearch = state => state.ui.search
-export const getActiveFaqref = state => state.ui.faqref
+
 
 // the question is, what it does it mean that there is one active faqref
 // from a search standpoint this is meaningless, since several faqs are searchable simultaneously
@@ -38,19 +34,15 @@ export const getActiveFaqref = state => state.ui.faqref
 // hot, warm, cold, detached
 // hot is editing, there can only be one 
 
-
-const scoresToFaqts = (state, scores) => scores.map(score => state.faqts.get(scoreToFaqtKey(score)))     
 export const getBestFaqtByRank = (state, faqref)  => maxBy(getFaqts(state), 'rank') || null
 
-function allFaqtsByRank(state) {
+function allFaqtsByDate(state) {
   const faqts = [...getFaqts(state).values()]
-  faqts.sort((a,b) => (b.rank || 0) - (a.rank || 0))
+  faqts.sort((a,b) => (a.created || 0) - (b.created || 0))
   return faqts// return faqts
 }
 
-
-
-export const findBestScore = (state, search) => maxBy(getScoresBySearch(state, search), 'value') || null
+export const findBestScore = search => search && search.scores && search.scores[0] ? search.scores[0] : 0
 
 export function findScoreNOSEARCH(state, faqt) {
   if(!faqt) return null
@@ -70,37 +62,35 @@ export function findScore(state, faqt, search) {
   return result;
 }
 
-function getMatchingScores(state, search) {
-  const scores = getScoresBySearch(state, search)
-  return orderBy(scores, 'value', 'desc')                              
+const addFaqtKeysToSet = (set, src, fn, faqts, pageSize=10) => {
+  if(set.size >= pageSize) return
+  src.slice(0, pageSize).forEach(item => {
+    const faqtKey = fn ? fn(item) : item
+    if(set.size < pageSize && faqts.get(faqtKey)) set.add(faqtKey)    
+  })
 }
 
-function faqtsForSavedSearch(state, search) {
-  const faqtsByScore = scoresToFaqts(state, getMatchingScores(state, search))
-  const faqtsByRank = allFaqtsByRank(state)
-  const faqtsFromFullText = FULLTEXT.search(search.text).map(({ref,score}) => state.faqts.get(ref))
-  return [...(new Set([...faqtsByScore, ...faqtsFromFullText, ...faqtsByRank]))]
-}
+export function faqtKeyToIsRO(faqtKey) {
+} 
 
-function faqtsForNoSearch(state) {
-  const faqtsByScore = scoresToFaqts(state, getMatchingScores(state))
-  const faqtsByRank = allFaqtsByRank(state)
-  return [...(new Set([...faqtsByScore, ...faqtsByRank]))]
-}
 
-export function getFaqtsForSearch(state, search) {
-  if(!search) return []
-  const {id, text} = search
-  let result = []
-  if(id) result = faqtsForSavedSearch(state, search)
-  else result = faqtsForNoSearch(state) 
-  return result.slice(0,10)
+// some of the search scores may belong to faqts that don't exist for various reasons
+export function getFaqtKeysForSearch(state) {
+  const MAX = 10
+  const {ui, faqts} = state
+  const {text='', scores=[]} = ui.search
+  const result = new Set()
+  addFaqtKeysToSet(result, scores, null, faqts, MAX)
+  addFaqtKeysToSet(result, FULLTEXT.search(text), match => match.ref, faqts, MAX)
+  addFaqtKeysToSet(result, allFaqtsByDate(state), faqt => faqtToKey(faqt), faqts, MAX)
+  return [...result] // convert set back to an array
 }
 export function findSearchByText(state, text) {
   if(!text) return null
   text = text.toLowerCase()
   return getSearches(state).find(search => text === search.text.toLowerCase())
 }
-
+export const getFaqtKeyScore = (faqt, search={}) => search.scores ? search.scores.indexOf(faqt) : -1
+export const getFaqtScore = (faqt, search={}) => getFaqtKeyScore(faqtToKey(faqt), search)
 
 

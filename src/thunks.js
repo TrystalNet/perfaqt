@@ -1,13 +1,23 @@
 import $ from 'jquery'
 import _ from 'lodash'
+import * as xxx from 'lodash'
 import {Entity} from 'draft-js'
 import * as UNIQ from '@trystal/uniq-ish'
 import * as SELECT from './select'
 import * as FAQTS from './faqts/faqts-actions'
-import * as SEARCHES from './searches/searches-actions'
-import * as SCORES from './scores/scores-actions'
 import * as FULLTEXT from './fulltext'
 import {updateUI, addFaq as ADDFAQ, removeFaq as REMFAQ} from './reducer'
+
+const faqtToKey = SELECT.faqtToKey
+
+let IDB
+
+function setIDB(idb) {
+  return dispatch => {
+    IDB = idb
+    dispatch(handleSearchRequest(''))
+  }
+}
 
 let FBAUTH
 let FBDATA
@@ -36,14 +46,30 @@ const searchPath = (uid,id) => `${searchesPath(uid)}/${id}`
 const searchPropPath = (uid, {id}, propname) => `${searchPath(uid, id)}/${propname}`
 const searchTextPath = (uid, search) => searchPropPath(uid, search, 'text')
 
-//     -- users / $UID / scores / $FAQID / $SCOREID / {FAQTID, SEARCHID, SCORE}
-//            -- OPENING FAQ subscribes to /users/BOB/scores/FAQREF/[SCORE, SCORE, SCORE]
-//            -- IF A FAQT DIES, THEN WE JUST DELETE ALL SCORES WITH A MATCHING FAQTID
-//            -- IF A SEARCH DIES, THEN DELETE ALL SCORES WITH MATHING SEARCHID
-//
-
+const saveSearchWithScores = search => dispatch => {
+  if(!search) return
+  const putreq = IDB.transaction('searches','readwrite').objectStore('searches').put(search)
+  putreq.onsuccess = e => dispatch(updateUI({search}))
+}
+const addFaqtKeyToSearch = (search, faqtKey) => {
+  const {text='', scores=[]} = search
+  switch(scores.indexOf(faqtKey)) {
+    case 0: return null
+    case -1: return {text, scores:[faqtKey,...scores]}
+    default: return {text, scores:[faqtKey,...scores.filter(score => score !== faqtKey)]}
+  }
+}
+export const setBestFaqtByKey = (faqtKey) => {
+  return (dispatch, getState) => {
+    const {search} = getState().ui  
+    dispatch(saveSearchWithScores(addFaqtKeyToSearch(search, faqtKey)))
+  }
+}
+export const deleteScore = faqtKey => (dispatch, getState) => {
+  const {text,scores} = getState().ui.search
+  dispatch(saveSearchWithScores({text, scores:scores.filter(score => score !== faqtKey)}))
+}
 const denit = (ref, ...handlers) => handlers.forEach(handler => ref.off(handler))
-
 function initFaqts(faqref) {
   return (dispatch, getState) => {
     const fbref = faqtsRef(faqref)
@@ -70,30 +96,9 @@ function initFaqts(faqref) {
       FULLTEXT.updateFaqt(faqt)
       if(uiFaqt && uiFaqt.id === faqt.id) dispatch(updateUI({faqtId:faqt.id}))
     })
-  }
-}
-function initSearches(uid) {
-  return (dispatch, getState) => {
-    const fbref = searchesRef(uid) 
-    fbref.on('child_added', snap => {
-      const search = { 
-        id: snap.key, 
-        text: snap.val().text 
-      }
-      dispatch(SEARCHES.addSearch(search))
+    fbref.on('child_removed', snap => {
+      console.log('child removed happened')
     })
-    fbref.on('child_changed', snap => console.log(snap.key, snap.val()))
-  }
-}
-function initScores(uid, faqref) {
-  return (dispatch,getState) => {
-    const fbref = scoresRef(uid, faqref)
-    fbref.on('child_added', snap => {
-      const {faqtId, searchId, value} = snap.val()
-      dispatch(SCORES.addScore({ faqref, id: snap.key, searchId, faqtId, value }))
-    })
-    fbref.on('child_changed', snap => dispatch(SCORES.setScoreValue(snap.key, snap.val().value)))
-    fbref.on('child_removed', snap => dispatch(SCORES.deleteScore({faqref, id:snap.key})))
   }
 }
 function updateOneFaqt(faqt, text, draftjs) {
@@ -105,9 +110,12 @@ function updateOneFaqt(faqt, text, draftjs) {
 }
 export function openFaq(faqref) {
   return function(dispatch, getState) {
-    dispatch(initFaqts(faqref))
-    dispatch(initScores(getState().ui.uid, faqref))
-    dispatch(ADDFAQ(faqref))
+    const {faqs} = getState()
+    const faq = faqs.find(faq => _.isEqual(faq, faqref))
+    if(!faq) {
+      dispatch(initFaqts(faqref))  // load the faq and its faqts from firebase
+      dispatch(ADDFAQ(faqref))   // add the faq to the store
+    }
     return faqref
   }
 }
@@ -116,22 +124,59 @@ export function closeFaq(faqref) {
     const state = getState()
     const {uid} = state.ui
     denit(faqtsRef(faqref),'child_added','child_changed')
-    denit(scoresRef(uid, faqref), 'child_added', 'child_changed', 'child_removed')
-    SELECT.getFaqtKeysByFaqref(state, faqref).forEach(key => FULLTEXT.removeFaqt({id:key}))
+    SELECT.getFaqtKeysByFaqref(state, faqref).forEach(key => FULLTEXT.removeFaqtByKey(key))
     dispatch(REMFAQ(faqref))  // purges all affected faqts and scores
   }
 }
-export function firebaseStuff(app, auth, db) {
+
+function openidb(name,ver) {
+  return new Promise(function(yes, no) {
+    var req = indexedDB.open(name, ver)
+    req.onupgradeneeded = function(res) {
+      no(req)
+      no.onsuccess = null
+    }
+    req.onsuccess = function(res) {
+      yes(res.result)
+    }
+    req.onblocked = no
+  })
+}
+
+export function openDatabases(app, auth, fbdb) {
+  return (dispatch, getState) => {
+    const req = window.indexedDB.open('perfaqt', 17)
+    req.onsuccess = function(event) {
+      dispatch(setIDB(this.result))
+      // IDB = this.result
+      dispatch(firebaseStuff(app, auth, fbdb))
+    } // use this to avoid issues with garbage collection
+    req.onError = e => console.error('openDb:', e.target.errorCode)
+    req.onupgradeneeded = function(e) {
+      const idb = e.target.result
+      // var x = e.currentTarget.result
+      if(idb.objectStoreNames.contains('scores')) idb.deleteObjectStore('scores')
+      if(idb.objectStoreNames.contains('answers')) idb.deleteObjectStore('answers')
+      if(idb.objectStoreNames.contains('questions')) idb.deleteObjectStore('questions')
+      if(!idb.objectStoreNames.contains('searches')) idb.createObjectStore('searches', {keyPath:'text'})
+      console.log('idb updated')
+      // IDB = idb
+      dispatch(setIDB(idb))
+      dispatch(firebaseStuff(app, auth, fbdb))
+    }
+  }
+}
+
+function firebaseStuff(app, auth, db) {
   FBAUTH = auth
   FBDATA = db
   return  function(dispatch, getState) {
+    dispatch(handleSearchRequest(''))
     auth.onAuthStateChanged(user => {
-      console.log('auth state change, user is ', user)
       if(user) {
-
+        const {ui} = getState()
         const {uid} = user
         dispatch(updateUI({uid, index:FULLTEXT.FULLTEXT}))
-        dispatch(initSearches(uid))
         const faqrefTest = dispatch(openFaq({uid, faqId:'work'}))
         const faqrefDefault = dispatch(openFaq({uid, faqId: 'default'}))
         const perfaqtHelp = dispatch(openFaq({uid:'perfaqt', faqId: 'help', isRO:true}))
@@ -141,7 +186,7 @@ export function firebaseStuff(app, auth, db) {
         dispatch(updateUI({faq:null, uid:null}))
         const isPrivate = () => true
         getState().faqs
-        .filter(faq => isPrivate())
+        .filter(faq => isPrivate())  // whaaaa?
         .forEach(faqref => dispatch(closeFaq(faqref)))
       }
     })
@@ -149,73 +194,16 @@ export function firebaseStuff(app, auth, db) {
     dbRefBroadcast.on('value', snap => dispatch(updateUI({broadcast:snap.val()})))
   }
 }
-export function setSearch(text) {
-  return function(dispatch, getState) {
-    const search = Object.assign({}, getState().ui.search, {text})
-    dispatch(updateUI({search}))
-  }
-}
 export function logState() {
   return function(dispatch, getState) {
     console.log(getState())
   }
 }
-
-export const deleteScore = score => (dispatch, getState) => {
-  const {uid} = getState().ui
-  return FBDATA.ref(scorePath(uid, score)).remove()
-}
-
-function createScore(uid, searchId, faqt, value) {
-  const id = UNIQ.randomId(4)
-  const {faqref} = faqt
-  const path = scorePath(uid, {faqref, id})
-  const scoreFB = { searchId, faqtId:faqt.id, value }
-  FBDATA.ref(path).set(scoreFB)
-}
-function setBestFaqtNOSEARCH(faqt) {
-  return function(dispatch, getState, extras) {
-    const state = getState()
-    const {uid} = state.ui
-
-    const matchingScore = SELECT.findScore(state, faqt)
-    const bestScore = SELECT.findBestScore(state)
-    const alreadyBest = matchingScore && matchingScore === bestScore
-    if(alreadyBest) return
-
-    const value = bestScore ? bestScore.value + 1 : 1
-    if(matchingScore) FBDATA.ref().update({[scoreValuePath(uid, matchingScore)]: value})
-    else createScore(uid, null, faqt, value) 
-  }
-}
-
-export function setBestFaqt(faqt) {
-  return function(dispatch, getState, extras) {
-    const state = getState()
-    const {uid, search} = state.ui
-    if(!search.id) {
-      const {text} = search
-      if(!text) return dispatch(setBestFaqtNOSEARCH(faqt))
-      search.id = UNIQ.randomId(4)
-      FBDATA.ref(searchTextPath(uid, search)).set(text)
-      .then(() => dispatch(updateUI({search})))
-    }
-    const matchingScore = SELECT.findScore(state, faqt, search)
-    const bestScore = SELECT.findBestScore(state, search)
-    const alreadyBest = matchingScore && matchingScore === bestScore
-    if(alreadyBest) return
-
-    const value = bestScore ? bestScore.value + 1 : 1
-    if(matchingScore) FBDATA.ref().update({[scoreValuePath(uid, matchingScore)]: value})
-    else createScore(uid, search.id, faqt, value) 
-  }  
-}
-
-export function updateFaqt(faqt, text, draftjs, nextFocus) {
+export function updateFaqt(faqtKey, text, draftjs, nextFocus) {
   return function(dispatch, getState) {
+    const faqt = getState().faqts.get(faqtKey)
+    if(!faqt) return
     const {faqref,id:faqtId} = faqt
-    const state = getState()
-    if(!SELECT.getFaqt(state, faqref, faqtId)) return
     const promise = updateOneFaqt(faqt, text, draftjs)
     if(!nextFocus) return
     switch(nextFocus) {
@@ -228,51 +216,38 @@ export function updateFaqt(faqt, text, draftjs, nextFocus) {
 export function saveTagsToFB(faqt, tags) {
     if(faqt.tags !== tags) FBDATA.ref().update({[faqtTagsPath(faqt)]: tags})
 }
+function buildNewFaqt(faqref) {
+  return {
+    faqref, 
+    id: UNIQ.randomId(4),
+    text:'',
+    draftjs: {},
+    created: Date.now()
+  }
+}
+function faqtToFaqtFB(faqt) {
+  var copy = Object.assign({}, faqt)
+  delete copy.faqref
+  return copy
+} 
 export function addFaqt() {
   return function(dispatch, getState) {
-    const state = getState()
-    const {uid, faqref, search} = state.ui
-
-    function getSearchId(text) {
-      if(!text || !text.length) return null
-      const search = SELECT.findSearchByText(state, text)
-      return search ? search.id : null
-    }
-    function getScoreValue(search) {
-      const score = SELECT.findBestScore(state, search)
-      return score ? score.value + 1 : 1
-    }
-    const faqtId = UNIQ.randomId(4)
-    const created = Date.now()
-    const rank = created
-    FBDATA.ref(faqtPath({faqref,id:faqtId})).set({text:'', draftjs:{}, created, rank})
+    const {faqref,search:{text,scores=[]}} = getState().ui
+    const faqt = buildNewFaqt(faqref)
+    const faqtKey = faqtToKey(faqt)
+    FBDATA.ref(faqtPath(faqt)).set(faqtToFaqtFB(faqt))
     .then(() => {
-      if(search && search.text) {
-        if(!search.id) {
-          search.id = UNIQ.randomId(4)
-          if(typeof search.text === 'object') throw 'search.text cannot be an object in addSearch'
-          FBDATA.ref(searchTextPath(uid, search)).set(search.text)
-        }
-        const scoreFB = { 
-          searchId:search.id, 
-          faqtId, 
-          value: getScoreValue(search)
-        }
-        FBDATA.ref(scorePath(uid, {faqref, id:UNIQ.randomId(4)})).set(scoreFB)
-      }
-      dispatch(updateUI({focused:faqtId, faqtId}))
+      dispatch(updateUI({focused:faqt.id, faqtId:faqt.id})) // get that out of the way
+      dispatch(saveSearchWithScores({ text, scores:[faqtKey, ...scores] }))
     })
   }
 }
-
-export const updateFaqtRank = faqt => FBDATA.ref().update({[faqtRankPath(faqt)]: Date.now()})
 export const signup = (email, password) => () => FBAUTH.createUserWithEmailAndPassword(email, password).catch(e => alert(e.message))
 export const login = (email, password) => () => FBAUTH.signInWithEmailAndPassword(email, password).catch(e => alert(e.message))
 export const logout = () => dispatch => FBAUTH.signOut()
-
 export const focusSearch = () => dispatch => dispatch(updateUI({focused:'SEARCH'}))
-export const setActiveFaq = faqref => dispatch => dispatch(updateUI({faqref, search:{faqref, id:null, text:null}}))
-export const activateFaqt = ({id,tags}) => dispatch => dispatch(updateUI({faqtId:id,focused:id}))
+export const setActiveFaq = faqref => dispatch => dispatch(updateUI({faqref}))
+export const activateFaqt = faqtKey => dispatch => dispatch(updateUI({faqtKey,focused:faqtKey}))
 
 function getActiveLink({ui:{editorState}}) {
   if(!editorState) return ''
@@ -297,37 +272,37 @@ function getTmpValue(state, {fldName,objectId}) {
     default: return '';
   }
 }
-
 export function handleSearchRequest(text) {
   return function(dispatch, getState) {
-    const state = getState()
-    const {ui} = state
-    const {uid, search} = ui
-    if(!text) return dispatch(updateUI({search:{id:null, text:null}}))
-
-    const foundSearch = SELECT.findSearchByText(state, text)
-    if(foundSearch) return dispatch(updateUI({search:foundSearch}))
-
-    const id = UNIQ.randomId(4)
-
-    FBDATA.ref(searchTextPath(uid, {id})).set(text)
-    .then(() => dispatch(updateUI({search:{id,text}})))
+    const {uid, search} = getState().ui
+    text = (text || '').toLowerCase()
+    const SEARCHSTORE = IDB.transaction('searches','readwrite').objectStore('searches')
+    const req = SEARCHSTORE.get(text)
+    req.onerror = e => {
+      console.log('search for search returns error ', e)
+      // SEARCHSTORE.add({text})
+      // dispatch(updateUI({search:{text, scores:[]}}))
+    }
+    req.onsuccess = e => {
+      let search = e.target.result
+      if(search) return dispatch(updateUI({search:e.target.result}))
+      SEARCHSTORE.add({text})
+      dispatch(updateUI({search:{text, scores:[]}}))
+    }
   }
 }
-
 export const saveActiveField = () => {
   return (dispatch, getState) => {
     const state = getState()
-    const {ui, ui:{activeField:{fldName, objectId, tmpValue}}} = state
+    const {faqts, ui, ui:{activeField:{fldName, objectId, tmpValue}}} = state
     if(!fldName) return
     switch(fldName) {
-      case 'fldTags': return saveTagsToFB(objectId, tmpValue)
+      case 'fldTags': return saveTagsToFB(faqts.get(objectId), tmpValue)
       case 'fldSearch' : return dispatch(handleSearchRequest(tmpValue))
       default: throw `no luck saving ${tmpValue} into ${fldName}`
     }
   }
 }
-
 export const resetActiveField = () => {
   return (dispatch, getState) => {
     const {ui:{activeField:{fldName, objectId}}} = getState()
@@ -341,7 +316,6 @@ export const updateActiveField = (tmpValue) => {
     dispatch(updateUI({activeField:{fldName, objectId, tmpValue}}))
   }
 }
-
 export const setActiveField = ({fldName, objectId}) => {
   return (dispatch, getState) => {
     dispatch(saveActiveField())
@@ -361,20 +335,25 @@ export const setDraftjs = editorState => {
     dispatch(updateUI({editorState}))
   }
 }
-
 export const logit = message => {
   return (dispatch, getState, whatever) => {
     console.log(message)
   }
 }
+export function getSuggestionsFromIDB(value) {
+  return dispatch => {
+    const inputValue = value.trim().toLowerCase()
+    const inputLength = inputValue.length
+    if(!inputLength) return dispatch(updateUI({searchSuggestions:[]}))
+    const reqGetall = IDB.transaction('searches').objectStore('searches').getAll()
+    reqGetall.onerror = e => console.log('error', e)
+    reqGetall.onsuccess = e => {
+      const searchSuggestions = e.target.result
+      .filter(({text}) => text.slice(0,inputLength).toLowerCase() === inputValue)
+      .map(search => search.text)
+      dispatch(updateUI({searchSuggestions}))
+    }
+  }
+}
 
-// why do the search results change as we type in search? 
-// because the collection of things to display is calculated at render time
-// and because the search criteria are changing, the search is recalculated
-// the search should not be recalculated except if the id has changed; 
-// BUT.... the search results collection is not being saved anywhere
-// -- this shouldn't matter; as far as the selector is concerned, the id of the search 
-// has not changed, and the search state has nto changed from text to blank, so there 
-// should be no reason to consider recalculating anything
-// so why does it?
 

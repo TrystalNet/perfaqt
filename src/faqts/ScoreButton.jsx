@@ -1,14 +1,16 @@
+// ...this is deprecated...
+
 import React, { Component } from 'react';
 import * as THUNK from '../thunks'
 import { connect } from 'react-redux'
 
-const ScoreButton = ({score, dispatch}) => {
-  if(!score) return null
+const ScoreButton = ({faqtKey, dispatch}) => {
+  if(!faqtKey) return null
   const onClick = e => {
     e.preventDefault()
-    dispatch(THUNK.deleteScore(score))
+    dispatch(THUNK.deleteScore(faqtKey))
   }
-  return <button onClick={onClick}>{score.value}</button>
+  return <button onClick={onClick}>XXX</button>
 }
 
-export default connect((state, ownProps) => ({score:ownProps.score}))(ScoreButton)
+export default connect()(ScoreButton)

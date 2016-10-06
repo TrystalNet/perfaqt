@@ -22,10 +22,11 @@ const app = firebase.initializeApp(config)
 const auth = firebase.auth()
 const db = firebase.database()
 
-
 const store = createStore(reducer, applyMiddleware(Thunk))
 
 render(<Provider store={store}><App /></Provider>, document.getElementById('root'))
-store.dispatch(THUNK.firebaseStuff(app, auth, db))
 
+store.dispatch(THUNK.openDatabases(app, auth, db))
+
+// store.dispatch(THUNK.firebaseStuff(app, auth, db))
 

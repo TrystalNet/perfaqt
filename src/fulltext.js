@@ -16,7 +16,9 @@ const faqtToFTFaqt = faqt => {
   }
 }
 
+export const removeFaqtByKey = faqtKey => FULLTEXT.remove({id:faqtKey})
+
 export const updateFaqt = faqt => FULLTEXT.update(faqtToFTFaqt(faqt))
 export const addFaqt    = faqt => FULLTEXT.add(faqtToFTFaqt(faqt))
-export const removeFaqt = faqt => FULLTEXT.remove({id:faqtToKey(faqt)})
+export const removeFaqt = faqt => removeFaqtByKey(faqtToKey(faqt))
 

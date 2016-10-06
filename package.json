@@ -43,7 +43,7 @@
   },
   "dependencies": {
     "@trystal/uniq-ish": "^1.1.0",
-    "draft-js": "^0.8.1",
+    "draft-js": "^0.9.1",
     "firebase": "^3.3.0",
     "jquery": "^3.1.0",
     "lunr": "^0.7.1",

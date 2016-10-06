@@ -18,4 +18,3 @@ const App = ({uid}) => {
 
 const mapStateToProps = ({ui:{uid}}) => ({uid}) 
 export default connect(mapStateToProps)(App)
-

@@ -5,12 +5,19 @@ function addFaqt(faqts, {payload:faqt}) {
   return faqts.has(key) ? faqts : (new Map([...faqts])).set(key, faqt)
 }
 
+function removeFaqFaqts(faqts, {uid, faqId}) {
+  const faqKey = `${uid}/${faqId}`
+  const keys = [...faqts.keys()].filter(key => key.startsWith(faqKey))
+  keys.forEach(key => faqts.delete(key))
+  return new Map([...faqts])
+}
+
 
 function reducer(faqts=new Map(), action) {
   switch(action.type) {  
     case 'ADD_FAQT': return addFaqt(faqts, action)
     case 'REPLACE_FAQT': return new Map([...faqts]).set(faqtToKey(action.payload), action.payload)
-    case 'DELETE_FAQ'  : return new Map([...faqts]).delete(faqtToKey(action.payload))
+    case 'DELETE_FAQ'  : return removeFaqFaqts(faqts, action.payload)
   }
   return faqts
 }

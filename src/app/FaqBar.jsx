@@ -1,13 +1,15 @@
 import React, { Component } from 'react';
+// import { Button } from 'react-bootstrap'
 import { connect } from 'react-redux'
 import {isEqual} from 'lodash'
 import * as THUNK  from '../thunks'
+
+// console.log('button is ', Button)
 
 const S1 = { flex:1, textAlign:'left' }
 const S2 = { display:'inline'}
 
 function FaqBar({faqref, faqs, dispatch}) {
-  console.log(faqref)
   return <div style={S1}>{
     faqs.map(fr => {
       const key = `${fr.uid}-${fr.faqId}` 

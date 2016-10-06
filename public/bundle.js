@@ -76,7 +76,7 @@
 
 	var _App2 = _interopRequireDefault(_App);
 
-	var _reducer = __webpack_require__(330);
+	var _reducer = __webpack_require__(331);
 
 	var _reducer2 = _interopRequireDefault(_reducer);
 
@@ -22617,7 +22617,7 @@
 	Object.defineProperty(exports, "__esModule", {
 	  value: true
 	});
-	exports.logit = exports.setDraftjs = exports.toggleActiveField = exports.setActiveField = exports.updateActiveField = exports.resetActiveField = exports.saveActiveField = exports.activateFaqt = exports.setActiveFaq = exports.deleteScore = exports.focusSearch = exports.logout = exports.login = exports.signup = exports.updateFaqtRank = undefined;
+	exports.logit = exports.setDraftjs = exports.toggleActiveField = exports.setActiveField = exports.updateActiveField = exports.resetActiveField = exports.saveActiveField = exports.activateFaqt = exports.setActiveFaq = exports.focusSearch = exports.logout = exports.login = exports.signup = exports.updateFaqtRank = exports.deleteScore = undefined;
 
 	var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol ? "symbol" : typeof obj; };
 
@@ -22625,12 +22625,12 @@
 	exports.closeFaq = closeFaq;
 	exports.firebaseStuff = firebaseStuff;
 	exports.setSearch = setSearch;
-	exports.cleanUp = cleanUp;
+	exports.logState = logState;
 	exports.setBestFaqt = setBestFaqt;
 	exports.updateFaqt = updateFaqt;
-	exports.updateTags = updateTags;
+	exports.saveTagsToFB = saveTagsToFB;
 	exports.addFaqt = addFaqt;
-	exports.saveSearch = saveSearch;
+	exports.handleSearchRequest = handleSearchRequest;
 
 	var _jquery = __webpack_require__(194);
 
@@ -22650,27 +22650,23 @@
 
 	var SELECT = _interopRequireWildcard(_select);
 
-	var _faqtsActions = __webpack_require__(327);
+	var _faqtsActions = __webpack_require__(328);
 
 	var FAQTS = _interopRequireWildcard(_faqtsActions);
 
-	var _searchesActions = __webpack_require__(328);
+	var _searchesActions = __webpack_require__(329);
 
 	var SEARCHES = _interopRequireWildcard(_searchesActions);
 
-	var _scoresActions = __webpack_require__(329);
+	var _scoresActions = __webpack_require__(330);
 
 	var SCORES = _interopRequireWildcard(_scoresActions);
 
-	var _reducer = __webpack_require__(330);
-
-	var _lunr = __webpack_require__(334);
-
-	var _lunr2 = _interopRequireDefault(_lunr);
-
 	var _fulltext = __webpack_require__(326);
 
-	var _fulltext2 = _interopRequireDefault(_fulltext);
+	var FULLTEXT = _interopRequireWildcard(_fulltext);
+
+	var _reducer = __webpack_require__(331);
 
 	function _interopRequireWildcard(obj) { if (obj && obj.__esModule) { return obj; } else { var newObj = {}; if (obj != null) { for (var key in obj) { if (Object.prototype.hasOwnProperty.call(obj, key)) newObj[key] = obj[key]; } } newObj.default = obj; return newObj; } }
 
@@ -22716,77 +22712,60 @@
 	  return faqtPropPath(faqt, 'rank');
 	};
 
-	var scoresPath = function scoresPath(faqref) {
-	  return 'scores/' + faqPath(faqref);
+	var scoresPath = function scoresPath(uid, faqref) {
+	  return '/users/' + uid + '/scores/' + faqPath(faqref);
 	};
-	var scoresRef = function scoresRef(faqref) {
-	  return FBDATA.ref().child(scoresPath(faqref));
+	var scoresRef = function scoresRef(uid, faqref) {
+	  return FBDATA.ref().child(scoresPath(uid, faqref));
 	};
-	var scorePath = function scorePath(_ref3) {
+	var scorePath = function scorePath(uid, _ref3) {
 	  var faqref = _ref3.faqref;
 	  var id = _ref3.id;
-	  return scoresPath(faqref) + '/' + id;
+	  return scoresPath(uid, faqref) + '/' + id;
 	};
-	var scorePropPath = function scorePropPath(score, propname) {
-	  return scorePath(score) + '/' + propname;
+	var scorePropPath = function scorePropPath(uid, score, propname) {
+	  return scorePath(uid, score) + '/' + propname;
 	};
-	var scoreSearchIdPath = function scoreSearchIdPath(score) {
-	  return scorePropPath(score, 'searchId');
+	var scoreSearchIdPath = function scoreSearchIdPath(uid, score) {
+	  return scorePropPath(uid, score, 'searchId');
 	};
-	var scoreValuePath = function scoreValuePath(score) {
-	  return scorePropPath(score, 'value');
+	var scoreValuePath = function scoreValuePath(uid, score) {
+	  return scorePropPath(uid, score, 'value');
 	};
 
-	var searchesPath = function searchesPath(faqref) {
-	  return 'searches/' + faqPath(faqref);
+	var searchesPath = function searchesPath(uid) {
+	  return '/users/' + uid + '/searches';
 	};
-	var searchesRef = function searchesRef(faqref) {
-	  return FBDATA.ref().child(searchesPath(faqref));
+	var searchesRef = function searchesRef(uid) {
+	  return FBDATA.ref().child(searchesPath(uid));
 	};
-	var searchPath = function searchPath(_ref4) {
-	  var faqref = _ref4.faqref;
+	var searchPath = function searchPath(uid, id) {
+	  return searchesPath(uid) + '/' + id;
+	};
+	var searchPropPath = function searchPropPath(uid, _ref4, propname) {
 	  var id = _ref4.id;
-	  return searchesPath(faqref) + '/' + id;
+	  return searchPath(uid, id) + '/' + propname;
 	};
-	var searchPropPath = function searchPropPath(search, propname) {
-	  return searchPath(search) + '/' + propname;
-	};
-	var searchTextPath = function searchTextPath(search) {
-	  return searchPropPath(search, 'text');
+	var searchTextPath = function searchTextPath(uid, search) {
+	  return searchPropPath(uid, search, 'text');
 	};
 
-	function remapScoreSearchIds(faqref, searches, scores) {
-	  var uid = faqref.uid;
-	  var faqId = faqref.faqId;
+	//     -- users / $UID / scores / $FAQID / $SCOREID / {FAQTID, SEARCHID, SCORE}
+	//            -- OPENING FAQ subscribes to /users/BOB/scores/FAQREF/[SCORE, SCORE, SCORE]
+	//            -- IF A FAQT DIES, THEN WE JUST DELETE ALL SCORES WITH A MATCHING FAQTID
+	//            -- IF A SEARCH DIES, THEN DELETE ALL SCORES WITH MATHING SEARCHID
+	//
 
-	  var _searches$reduce = searches.reduce(function (_ref5, _ref6) {
-	    var key = _ref5.key;
-	    var remaps = _ref5.remaps;
-	    var text = _ref6.text;
-	    var id = _ref6.id;
+	var denit = function denit(ref) {
+	  for (var _len = arguments.length, handlers = Array(_len > 1 ? _len - 1 : 0), _key = 1; _key < _len; _key++) {
+	    handlers[_key - 1] = arguments[_key];
+	  }
 
-	    text = text.toLowerCase().trim();
-	    var existing = key[text.toLowerCase()];
-	    if (!key[text]) key[text] = id;else remaps[id] = existing;
-	    return { key: key, remaps: remaps };
-	  }, { key: {}, remaps: {} });
-
-	  var key = _searches$reduce.key;
-	  var remaps = _searches$reduce.remaps;
-
-	  var badScores = scores.filter(function (score) {
-	    return remaps[score.searchId];
+	  return handlers.forEach(function (handler) {
+	    return ref.off(handler);
 	  });
-	  var updates = {};
-	  badScores.forEach(function (badScore) {
-	    return updates[scoreSearchIdPath(badScore)] = remaps[badScore.searchId];
-	  });
-	  Object.keys(remaps).forEach(function (badSearchId) {
-	    return updates[searchPath(faqref, badSearchId)] = null;
-	  });
-	  console.log(updates);
-	  //FBDATA.ref().update(updates)
-	}
+	};
+
 	function initFaqts(faqref) {
 	  return function (dispatch, getState) {
 	    var fbref = faqtsRef(faqref);
@@ -22811,7 +22790,7 @@
 	        updated: whenUpdated
 	      };
 	      dispatch(FAQTS.addFaqt(faqt));
-	      (0, _fulltext.dbForFaqref)(faqref).add(faqt);
+	      FULLTEXT.addFaqt(faqt);
 	    });
 	    fbref.on('child_changed', function (snap) {
 	      var _getState = getState();
@@ -22829,54 +22808,45 @@
 
 	      var faqt = { faqref: faqref, id: snap.key, text: text, draftjs: draftjs, tags: tags, rank: rank, updated: updated, created: created };
 	      dispatch(FAQTS.replaceFaqt(faqt));
-	      (0, _fulltext.dbForFaqref)(faqref).update(faqt);
+	      FULLTEXT.updateFaqt(faqt);
 	      if (uiFaqt && uiFaqt.id === faqt.id) dispatch((0, _reducer.updateUI)({ faqtId: faqt.id }));
 	    });
 	  };
 	}
-	function initSearches(dispatch, faqref) {
-	  var fbref = searchesRef(faqref);
-	  fbref.on('child_added', function (snap) {
-	    var search = {
-	      faqref: faqref,
-	      id: snap.key,
-	      text: snap.val().text
-	    };
-	    dispatch(SEARCHES.addSearch(search));
-	  });
-	  fbref.on('child_changed', function (snap) {
-	    console.log(faqref.faqId, snap.key, snap.val().faqts);
-	  });
+	function initSearches(uid) {
+	  return function (dispatch, getState) {
+	    var fbref = searchesRef(uid);
+	    fbref.on('child_added', function (snap) {
+	      var search = {
+	        id: snap.key,
+	        text: snap.val().text
+	      };
+	      dispatch(SEARCHES.addSearch(search));
+	    });
+	    fbref.on('child_changed', function (snap) {
+	      return console.log(snap.key, snap.val());
+	    });
+	  };
 	}
-	function initScores(dispatch, faqref) {
-	  var fbref = scoresRef(faqref);
-	  fbref.on('child_added', function (snap) {
-	    var _snap$val3 = snap.val();
+	function initScores(uid, faqref) {
+	  return function (dispatch, getState) {
+	    var fbref = scoresRef(uid, faqref);
+	    fbref.on('child_added', function (snap) {
+	      var _snap$val3 = snap.val();
 
-	    var faqtId = _snap$val3.faqtId;
-	    var searchId = _snap$val3.searchId;
-	    var value = _snap$val3.value;
+	      var faqtId = _snap$val3.faqtId;
+	      var searchId = _snap$val3.searchId;
+	      var value = _snap$val3.value;
 
-	    dispatch(SCORES.addScore({ faqref: faqref, id: snap.key, searchId: searchId, faqtId: faqtId, value: value }));
-	  });
-	  fbref.on('child_changed', function (snap) {
-	    return dispatch(SCORES.updateScore(faqref, snap.key, { value: snap.val().value }));
-	  });
-	  fbref.on('child_removed', function (snap) {
-	    return dispatch(SCORES.deleteScore({ faqref: faqref, id: snap.key }));
-	  });
-	}
-	function initFullText(dispatch, faqref) {
-	  var uid = faqref.uid;
-	  var faqId = faqref.faqId;
-
-	  var dbkey = uid + '-' + faqId;
-	  _fulltext2.default[dbkey] = (0, _lunr2.default)(function () {
-	    this.field('text');
-	    this.field('tags', { boost: 100 });
-	    this.ref('id');
-	  });
-	  dispatch((0, _reducer.updateUI)({ index: _fulltext2.default[dbkey] }));
+	      dispatch(SCORES.addScore({ faqref: faqref, id: snap.key, searchId: searchId, faqtId: faqtId, value: value }));
+	    });
+	    fbref.on('child_changed', function (snap) {
+	      return dispatch(SCORES.setScoreValue(snap.key, snap.val().value));
+	    });
+	    fbref.on('child_removed', function (snap) {
+	      return dispatch(SCORES.deleteScore({ faqref: faqref, id: snap.key }));
+	    });
+	  };
 	}
 	function updateOneFaqt(faqt, text, draftjs) {
 	  var _FBDATA$ref$update;
@@ -22886,32 +22856,22 @@
 	function openFaq(faqref) {
 	  return function (dispatch, getState) {
 	    dispatch(initFaqts(faqref));
-	    initSearches(dispatch, faqref);
-	    initScores(dispatch, faqref);
-	    initFullText(dispatch, faqref); // this should be shut down when auth state changes; massive hole
+	    dispatch(initScores(getState().ui.uid, faqref));
 	    dispatch((0, _reducer.addFaq)(faqref));
 	    return faqref;
 	  };
 	}
-	var denit = function denit(ref) {
-	  for (var _len = arguments.length, handlers = Array(_len > 1 ? _len - 1 : 0), _key = 1; _key < _len; _key++) {
-	    handlers[_key - 1] = arguments[_key];
-	  }
-
-	  return handlers.forEach(function (handler) {
-	    return ref.off(handler);
-	  });
-	};
-
 	function closeFaq(faqref) {
 	  return function (dispatch, getState) {
-	    console.log('closing faqref' + (faqref.uid + '-' + faqref.faqId));
+	    var state = getState();
+	    var uid = state.ui.uid;
+
 	    denit(faqtsRef(faqref), 'child_added', 'child_changed');
-	    denit(searchesRef(faqref), 'child_added', 'child_changed');
-	    denit(scoresRef(faqref), 'child_added', 'child_changed', 'child_removed');
-	    denit(FBDATA.ref().child('broadcast'), 'value');
-	    (0, _fulltext.removeFTDB)(faqref);
-	    dispatch((0, _reducer.removeFaq)(faqref));
+	    denit(scoresRef(uid, faqref), 'child_added', 'child_changed', 'child_removed');
+	    SELECT.getFaqtKeysByFaqref(state, faqref).forEach(function (key) {
+	      return FULLTEXT.removeFaqt({ id: key });
+	    });
+	    dispatch((0, _reducer.removeFaq)(faqref)); // purges all affected faqts and scores
 	  };
 	}
 	function firebaseStuff(app, auth, db) {
@@ -22919,19 +22879,28 @@
 	  FBDATA = db;
 	  return function (dispatch, getState) {
 	    auth.onAuthStateChanged(function (user) {
+	      console.log('auth state change, user is ', user);
 	      if (user) {
 	        var uid = user.uid;
 
-	        dispatch((0, _reducer.updateUI)({ uid: uid }));
+	        dispatch((0, _reducer.updateUI)({ uid: uid, index: FULLTEXT.FULLTEXT }));
+	        dispatch(initSearches(uid));
 	        var faqrefTest = dispatch(openFaq({ uid: uid, faqId: 'work' }));
 	        var faqrefDefault = dispatch(openFaq({ uid: uid, faqId: 'default' }));
 	        var perfaqtHelp = dispatch(openFaq({ uid: 'perfaqt', faqId: 'help', isRO: true }));
 	        dispatch(setActiveFaq(faqrefDefault));
 	      } else {
-	        dispatch((0, _reducer.updateUI)({ faq: null, uid: null }));
-	        getState().faqs.forEach(function (faqref) {
-	          return dispatch(closeFaq(faqref));
-	        });
+	        (function () {
+	          dispatch((0, _reducer.updateUI)({ faq: null, uid: null }));
+	          var isPrivate = function isPrivate() {
+	            return true;
+	          };
+	          getState().faqs.filter(function (faq) {
+	            return isPrivate();
+	          }).forEach(function (faqref) {
+	            return dispatch(closeFaq(faqref));
+	          });
+	        })();
 	      }
 	    });
 	    var dbRefBroadcast = db.ref().child('broadcast');
@@ -22940,52 +22909,73 @@
 	    });
 	  };
 	}
-	function setSearch(faqref, text) {
+	function setSearch(text) {
 	  return function (dispatch, getState) {
-	    if (!text) return dispatch((0, _reducer.updateUI)({ search: { faqref: faqref, id: null, text: null } }));
-	    var search = SELECT.findSearchByText(getState(), faqref, text);
-	    if (!search) search = { faqref: faqref, id: null, text: text };
+	    var search = Object.assign({}, getState().ui.search, { text: text });
 	    dispatch((0, _reducer.updateUI)({ search: search }));
 	  };
 	}
-
-	function cleanUp() {
-	  return function (dispatch, getState, extras) {
-	    var _getState2 = getState();
-
-	    var searches = _getState2.searches;
-	    var scores = _getState2.scores;
-	    var faqref = _getState2.ui.faqref;
-
-	    remapScoreSearchIds(faqref, searches, scores);
+	function logState() {
+	  return function (dispatch, getState) {
+	    console.log(getState());
 	  };
 	}
-	function setBestFaqt(faqref, faqt) {
+
+	var deleteScore = exports.deleteScore = function deleteScore(score) {
+	  return function (dispatch, getState) {
+	    var uid = getState().ui.uid;
+
+	    return FBDATA.ref(scorePath(uid, score)).remove();
+	  };
+	};
+
+	function createScore(uid, searchId, faqt, value) {
+	  var id = UNIQ.randomId(4);
+	  var faqref = faqt.faqref;
+
+	  var path = scorePath(uid, { faqref: faqref, id: id });
+	  var scoreFB = { searchId: searchId, faqtId: faqt.id, value: value };
+	  FBDATA.ref(path).set(scoreFB);
+	}
+	function setBestFaqtNOSEARCH(faqt) {
 	  return function (dispatch, getState, extras) {
 	    var state = getState();
-	    var search = state.ui.search;
-	    var uid = faqref.uid;
-	    var faqId = faqref.faqId;
+	    var uid = state.ui.uid;
 
+
+	    var matchingScore = SELECT.findScore(state, faqt);
+	    var bestScore = SELECT.findBestScore(state);
+	    var alreadyBest = matchingScore && matchingScore === bestScore;
+	    if (alreadyBest) return;
+
+	    var value = bestScore ? bestScore.value + 1 : 1;
+	    if (matchingScore) FBDATA.ref().update(_defineProperty({}, scoreValuePath(uid, matchingScore), value));else createScore(uid, null, faqt, value);
+	  };
+	}
+
+	function setBestFaqt(faqt) {
+	  return function (dispatch, getState, extras) {
+	    var state = getState();
+	    var _state$ui = state.ui;
+	    var uid = _state$ui.uid;
+	    var search = _state$ui.search;
 
 	    if (!search.id) {
 	      var text = search.text;
 
-	      if (!text) {
-	        var promise = updateFaqtRank(faqt);
-	        return;
-	      }
+	      if (!text) return dispatch(setBestFaqtNOSEARCH(faqt));
 	      search.id = UNIQ.randomId(4);
-	      FBDATA.ref(searchTextPath(search)).set(text).then(function () {
+	      FBDATA.ref(searchTextPath(uid, search)).set(text).then(function () {
 	        return dispatch((0, _reducer.updateUI)({ search: search }));
 	      });
 	    }
-	    var matchingScore = SELECT.findScore(state, search, faqt);
+	    var matchingScore = SELECT.findScore(state, faqt, search);
 	    var bestScore = SELECT.findBestScore(state, search);
-	    if (matchingScore && matchingScore === bestScore) return;
-	    var value = bestScore ? bestScore.value + 1 : 1;
+	    var alreadyBest = matchingScore && matchingScore === bestScore;
+	    if (alreadyBest) return;
 
-	    if (matchingScore) FBDATA.ref().update(_defineProperty({}, scoreValuePath(matchingScore), value));else FBDATA.ref(scorePath({ faqref: faqref, id: UNIQ.randomId(4) })).set({ searchId: search.id, faqtId: faqt.id, value: value });
+	    var value = bestScore ? bestScore.value + 1 : 1;
+	    if (matchingScore) FBDATA.ref().update(_defineProperty({}, scoreValuePath(uid, matchingScore), value));else createScore(uid, search.id, faqt, value);
 	  };
 	}
 
@@ -23007,32 +22997,21 @@
 	    return promise;
 	  };
 	}
-	function updateTags(faqt, tags) {
-	  return function (dispatch, getState) {
-	    var _faqt$faqref = faqt.faqref;
-	    var uid = _faqt$faqref.uid;
-	    var faqId = _faqt$faqref.faqId;
-	    var faqtId = faqt.id;
-
-	    var updates = {};
-	    updates[faqtTagsPath(faqt)] = tags;
-	    FBDATA.ref().update(updates);
-	    dispatch((0, _reducer.updateUI)({ focused: 'SEARCH' }));
-	  };
+	function saveTagsToFB(faqt, tags) {
+	  if (faqt.tags !== tags) FBDATA.ref().update(_defineProperty({}, faqtTagsPath(faqt), tags));
 	}
-	function addFaqt(search) {
+	function addFaqt() {
 	  return function (dispatch, getState) {
 	    var state = getState();
-	    if (!search) return;
-	    var faqref = search.faqref;
-	    var _search$faqref = search.faqref;
-	    var uid = _search$faqref.uid;
-	    var faqId = _search$faqref.faqId;
+	    var _state$ui2 = state.ui;
+	    var uid = _state$ui2.uid;
+	    var faqref = _state$ui2.faqref;
+	    var search = _state$ui2.search;
 
 
 	    function getSearchId(text) {
 	      if (!text || !text.length) return null;
-	      var search = SELECT.findSearchByText(state, faqref, text);
+	      var search = SELECT.findSearchByText(state, text);
 	      return search ? search.id : null;
 	    }
 	    function getScoreValue(search) {
@@ -23043,41 +23022,24 @@
 	    var created = Date.now();
 	    var rank = created;
 	    FBDATA.ref(faqtPath({ faqref: faqref, id: faqtId })).set({ text: '', draftjs: {}, created: created, rank: rank }).then(function () {
-	      if (search.text) {
+	      if (search && search.text) {
 	        if (!search.id) {
 	          search.id = UNIQ.randomId(4);
 	          if (_typeof(search.text) === 'object') throw 'search.text cannot be an object in addSearch';
-	          FBDATA.ref(searchTextPath(search)).set(search.text);
+	          FBDATA.ref(searchTextPath(uid, search)).set(search.text);
 	        }
-	        var fbScore = {
+	        var scoreFB = {
 	          searchId: search.id,
 	          faqtId: faqtId,
 	          value: getScoreValue(search)
 	        };
-	        FBDATA.ref(scorePath({ faqref: faqref, id: UNIQ.randomId(4) })).set(fbScore);
+	        FBDATA.ref(scorePath(uid, { faqref: faqref, id: UNIQ.randomId(4) })).set(scoreFB);
 	      }
 	      dispatch((0, _reducer.updateUI)({ focused: faqtId, faqtId: faqtId }));
 	    });
 	  };
 	}
-	function saveSearch(faqref, text) {
-	  return function (dispatch, getState) {
-	    if (!text || !text.length) return;
-	    var state = getState();
-	    var search = SELECT.findSearchByText(state, faqref, text);
-	    if (search && search.id) return dispatch((0, _reducer.updateUI)({ search: search }));
-	    search = {
-	      id: UNIQ.randomId(4),
-	      faqref: faqref, text: text
-	    };
-	    var uid = faqref.uid;
-	    var faqId = faqref.faqId;
 
-	    FBDATA.ref(searchTextPath(search)).set(search.text).then(function () {
-	      return dispatch((0, _reducer.updateUI)({ search: search }));
-	    });
-	  };
-	}
 	var updateFaqtRank = exports.updateFaqtRank = function updateFaqtRank(faqt) {
 	  return FBDATA.ref().update(_defineProperty({}, faqtRankPath(faqt), Date.now()));
 	};
@@ -23106,37 +23068,21 @@
 	    return dispatch((0, _reducer.updateUI)({ focused: 'SEARCH' }));
 	  };
 	};
-	var deleteScore = exports.deleteScore = function deleteScore(score) {
-	  return function () {
-	    return FBDATA.ref(scorePath(score)).remove();
-	  };
-	};
 	var setActiveFaq = exports.setActiveFaq = function setActiveFaq(faqref) {
 	  return function (dispatch) {
 	    return dispatch((0, _reducer.updateUI)({ faqref: faqref, search: { faqref: faqref, id: null, text: null } }));
 	  };
 	};
-	var activateFaqt = exports.activateFaqt = function activateFaqt(_ref7) {
-	  var id = _ref7.id;
-	  var tags = _ref7.tags;
+	var activateFaqt = exports.activateFaqt = function activateFaqt(_ref5) {
+	  var id = _ref5.id;
+	  var tags = _ref5.tags;
 	  return function (dispatch) {
 	    return dispatch((0, _reducer.updateUI)({ faqtId: id, focused: id }));
 	  };
 	};
 
-	var saveActiveField = exports.saveActiveField = function saveActiveField() {
-	  return function (dispatch, getState) {
-	    var _getState3 = getState();
-
-	    var _getState3$ui$activeF = _getState3.ui.activeField;
-	    var fldName = _getState3$ui$activeF.fldName;
-	    var tmpValue = _getState3$ui$activeF.tmpValue;
-
-	    if (!fldName) return;
-	  };
-	};
-	function getActiveLink(_ref8) {
-	  var editorState = _ref8.ui.editorState;
+	function getActiveLink(_ref6) {
+	  var editorState = _ref6.ui.editorState;
 
 	  if (!editorState) return '';
 
@@ -23157,9 +23103,9 @@
 
 	  return type === 'LINK' ? data.href : '';
 	}
-	function getActiveTags(_ref9, faqtId) {
-	  var faqts = _ref9.faqts;
-	  var ui = _ref9.ui;
+	function getActiveTags(_ref7, faqtId) {
+	  var faqts = _ref7.faqts;
+	  var ui = _ref7.ui;
 
 	  if (!faqtId) return '';
 	  var faqt = faqts.find(function (item) {
@@ -23167,28 +23113,71 @@
 	  });
 	  return faqt ? faqt.tags : '';
 	}
-	function getTmpValue(state, _ref10) {
-	  var fldName = _ref10.fldName;
-	  var objectId = _ref10.objectId;
+	function getTmpValue(state, _ref8) {
+	  var fldName = _ref8.fldName;
+	  var objectId = _ref8.objectId;
 
 	  if (!fldName) return null;
 	  switch (fldName) {
 	    case 'fldLink':
 	      return getActiveLink(state);
 	    case 'fldTags':
-	      return getActiveTags(state, objectId);
+	      return objectId.tags;
+	    case 'fldSearch':
+	      return state.ui.search.text || '';
 	    default:
 	      return '';
 	  }
 	}
 
+	function handleSearchRequest(text) {
+	  return function (dispatch, getState) {
+	    var state = getState();
+	    var ui = state.ui;
+	    var uid = ui.uid;
+	    var search = ui.search;
+
+	    if (!text) return dispatch((0, _reducer.updateUI)({ search: { id: null, text: null } }));
+
+	    var foundSearch = SELECT.findSearchByText(state, text);
+	    if (foundSearch) return dispatch((0, _reducer.updateUI)({ search: foundSearch }));
+
+	    var id = UNIQ.randomId(4);
+
+	    FBDATA.ref(searchTextPath(uid, { id: id })).set(text).then(function () {
+	      return dispatch((0, _reducer.updateUI)({ search: { id: id, text: text } }));
+	    });
+	  };
+	}
+
+	var saveActiveField = exports.saveActiveField = function saveActiveField() {
+	  return function (dispatch, getState) {
+	    var state = getState();
+	    var ui = state.ui;
+	    var _state$ui$activeField = state.ui.activeField;
+	    var fldName = _state$ui$activeField.fldName;
+	    var objectId = _state$ui$activeField.objectId;
+	    var tmpValue = _state$ui$activeField.tmpValue;
+
+	    if (!fldName) return;
+	    switch (fldName) {
+	      case 'fldTags':
+	        return saveTagsToFB(objectId, tmpValue);
+	      case 'fldSearch':
+	        return dispatch(handleSearchRequest(tmpValue));
+	      default:
+	        throw 'no luck saving ' + tmpValue + ' into ' + fldName;
+	    }
+	  };
+	};
+
 	var resetActiveField = exports.resetActiveField = function resetActiveField() {
 	  return function (dispatch, getState) {
-	    var _getState4 = getState();
+	    var _getState2 = getState();
 
-	    var _getState4$ui$activeF = _getState4.ui.activeField;
-	    var fldName = _getState4$ui$activeF.fldName;
-	    var objectId = _getState4$ui$activeF.objectId;
+	    var _getState2$ui$activeF = _getState2.ui.activeField;
+	    var fldName = _getState2$ui$activeF.fldName;
+	    var objectId = _getState2$ui$activeF.objectId;
 
 	    var tmpValue = getTmpValue(getState(), { fldName: fldName, objectId: objectId });
 	    dispatch((0, _reducer.updateUI)({ activeField: { fldName: fldName, objectId: objectId, tmpValue: '' } }));
@@ -23196,19 +23185,19 @@
 	};
 	var updateActiveField = exports.updateActiveField = function updateActiveField(tmpValue) {
 	  return function (dispatch, getState) {
-	    var _getState5 = getState();
+	    var _getState3 = getState();
 
-	    var _getState5$ui$activeF = _getState5.ui.activeField;
-	    var fldName = _getState5$ui$activeF.fldName;
-	    var objectId = _getState5$ui$activeF.objectId;
+	    var _getState3$ui$activeF = _getState3.ui.activeField;
+	    var fldName = _getState3$ui$activeF.fldName;
+	    var objectId = _getState3$ui$activeF.objectId;
 
 	    dispatch((0, _reducer.updateUI)({ activeField: { fldName: fldName, objectId: objectId, tmpValue: tmpValue } }));
 	  };
 	};
 
-	var setActiveField = exports.setActiveField = function setActiveField(_ref11) {
-	  var fldName = _ref11.fldName;
-	  var objectId = _ref11.objectId;
+	var setActiveField = exports.setActiveField = function setActiveField(_ref9) {
+	  var fldName = _ref9.fldName;
+	  var objectId = _ref9.objectId;
 
 	  return function (dispatch, getState) {
 	    dispatch(saveActiveField());
@@ -23234,6 +23223,16 @@
 	    console.log(message);
 	  };
 	};
+
+	// why do the search results change as we type in search? 
+	// because the collection of things to display is calculated at render time
+	// and because the search criteria are changing, the search is recalculated
+	// the search should not be recalculated except if the id has changed; 
+	// BUT.... the search results collection is not being saved anywhere
+	// -- this shouldn't matter; as far as the selector is concerned, the id of the search 
+	// has not changed, and the search state has nto changed from text to blank, so there 
+	// should be no reason to consider recalculating anything
+	// so why does it?
 
 /***/ },
 /* 194 */
@@ -67469,45 +67468,67 @@
 	Object.defineProperty(exports, "__esModule", {
 	  value: true
 	});
-	exports.getActiveFaqref = exports.getActiveSearch = exports.getActiveFaqtId = exports.getFaqt = exports.getScoresByFaqref = exports.getFaqtsByFaqref = exports.getSearchesByFaqref = undefined;
+	exports.findBestScore = exports.getBestFaqtByRank = exports.getActiveFaqref = exports.getActiveSearch = exports.getActiveFaqtId = exports.getScoresBySearch = exports.getScores = exports.getSearches = exports.getFaqts = exports.getFaqt = exports.getFaqtKeysByFaqref = exports.faqrefIdMatch = exports.scoreToFaqtKey = exports.faqtToKey = exports.faqToKey = undefined;
+	exports.findScoreNOSEARCH = findScoreNOSEARCH;
 	exports.findScore = findScore;
-	exports.getBestFaqtByRank = getBestFaqtByRank;
-	exports.findBestScore = findBestScore;
 	exports.getFaqtsForSearch = getFaqtsForSearch;
 	exports.findSearchByText = findSearchByText;
 
 	var _lodash = __webpack_require__(195);
 
-	var _ = _interopRequireWildcard(_lodash);
-
 	var _fulltext = __webpack_require__(326);
-
-	var _fulltext2 = _interopRequireDefault(_fulltext);
-
-	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
-
-	function _interopRequireWildcard(obj) { if (obj && obj.__esModule) { return obj; } else { var newObj = {}; if (obj != null) { for (var key in obj) { if (Object.prototype.hasOwnProperty.call(obj, key)) newObj[key] = obj[key]; } } newObj.default = obj; return newObj; } }
 
 	function _toConsumableArray(arr) { if (Array.isArray(arr)) { for (var i = 0, arr2 = Array(arr.length); i < arr.length; i++) { arr2[i] = arr[i]; } return arr2; } else { return Array.from(arr); } }
 
-	var getSearchesByFaqref = exports.getSearchesByFaqref = function getSearchesByFaqref(state, faqref) {
-	  return faqref ? state.searches.filter(function (search) {
-	    return _.isEqual(search.faqref, faqref);
-	  }) : [];
+	var faqToKey = exports.faqToKey = function faqToKey(_ref) {
+	  var uid = _ref.uid;
+	  var faqId = _ref.faqId;
+	  return uid + '/' + faqId;
 	};
-	var getFaqtsByFaqref = exports.getFaqtsByFaqref = function getFaqtsByFaqref(state, faqref) {
-	  return faqref && state.faqts ? state.faqts.filter(function (faqt) {
-	    return _.isEqual(faqt.faqref, faqref);
-	  }) : [];
+	var faqtToKey = exports.faqtToKey = function faqtToKey(_ref2) {
+	  var faqref = _ref2.faqref;
+	  var id = _ref2.id;
+	  return faqToKey(faqref) + '/' + id;
 	};
-	var getScoresByFaqref = exports.getScoresByFaqref = function getScoresByFaqref(state, faqref) {
-	  return faqref ? state.scores.filter(function (score) {
-	    return _.isEqual(score.faqref, faqref);
-	  }) : [];
+	var scoreToFaqtKey = exports.scoreToFaqtKey = function scoreToFaqtKey(_ref3) {
+	  var faqref = _ref3.faqref;
+	  var faqtId = _ref3.faqtId;
+	  return faqtToKey({ faqref: faqref, id: faqtId });
 	};
+
+	var faqrefIdMatch = exports.faqrefIdMatch = function faqrefIdMatch(a, b) {
+	  return a.id === b.id && (0, _lodash.isEqual)(a.faqref, b.faqref);
+	};
+
+	var getFaqtKeysByFaqref = exports.getFaqtKeysByFaqref = function getFaqtKeysByFaqref(state, faqref) {
+	  if (!faqref || !state.faqts) return [];
+	  var faqKey = faqToKey(faqref) + '/';
+	  return state.faqts.keys().filter(function (key) {
+	    return key.startsWith(faqKey);
+	  });
+	};
+
 	var getFaqt = exports.getFaqt = function getFaqt(state, faqref, id) {
-	  return getFaqtsByFaqref(state, faqref).find(function (faqt) {
-	    return faqt.id === id;
+	  return state.faqts.get(faqtToKey({ faqref: faqref, id: id }));
+	};
+
+	var getFaqts = exports.getFaqts = function getFaqts(state) {
+	  return state.faqts;
+	};
+	var getSearches = exports.getSearches = function getSearches(state) {
+	  return state.searches || [];
+	};
+
+	var getScores = exports.getScores = function getScores(state) {
+	  return [].concat(_toConsumableArray(state.scores.values()));
+	}; // here is the question....
+
+	var getScoresBySearch = exports.getScoresBySearch = function getScoresBySearch(state, search) {
+	  if (search && search.text) return getScores(state).filter(function (score) {
+	    return score.searchId === search.id;
+	  });
+	  return getScores(state).filter(function (score) {
+	    return !score.searchId;
 	  });
 	};
 
@@ -67521,215 +67542,100 @@
 	  return state.ui.faqref;
 	};
 
-	function faqtsForSavedSearch(state, search) {
-	  var faqref = search.faqref;
-	  var id = search.id;
-	  var text = search.text;
+	// the question is, what it does it mean that there is one active faqref
+	// from a search standpoint this is meaningless, since several faqs are searchable simultaneously
+	// but from an update standpoint, not so much
+	// sometimes there will not be an updatable search; in that case, continues to be meaningless
+	// so, say I have three faq going at the same time; there has to be an indicator for that
+	// so the states for a faq are now:
+	// hot, warm, cold, detached
+	// hot is editing, there can only be one 
 
-	  var FAQTS = getFaqtsByFaqref(state, faqref);
-	  var SCORES = getScoresByFaqref(state, faqref);
-	  var bestFAQTIDS = _.chain(SCORES).filter(function (score) {
-	    return score.searchId === id;
-	  }).orderBy('value', 'desc').map(function (score) {
-	    return score.faqtId;
-	  }).value();
 
-	  var ftIndex = (0, _fulltext.dbForFaqref)(faqref);
-	  var ftFAQTIDS = ftIndex ? _.difference(ftIndex.search(text).map(function (item) {
-	    return item.ref;
-	  }), bestFAQTIDS) : [];
-
-	  var allFAQTIDS = _.map(getFaqtsByFaqref(state, faqref), 'id');
-	  var nonBestFAQTIDS = _.difference(allFAQTIDS, bestFAQTIDS);
-	  var unranked = _.difference(nonBestFAQTIDS, ftFAQTIDS);
-
-	  var faqtIndex = _.keyBy(FAQTS, 'id');
-
-	  var faqts1 = bestFAQTIDS.map(function (id) {
-	    return faqtIndex[id];
+	var scoresToFaqts = function scoresToFaqts(state, scores) {
+	  return scores.map(function (score) {
+	    return state.faqts.get(scoreToFaqtKey(score));
 	  });
-	  var faqts2 = ftFAQTIDS.map(function (id) {
-	    return faqtIndex[id];
-	  });
-	  var faqts3 = unranked.map(function (id) {
-	    return faqtIndex[id];
-	  });
+	};
+	var getBestFaqtByRank = exports.getBestFaqtByRank = function getBestFaqtByRank(state, faqref) {
+	  return (0, _lodash.maxBy)(getFaqts(state), 'rank') || null;
+	};
 
-	  faqts3.sort(function (a, b) {
-	    return (b.rank || 0) - (a.rank || 0);
-	  });
-
-	  return [].concat(_toConsumableArray(faqts1), _toConsumableArray(faqts2), _toConsumableArray(faqts3));
-	}
-	function faqtsForSearchText(state, search) {
-	  var faqref = search.faqref;
-	  var text = search.text;
-
-	  var ftIndex = (0, _fulltext.dbForFaqref)(faqref);
-
-	  var faqts = getFaqtsByFaqref(state, faqref);
-	  var faqtIndex = _.keyBy(faqts, 'id');
-	  var allFAQTIDS = _.map(getFaqtsByFaqref(state, faqref), 'id');
-	  var ftFAQTIDS = ftIndex ? ftIndex.search(text).map(function (item) {
-	    return item.ref;
-	  }) : [];
-	  var unranked = _.difference(allFAQTIDS, ftFAQTIDS);
-	  var faqts1 = ftFAQTIDS.map(function (id) {
-	    return faqtIndex[id];
-	  });
-	  var faqts2 = unranked.map(function (id) {
-	    return faqtIndex[id];
-	  });
-	  faqts2.sort(function (a, b) {
-	    return (b.rank || 0) - (a.rank || 0);
-	  });
-	  return [].concat(_toConsumableArray(faqts1), _toConsumableArray(faqts2));
-	}
-	function faqtsForNoText(state, faqref) {
-	  var faqts = [].concat(_toConsumableArray(getFaqtsByFaqref(state, faqref)));
+	function allFaqtsByRank(state) {
+	  var faqts = [].concat(_toConsumableArray(getFaqts(state).values()));
 	  faqts.sort(function (a, b) {
 	    return (b.rank || 0) - (a.rank || 0);
 	  });
-	  return faqts;
+	  return faqts; // return faqts
 	}
-	function findScore(state, search, faqt) {
-	  // used when showing a faqt, to show the best button with associated score and delete-score buttons 
-	  if (!faqt || !faqt.id || !search || !search.id) return null;
-	  var result = getScoresByFaqref(state, search.faqref).filter(function (score) {
-	    return score.searchId === search.id;
+
+	var findBestScore = exports.findBestScore = function findBestScore(state, search) {
+	  return (0, _lodash.maxBy)(getScoresBySearch(state, search), 'value') || null;
+	};
+
+	function findScoreNOSEARCH(state, faqt) {
+	  if (!faqt) return null;
+	  var result = getScores(state).filter(function (score) {
+	    return !score.searchId && (0, _lodash.isEqual)(score.faqref, faqt.faqref);
 	  }).find(function (score) {
 	    return score.faqtId === faqt.id;
 	  }); // max 1 match for faqt+search combo
 	  return result;
 	}
-	function getBestFaqtByRank(state, faqref) {
-	  return _.maxBy(getFaqtsByFaqref(state, faqref), 'rank') || null;
+
+	function findScore(state, faqt, search) {
+	  // used when showing a faqt, to show the best button with associated score and delete-score buttons 
+	  if (!faqt) return null;
+	  if (!search || !search.id) return findScoreNOSEARCH(state, faqt);
+	  var result = getScores(state).filter(function (score) {
+	    return score.searchId === search.id && (0, _lodash.isEqual)(score.faqref, faqt.faqref);
+	  }).find(function (score) {
+	    return score.faqtId === faqt.id;
+	  }); // max 1 match for faqt+search combo
+	  return result;
 	}
 
-	function findBestScore(state, search) {
-	  var faqref = search.faqref;
-	  var searchId = search.id;
+	function getMatchingScores(state, search) {
+	  var scores = getScoresBySearch(state, search);
+	  return (0, _lodash.orderBy)(scores, 'value', 'desc');
+	}
 
-	  if (!search || !search.text) return null;
-	  var matches = getScoresByFaqref(state, faqref).filter(function (score) {
-	    return score.searchId === searchId;
+	function faqtsForSavedSearch(state, search) {
+	  var faqtsByScore = scoresToFaqts(state, getMatchingScores(state, search));
+	  var faqtsByRank = allFaqtsByRank(state);
+	  var faqtsFromFullText = _fulltext.FULLTEXT.search(search.text).map(function (_ref4) {
+	    var ref = _ref4.ref;
+	    var score = _ref4.score;
+	    return state.faqts.get(ref);
 	  });
-	  return _.maxBy(matches, 'value') || null;
+	  return [].concat(_toConsumableArray(new Set([].concat(_toConsumableArray(faqtsByScore), _toConsumableArray(faqtsFromFullText), _toConsumableArray(faqtsByRank)))));
 	}
+
+	function faqtsForNoSearch(state) {
+	  var faqtsByScore = scoresToFaqts(state, getMatchingScores(state));
+	  var faqtsByRank = allFaqtsByRank(state);
+	  return [].concat(_toConsumableArray(new Set([].concat(_toConsumableArray(faqtsByScore), _toConsumableArray(faqtsByRank)))));
+	}
+
 	function getFaqtsForSearch(state, search) {
-	  if (!search || !search.faqref) return [];
-	  var faqref = search.faqref;
+	  if (!search) return [];
 	  var id = search.id;
 	  var text = search.text;
 
 	  var result = [];
-	  if (id) result = faqtsForSavedSearch(state, search);else if (text) result = faqtsForSearchText(state, search);else result = faqtsForNoText(state, faqref);
+	  if (id) result = faqtsForSavedSearch(state, search);else result = faqtsForNoSearch(state);
 	  return result.slice(0, 10);
 	}
-	function findSearchByText(state, faqref, text) {
+	function findSearchByText(state, text) {
 	  if (!text) return null;
 	  text = text.toLowerCase();
-	  return getSearchesByFaqref(state, faqref).find(function (search) {
+	  return getSearches(state).find(function (search) {
 	    return text === search.text.toLowerCase();
 	  });
 	}
 
 /***/ },
 /* 326 */
-/***/ function(module, exports) {
-
-	"use strict";
-
-	Object.defineProperty(exports, "__esModule", {
-	  value: true
-	});
-	var databases = {};
-
-	var dbkey = exports.dbkey = function dbkey(_ref) {
-	  var uid = _ref.uid;
-	  var faqId = _ref.faqId;
-	  return uid + "-" + faqId;
-	};
-	var dbForFaqref = exports.dbForFaqref = function dbForFaqref(faqref) {
-	  return databases[dbkey(faqref)];
-	};
-	var removeFTDB = exports.removeFTDB = function removeFTDB(faqref) {
-	  return delete databases[dbkey(faqref)];
-	};
-
-	exports.default = databases;
-
-/***/ },
-/* 327 */
-/***/ function(module, exports) {
-
-	'use strict';
-
-	Object.defineProperty(exports, "__esModule", {
-	  value: true
-	});
-	var simple = function simple(type, payload) {
-	  return { type: type, payload: payload };
-	};
-
-	var replaceFaqt = exports.replaceFaqt = function replaceFaqt(faqt) {
-	  return simple('REPLACE_FAQT', faqt);
-	};
-	var addFaqt = exports.addFaqt = function addFaqt(faqt) {
-	  return simple('ADD_FAQT', { faqt: faqt });
-	}; // faqt includes faqref for now
-	var loadFaqts = exports.loadFaqts = function loadFaqts(faqts) {
-	  return simple('LOAD_FAQTS', { faqts: faqts });
-	};
-
-/***/ },
-/* 328 */
-/***/ function(module, exports) {
-
-	'use strict';
-
-	Object.defineProperty(exports, "__esModule", {
-	  value: true
-	});
-	var simple = function simple(type, payload) {
-	  return { type: type, payload: payload };
-	};
-
-	var loadSearches = exports.loadSearches = function loadSearches(searches) {
-	  return simple('LOAD_SEARCHES', { searches: searches });
-	};
-	var addSearch = exports.addSearch = function addSearch(search) {
-	  return simple('ADD_SEARCH', { search: search });
-	};
-
-/***/ },
-/* 329 */
-/***/ function(module, exports) {
-
-	'use strict';
-
-	Object.defineProperty(exports, "__esModule", {
-	  value: true
-	});
-	var simple = function simple(type, payload) {
-	  return { type: type, payload: payload };
-	};
-
-	var loadScores = exports.loadScores = function loadScores(scores) {
-	  return simple('LOAD_SCORES', { scores: scores });
-	};
-	var addScore = exports.addScore = function addScore(score) {
-	  return simple('ADD_SCORE', { score: score });
-	};
-	var updateScore = exports.updateScore = function updateScore(faqref, id, edits) {
-	  return simple('UPDATE_SCORE', { faqref: faqref, id: id, edits: edits });
-	};
-	var deleteScore = exports.deleteScore = function deleteScore(score) {
-	  return simple('DELETE_SCORE', score);
-	};
-
-/***/ },
-/* 330 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -67737,279 +67643,45 @@
 	Object.defineProperty(exports, "__esModule", {
 	  value: true
 	});
-	exports.updateTmpvalue = exports.updateUI = exports.addFaq = exports.removeFaq = undefined;
+	exports.removeFaqt = exports.addFaqt = exports.updateFaqt = exports.FULLTEXT = undefined;
 
-	var _lodash = __webpack_require__(195);
+	var _lunr = __webpack_require__(327);
 
-	var _lodash2 = _interopRequireDefault(_lodash);
-
-	var _faqtsReducer = __webpack_require__(331);
-
-	var _faqtsReducer2 = _interopRequireDefault(_faqtsReducer);
-
-	var _searchesReducer = __webpack_require__(332);
-
-	var _searchesReducer2 = _interopRequireDefault(_searchesReducer);
-
-	var _scoresReducer = __webpack_require__(333);
-
-	var _scoresReducer2 = _interopRequireDefault(_scoresReducer);
-
-	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
-
-	function _toConsumableArray(arr) { if (Array.isArray(arr)) { for (var i = 0, arr2 = Array(arr.length); i < arr.length; i++) { arr2[i] = arr[i]; } return arr2; } else { return Array.from(arr); } }
-
-	var defaultUI = {
-	  uid: null,
-	  faqref: null,
-	  faqtId: null,
-	  focused: null,
-	  search: { faqref: null, id: null, text: null },
-	  broadcast: null,
-	  searchSuggestions: [],
-	  fldEmail: '',
-	  fldPassword: '',
-	  activeField: {
-	    objectId: null,
-	    fldName: null,
-	    tmpValue: null
-	  }
-	};
-
-	function UI() {
-	  var uiState = arguments.length <= 0 || arguments[0] === undefined ? defaultUI : arguments[0];
-	  var _ref = arguments[1];
-	  var type = _ref.type;
-	  var payload = _ref.payload;
-
-	  switch (type) {
-	    case 'UPDATE_UI':
-	      return Object.assign({}, uiState, payload);
-
-	    case 'UPDATE_ACTIVEFIELD':
-	      var activeField = Object.assign({}, uiState.activeField, payload);
-	      return Object.assign({}, uiState, { activeField: activeField });
-
-	    default:
-	      return uiState;
-	  }
-	}
-	function FAQS() {
-	  var faqs = arguments.length <= 0 || arguments[0] === undefined ? [] : arguments[0];
-	  var _ref2 = arguments[1];
-	  var type = _ref2.type;
-	  var payload = _ref2.payload;
-
-	  switch (type) {
-	    case 'ADD_FAQ':
-	      return [].concat(_toConsumableArray(faqs), [payload]);
-	    case 'DELETE_FAQ':
-	      return faqs.filter(function (faqref) {
-	        return !_lodash2.default.isEqual(faqref, payload);
-	      });
-	  }
-	  return faqs;
-	}
-
-	function showStatus(state) {
-	  console.log(state.faqts.length + ' faqts, ' + state.scores.length + ' scores, ' + state.searches.length + ' searches');
-	}
-	function reducer() {
-	  var state = arguments.length <= 0 || arguments[0] === undefined ? {} : arguments[0];
-	  var action = arguments[1];
-
-	  var newState = {
-	    faqts: (0, _faqtsReducer2.default)(state.faqts, action),
-	    searches: (0, _searchesReducer2.default)(state.searches, action),
-	    scores: (0, _scoresReducer2.default)(state.scores, action),
-	    faqs: FAQS(state.faqs, action)
-	  };
-	  newState.ui = UI(state.ui, action);
-	  // showStatus(newState)
-	  return newState;
-	}
-
-	var removeFaq = exports.removeFaq = function removeFaq(faqref) {
-	  return { type: 'DELETE_FAQ', payload: faqref };
-	};
-	var addFaq = exports.addFaq = function addFaq(faqref) {
-	  return { type: 'ADD_FAQ', payload: faqref };
-	};
-	var updateUI = exports.updateUI = function updateUI(edits) {
-	  return { type: 'UPDATE_UI', payload: edits };
-	};
-	var updateTmpvalue = exports.updateTmpvalue = function updateTmpvalue(value) {
-	  return { type: 'UPDATE_ACTIVEFIELD', payload: value };
-	};
-	exports.default = reducer;
-
-/***/ },
-/* 331 */
-/***/ function(module, exports, __webpack_require__) {
-
-	'use strict';
-
-	Object.defineProperty(exports, "__esModule", {
-	  value: true
-	});
+	var _lunr2 = _interopRequireDefault(_lunr);
 
 	var _select = __webpack_require__(325);
 
-	var SELECT = _interopRequireWildcard(_select);
-
-	var _lodash = __webpack_require__(195);
-
-	var _lodash2 = _interopRequireDefault(_lodash);
-
 	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
-	function _interopRequireWildcard(obj) { if (obj && obj.__esModule) { return obj; } else { var newObj = {}; if (obj != null) { for (var key in obj) { if (Object.prototype.hasOwnProperty.call(obj, key)) newObj[key] = obj[key]; } } newObj.default = obj; return newObj; } }
-
-	function _toConsumableArray(arr) { if (Array.isArray(arr)) { for (var i = 0, arr2 = Array(arr.length); i < arr.length; i++) { arr2[i] = arr[i]; } return arr2; } else { return Array.from(arr); } }
-
-	var same = function same(A, B) {
-	  return A.id === B.id && _lodash2.default.isEqual(A.faqref, B.faqref);
-	};
-
-	function addFaqt(faqts, action) {
-	  var faqt = action.payload.faqt;
-	  var faqref = faqt.faqref;
-	  var id = faqt.id;
-
-	  var alreadyThere = faqts.find(function (faqt) {
-	    return _lodash2.default.isEqual(faqt.faqref, faqref) && faqt.id === id;
-	  });
-	  if (alreadyThere) return faqts;
-	  return [].concat(_toConsumableArray(faqts), [Object.assign({}, faqt)]);
-	}
-
-	function reducer() {
-	  var faqts = arguments.length <= 0 || arguments[0] === undefined ? [] : arguments[0];
-	  var action = arguments[1];
-
-	  switch (action.type) {
-	    case 'LOAD_FAQTS':
-	      return action.payload.faqts;
-	    case 'ADD_FAQT':
-	      return addFaqt(faqts, action);
-	    case 'REPLACE_FAQT':
-	      return faqts.map(function (faqt) {
-	        return same(faqt, action.payload) ? action.payload : faqt;
-	      });
-	    case 'DELETE_FAQ':
-	      return faqts.filter(function (faqt) {
-	        return !_lodash2.default.isEqual(faqt.faqref, action.payload);
-	      });
-	    // case 'REMOVE_FAQT': return faqts.filter(faqt => !same(faqt, action.payload))
-	  }
-	  return faqts;
-	}
-
-	exports.default = reducer;
-
-	// for tonight: continue switching back from faqt to faqtId in the UI state
-	// we are doing this because this is the only simple way the UI can know that a newly added FAQT should be active
-
-/***/ },
-/* 332 */
-/***/ function(module, exports, __webpack_require__) {
-
-	'use strict';
-
-	Object.defineProperty(exports, "__esModule", {
-	  value: true
+	var FULLTEXT = exports.FULLTEXT = (0, _lunr2.default)(function () {
+	  this.field('text');
+	  this.field('tags', { boost: 100 });
+	  this.ref('id');
 	});
 
-	var _lodash = __webpack_require__(195);
+	var faqtToFTFaqt = function faqtToFTFaqt(faqt) {
+	  var text = faqt.text;
+	  var tags = faqt.tags;
 
-	var _lodash2 = _interopRequireDefault(_lodash);
-
-	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
-
-	function _toConsumableArray(arr) { if (Array.isArray(arr)) { for (var i = 0, arr2 = Array(arr.length); i < arr.length; i++) { arr2[i] = arr[i]; } return arr2; } else { return Array.from(arr); } }
-
-	function reducer() {
-	  var searches = arguments.length <= 0 || arguments[0] === undefined ? [] : arguments[0];
-	  var action = arguments[1];
-
-	  switch (action.type) {
-	    case 'LOAD_SEARCHES':
-	      return action.payload.searches;
-	    case 'ADD_SEARCH':
-	      return [].concat(_toConsumableArray(searches), [action.payload.search]);
-	    case 'DELETE_FAQ':
-	      return searches.filter(function (search) {
-	        return !_lodash2.default.isEqual(search.faqref, action.payload);
-	      });
-	  }
-	  return searches;
-	}
-
-	exports.default = reducer;
-
-/***/ },
-/* 333 */
-/***/ function(module, exports, __webpack_require__) {
-
-	'use strict';
-
-	Object.defineProperty(exports, "__esModule", {
-	  value: true
-	});
-
-	var _lodash = __webpack_require__(195);
-
-	var _lodash2 = _interopRequireDefault(_lodash);
-
-	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
-
-	function _toConsumableArray(arr) { if (Array.isArray(arr)) { for (var i = 0, arr2 = Array(arr.length); i < arr.length; i++) { arr2[i] = arr[i]; } return arr2; } else { return Array.from(arr); } }
-
-	var same = function same(A, B) {
-	  return A.id === B.id && _lodash2.default.isEqual(A.faqref, B.faqref);
+	  return {
+	    id: (0, _select.faqtToKey)(faqt),
+	    text: text,
+	    tags: tags
+	  };
 	};
 
-	function updateScore(scores, _ref) {
-	  var faqId = _ref.faqId;
-	  var id = _ref.id;
-	  var edits = _ref.edits;
-
-	  var oldVersion = scores.find(function (score) {
-	    return score.faqId === faqId && score.id === id;
-	  });
-	  var newVersion = Object.assign({}, oldVersion, edits);
-	  return scores.map(function (score) {
-	    return score.faqId === faqId && score.id === id ? newVersion : score;
-	  });
-	}
-
-	function reducer() {
-	  var scores = arguments.length <= 0 || arguments[0] === undefined ? [] : arguments[0];
-	  var action = arguments[1];
-
-	  switch (action.type) {
-	    case 'LOAD_SCORES':
-	      return [].concat(_toConsumableArray(action.payload.scores));
-	    case 'ADD_SCORE':
-	      return [].concat(_toConsumableArray(scores), [action.payload.score]);
-	    case 'UPDATE_SCORE':
-	      return updateScore(scores, action.payload);
-	    case 'DELETE_SCORE':
-	      return scores.filter(function (score) {
-	        return !same(score, action.payload);
-	      });
-	    case 'DELETE_FAQ':
-	      return scores.filter(function (score) {
-	        return !_lodash2.default.isEqual(score.faqref, action.payload);
-	      });
-	  }
-	  return scores;
-	}
-
-	exports.default = reducer;
+	var updateFaqt = exports.updateFaqt = function updateFaqt(faqt) {
+	  return FULLTEXT.update(faqtToFTFaqt(faqt));
+	};
+	var addFaqt = exports.addFaqt = function addFaqt(faqt) {
+	  return FULLTEXT.add(faqtToFTFaqt(faqt));
+	};
+	var removeFaqt = exports.removeFaqt = function removeFaqt(faqt) {
+	  return FULLTEXT.remove({ id: (0, _select.faqtToKey)(faqt) });
+	};
 
 /***/ },
-/* 334 */
+/* 327 */
 /***/ function(module, exports, __webpack_require__) {
 
 	var __WEBPACK_AMD_DEFINE_FACTORY__, __WEBPACK_AMD_DEFINE_RESULT__;/**
@@ -70068,6 +69740,325 @@
 
 
 /***/ },
+/* 328 */
+/***/ function(module, exports) {
+
+	'use strict';
+
+	Object.defineProperty(exports, "__esModule", {
+	  value: true
+	});
+	var simple = function simple(type, payload) {
+	  return { type: type, payload: payload };
+	};
+
+	var replaceFaqt = exports.replaceFaqt = function replaceFaqt(faqt) {
+	  return simple('REPLACE_FAQT', faqt);
+	};
+	var addFaqt = exports.addFaqt = function addFaqt(faqt) {
+	  return simple('ADD_FAQT', faqt);
+	}; // faqt includes faqref for now
+	var removeFaqt = exports.removeFaqt = function removeFaqt(faqt) {
+	  return simple('REMOVE_FAQT', faqt);
+	};
+
+/***/ },
+/* 329 */
+/***/ function(module, exports) {
+
+	'use strict';
+
+	Object.defineProperty(exports, "__esModule", {
+	  value: true
+	});
+	var simple = function simple(type, payload) {
+	  return { type: type, payload: payload };
+	};
+
+	var addSearch = exports.addSearch = function addSearch(search) {
+	  return simple('ADD_SEARCH', search);
+	};
+
+/***/ },
+/* 330 */
+/***/ function(module, exports) {
+
+	'use strict';
+
+	Object.defineProperty(exports, "__esModule", {
+	  value: true
+	});
+	var simple = function simple(type, payload) {
+	  return { type: type, payload: payload };
+	};
+
+	var addScore = exports.addScore = function addScore(score) {
+	  return simple('ADD_SCORE', score);
+	};
+	var deleteScore = exports.deleteScore = function deleteScore(score) {
+	  return simple('DELETE_SCORE', score);
+	};
+	var setScoreValue = exports.setScoreValue = function setScoreValue(id, value) {
+	  return simple('SET_SCOREVALUE', { id: id, value: value });
+	};
+
+/***/ },
+/* 331 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+
+	Object.defineProperty(exports, "__esModule", {
+	  value: true
+	});
+	exports.updateTmpvalue = exports.updateUI = exports.addFaq = exports.removeFaq = undefined;
+
+	var _lodash = __webpack_require__(195);
+
+	var _lodash2 = _interopRequireDefault(_lodash);
+
+	var _faqtsReducer = __webpack_require__(332);
+
+	var _faqtsReducer2 = _interopRequireDefault(_faqtsReducer);
+
+	var _searchesReducer = __webpack_require__(333);
+
+	var _searchesReducer2 = _interopRequireDefault(_searchesReducer);
+
+	var _scoresReducer = __webpack_require__(334);
+
+	var _scoresReducer2 = _interopRequireDefault(_scoresReducer);
+
+	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+	function _toConsumableArray(arr) { if (Array.isArray(arr)) { for (var i = 0, arr2 = Array(arr.length); i < arr.length; i++) { arr2[i] = arr[i]; } return arr2; } else { return Array.from(arr); } }
+
+	var defaultUI = {
+	  uid: null,
+	  faqref: null,
+	  faqtId: null,
+	  focused: null,
+	  search: { id: null, text: null },
+	  broadcast: null,
+	  searchSuggestions: [],
+	  fldEmail: '',
+	  fldPassword: '',
+	  activeField: {
+	    objectId: null,
+	    fldName: null,
+	    tmpValue: null
+	  }
+	};
+
+	function UI() {
+	  var uiState = arguments.length <= 0 || arguments[0] === undefined ? defaultUI : arguments[0];
+	  var _ref = arguments[1];
+	  var type = _ref.type;
+	  var payload = _ref.payload;
+
+	  switch (type) {
+	    case 'UPDATE_UI':
+	      return Object.assign({}, uiState, payload);
+
+	    case 'UPDATE_ACTIVEFIELD':
+	      var activeField = Object.assign({}, uiState.activeField, payload);
+	      return Object.assign({}, uiState, { activeField: activeField });
+
+	    default:
+	      return uiState;
+	  }
+	}
+	function FAQS() {
+	  var faqs = arguments.length <= 0 || arguments[0] === undefined ? [] : arguments[0];
+	  var _ref2 = arguments[1];
+	  var type = _ref2.type;
+	  var payload = _ref2.payload;
+
+	  switch (type) {
+	    case 'ADD_FAQ':
+	      return [].concat(_toConsumableArray(faqs), [payload]);
+	    case 'DELETE_FAQ':
+	      return faqs.filter(function (faqref) {
+	        return !_lodash2.default.isEqual(faqref, payload);
+	      });
+	  }
+	  return faqs;
+	}
+
+	function showStatus(state) {
+	  console.log(state.faqts.length + ' faqts, ' + state.scores.length + ' scores, ' + state.searches.length + ' searches');
+	}
+	function reducer() {
+	  var state = arguments.length <= 0 || arguments[0] === undefined ? {} : arguments[0];
+	  var action = arguments[1];
+
+	  var newState = {
+	    faqts: (0, _faqtsReducer2.default)(state.faqts, action),
+	    searches: (0, _searchesReducer2.default)(state.searches, action),
+	    scores: (0, _scoresReducer2.default)(state.scores, action),
+	    faqs: FAQS(state.faqs, action)
+	  };
+	  newState.ui = UI(state.ui, action);
+	  // showStatus(newState)
+	  return newState;
+	}
+
+	var removeFaq = exports.removeFaq = function removeFaq(faqref) {
+	  return { type: 'DELETE_FAQ', payload: faqref };
+	};
+	var addFaq = exports.addFaq = function addFaq(faqref) {
+	  return { type: 'ADD_FAQ', payload: faqref };
+	};
+	var updateUI = exports.updateUI = function updateUI(edits) {
+	  return { type: 'UPDATE_UI', payload: edits };
+	};
+	var updateTmpvalue = exports.updateTmpvalue = function updateTmpvalue(value) {
+	  return { type: 'UPDATE_ACTIVEFIELD', payload: value };
+	};
+	exports.default = reducer;
+
+/***/ },
+/* 332 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+
+	Object.defineProperty(exports, "__esModule", {
+	  value: true
+	});
+
+	var _select = __webpack_require__(325);
+
+	function _toConsumableArray(arr) { if (Array.isArray(arr)) { for (var i = 0, arr2 = Array(arr.length); i < arr.length; i++) { arr2[i] = arr[i]; } return arr2; } else { return Array.from(arr); } }
+
+	function addFaqt(faqts, _ref) {
+	  var faqt = _ref.payload;
+
+	  var key = (0, _select.faqtToKey)(faqt);
+	  return faqts.has(key) ? faqts : new Map([].concat(_toConsumableArray(faqts))).set(key, faqt);
+	}
+
+	function reducer() {
+	  var faqts = arguments.length <= 0 || arguments[0] === undefined ? new Map() : arguments[0];
+	  var action = arguments[1];
+
+	  switch (action.type) {
+	    case 'ADD_FAQT':
+	      return addFaqt(faqts, action);
+	    case 'REPLACE_FAQT':
+	      return new Map([].concat(_toConsumableArray(faqts))).set((0, _select.faqtToKey)(action.payload), action.payload);
+	    case 'DELETE_FAQ':
+	      return new Map([].concat(_toConsumableArray(faqts))).delete((0, _select.faqtToKey)(action.payload));
+	  }
+	  return faqts;
+	}
+
+	exports.default = reducer;
+
+	// for tonight: continue switching back from faqt to faqtId in the UI state
+	// we are doing this because this is the only simple way the UI can know that a newly added FAQT should be active
+
+/***/ },
+/* 333 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+
+	Object.defineProperty(exports, "__esModule", {
+	  value: true
+	});
+
+	var _lodash = __webpack_require__(195);
+
+	var _lodash2 = _interopRequireDefault(_lodash);
+
+	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+	function _toConsumableArray(arr) { if (Array.isArray(arr)) { for (var i = 0, arr2 = Array(arr.length); i < arr.length; i++) { arr2[i] = arr[i]; } return arr2; } else { return Array.from(arr); } }
+
+	// FUCK: WORK OUT WHAT NEEDS TO HAPPEN IN SEARCHES WHEN A FAQ IS DELETED
+
+	function reducer() {
+	  var searches = arguments.length <= 0 || arguments[0] === undefined ? [] : arguments[0];
+	  var action = arguments[1];
+
+	  switch (action.type) {
+	    case 'ADD_SEARCH':
+	      return [].concat(_toConsumableArray(searches), [action.payload]);
+	    case 'DELETE_FAQ':
+	      return searches.filter(function (search) {
+	        return !_lodash2.default.isEqual(search.faqref, action.payload);
+	      });
+	  }
+	  return searches;
+	}
+
+	exports.default = reducer;
+
+/***/ },
+/* 334 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+
+	Object.defineProperty(exports, "__esModule", {
+	  value: true
+	});
+
+	var _lodash = __webpack_require__(195);
+
+	var _lodash2 = _interopRequireDefault(_lodash);
+
+	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+	function _toConsumableArray(arr) { if (Array.isArray(arr)) { for (var i = 0, arr2 = Array(arr.length); i < arr.length; i++) { arr2[i] = arr[i]; } return arr2; } else { return Array.from(arr); } }
+
+	var setScore = function setScore(scores, score) {
+	  return new Map([].concat(_toConsumableArray(scores))).set(score.id, score);
+	};
+	var unsetScore = function unsetScore(scores, score) {
+	  var newScores = new Map([].concat(_toConsumableArray(scores)));
+	  newScores.delete(score.id);
+	  return newScores;
+	};
+	var unsetFaq = function unsetFaq(scores, faqref) {
+	  return new Map([].concat(_toConsumableArray(scores)).filter(function (score) {
+	    return !(0, _lodash2.default)(score.faqref, faqref);
+	  }));
+	};
+
+	// the only thing that can change in a score is the value,
+	// so we do special handling
+	function setScoreValue(scores, _ref) {
+	  var id = _ref.id;
+	  var value = _ref.value;
+
+	  var newMap = new Map([].concat(_toConsumableArray(scores)));
+	  var score = Object.assign({}, scores.get(id), { value: value });
+	  newMap.set(id, score);
+	  return newMap;
+	}
+
+	function reducer() {
+	  var scores = arguments.length <= 0 || arguments[0] === undefined ? new Map() : arguments[0];
+	  var action = arguments[1];
+
+	  switch (action.type) {
+	    case 'ADD_SCORE':
+	      return setScore(scores, action.payload);
+	    case 'SET_SCOREVALUE':
+	      return setScoreValue(scores, action.payload);
+	    case 'DELETE_SCORE':
+	      return unsetScore(scores, action.payload);
+	    case 'DELETE_FAQ':
+	      return unsetFaq(scores, action.payload);
+	  }
+	  return scores;
+	}
+
+	exports.default = reducer;
+
+/***/ },
 /* 335 */
 /***/ function(module, exports, __webpack_require__) {
 
@@ -70178,8 +70169,11 @@
 	    { id: 'searchesContainer', style: S0 },
 	    _react2.default.createElement(_Logo2.default, null),
 	    _react2.default.createElement(_SearchBox2.default, null),
-	    _react2.default.createElement('div', { style: S1 }),
-	    _react2.default.createElement(_BroadcastView2.default, null),
+	    _react2.default.createElement(
+	      'div',
+	      { style: S1 },
+	      _react2.default.createElement(_BroadcastView2.default, null)
+	    ),
 	    _react2.default.createElement(_LogoutButton2.default, null)
 	  );
 	}
@@ -70240,25 +70234,35 @@
 
 	var _reactRedux = __webpack_require__(164);
 
+	var _thunks = __webpack_require__(193);
+
+	var THUNKS = _interopRequireWildcard(_thunks);
+
+	function _interopRequireWildcard(obj) { if (obj && obj.__esModule) { return obj; } else { var newObj = {}; if (obj != null) { for (var key in obj) { if (Object.prototype.hasOwnProperty.call(obj, key)) newObj[key] = obj[key]; } } newObj.default = obj; return newObj; } }
+
 	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 	var S1 = { marginRight: 15, color: 'red', fontSize: 'small' };
 
 	var BroadcastView = function BroadcastView(_ref) {
 	  var broadcast = _ref.broadcast;
+	  var dispatch = _ref.dispatch;
 
+	  var onClick = function onClick(e) {
+	    return dispatch(THUNKS.logState());
+	  };
 	  return _react2.default.createElement(
 	    'div',
-	    { style: S1 },
+	    { style: S1, onClick: onClick },
 	    broadcast
 	  );
 	};
 
-	var mapDispatchToProps = function mapDispatchToProps(_ref2) {
+	var mapStateToProps = function mapStateToProps(_ref2) {
 	  var broadcast = _ref2.ui.broadcast;
 	  return { broadcast: broadcast };
 	};
-	exports.default = (0, _reactRedux.connect)(mapDispatchToProps)(BroadcastView);
+	exports.default = (0, _reactRedux.connect)(mapStateToProps)(BroadcastView);
 
 /***/ },
 /* 339 */
@@ -70343,7 +70347,7 @@
 
 	var _reactAutosuggest2 = _interopRequireDefault(_reactAutosuggest);
 
-	var _reducer = __webpack_require__(330);
+	var _reducer = __webpack_require__(331);
 
 	function _interopRequireWildcard(obj) { if (obj && obj.__esModule) { return obj; } else { var newObj = {}; if (obj != null) { for (var key in obj) { if (Object.prototype.hasOwnProperty.call(obj, key)) newObj[key] = obj[key]; } } newObj.default = obj; return newObj; } }
 
@@ -70359,9 +70363,12 @@
 	  var inputValue = value.trim().toLowerCase();
 	  var inputLength = inputValue.length;
 	  if (!inputLength) return [];
-	  return searches.filter(function (search) {
-	    return inputValue === (search.text || '').toLowerCase().slice(0, inputLength);
+	  var result = searches.filter(function (search) {
+	    return inputValue === (search.text || '').slice(0, inputLength);
+	  }).map(function (search) {
+	    return search.text.toLowerCase();
 	  });
+	  return result;
 	}
 
 	var SearchBox = function (_React$Component) {
@@ -70379,15 +70386,9 @@
 	    }
 
 	    return _ret = (_temp = (_this = _possibleConstructorReturn(this, (_Object$getPrototypeO = Object.getPrototypeOf(SearchBox)).call.apply(_Object$getPrototypeO, [this].concat(args))), _this), _this.onKeyDown = function (e) {
-	      var _this$props = _this.props;
-	      var dispatch = _this$props.dispatch;
-	      var faqref = _this$props.faqref;
-	      var search = _this$props.search;
-
 	      switch (e.keyCode) {
 	        case 13:
-	          dispatch(THUNK.saveSearch(faqref, search.text));
-	          break;
+	          _this.props.dispatch(THUNK.saveActiveField());break;
 	        default:
 	          return;
 	      }
@@ -70396,25 +70397,21 @@
 	    }, _this.onChange = function (e, f) {
 	      var newValue = f.newValue;
 	      var method = f.method;
+	      //if(method !== 'type') return
 
-	      if (method !== 'type') return;
 	      e.preventDefault();
-	      var _this$props2 = _this.props;
-	      var dispatch = _this$props2.dispatch;
-	      var faqref = _this$props2.faqref;
-
-	      dispatch(THUNK.setSearch(faqref, newValue));
+	      _this.props.dispatch(THUNK.updateActiveField(newValue));
 	    }, _this.onSuggestionsUpdateRequested = function (_ref) {
 	      var value = _ref.value;
 	      var reason = _ref.reason;
-	      var _this$props3 = _this.props;
-	      var dispatch = _this$props3.dispatch;
-	      var searches = _this$props3.searches;
+	      var _this$props = _this.props;
+	      var dispatch = _this$props.dispatch;
+	      var searches = _this$props.searches;
 
 	      var searchSuggestions = getSuggestions(value, searches);
 	      dispatch((0, _reducer.updateUI)({ searchSuggestions: searchSuggestions }));
 	    }, _this.onFocus = function (e) {
-	      return _this.props.dispatch(THUNK.focusSearch());
+	      return _this.props.dispatch(THUNK.setActiveField({ fldName: 'fldSearch', objectId: null }));
 	    }, _temp), _possibleConstructorReturn(_this, _ret);
 	  }
 
@@ -70434,11 +70431,11 @@
 
 	      var _props = this.props;
 	      var suggestions = _props.suggestions;
-	      var search = _props.search;
+	      var text = _props.text;
 
 	      var inputProps = {
 	        placeholder: 'Type a search',
-	        value: search.text || '',
+	        value: text || '',
 	        onKeyDown: this.onKeyDown,
 	        onChange: this.onChange,
 	        onFocus: this.onFocus
@@ -70449,14 +70446,14 @@
 	        },
 	        suggestions: suggestions,
 	        onSuggestionsUpdateRequested: this.onSuggestionsUpdateRequested,
-	        getSuggestionValue: function getSuggestionValue(search) {
-	          return search.text;
+	        getSuggestionValue: function getSuggestionValue(text) {
+	          return text;
 	        },
-	        renderSuggestion: function renderSuggestion(search) {
+	        renderSuggestion: function renderSuggestion(text) {
 	          return _react2.default.createElement(
 	            'span',
 	            null,
-	            search.text
+	            text
 	          );
 	        },
 	        inputProps: inputProps
@@ -70471,14 +70468,20 @@
 	  var _state$ui = state.ui;
 	  var suggestions = _state$ui.searchSuggestions;
 	  var search = _state$ui.search;
-	  var faqref = _state$ui.faqref;
 	  var focused = _state$ui.focused;
+	  var activeField = _state$ui.activeField;
+	  var fldName = activeField.fldName;
+	  var objectId = activeField.objectId;
+	  var tmpValue = activeField.tmpValue;
 
-	  var searches = SELECT.getSearchesByFaqref(state, faqref);
+	  var text = fldName === 'fldSearch' ? tmpValue : search.text;
+	  var searches = SELECT.getSearches(state);
 	  var isFocus = focused === 'SEARCH';
-	  return { suggestions: suggestions, faqref: faqref, search: search, searches: searches, isFocus: isFocus };
+	  return { suggestions: suggestions, text: text, searches: searches, isFocus: isFocus };
 	}
 	exports.default = (0, _reactRedux.connect)(mapStateToProps)(SearchBox);
+
+	// get the best button going, and i think we are good to go
 
 /***/ },
 /* 342 */
@@ -72503,6 +72506,25 @@
 	};
 
 	var mapStateToProps = function mapStateToProps(state) {
+	  // connect has the responsibility to scan for state changes
+	  // seems like the searchId (or null) could be passed as a property to this control
+	  // if that doesn't change, then it should short-circuit the process
+	  // ----- but the question is --- how could we change this code so that it does the same short circuiting_
+	  // input is state
+	  // this is going to subscribe to the fact that state has changed
+	  // when the state has changed, it is going to recaluate some additional state, to be passed down to the Component
+	  // if that state hasn't changed, then the component update will be skipped
+	  //
+	  // the code below doesn't work because getFaqtsForSearch returns a new collection every time, even if nothing has 
+	  // changed; so it always looks different to the control
+	  // but wait; is this really true? if the new faqt collection has the same faqts, in the same order as the 
+	  // old collection, does the fact that refs are different matter? yes; this is the whole point of immutability
+	  // ----
+	  // so what really needs to happen is that getFaqtsForSearch has to return the same faqt collection that is alrady
+	  // there, and the only way to do that is to keep them around
+	  // time to go back and review how the todolist works; it is filtering vs sorting, but still relevant perhaps 
+
+
 	  return { faqts: SELECT.getFaqtsForSearch(state, state.ui.search) };
 	};
 	exports.default = (0, _reactRedux.connect)(mapStateToProps)(FaqtList);
@@ -72585,7 +72607,7 @@
 	    return dispatch(THUNK.updateFaqt(faqt, text, draftjs, nextFocus));
 	  };
 	  var onSetBest = function onSetBest() {
-	    return dispatch(THUNK.setBestFaqt(faqref, faqt));
+	    return dispatch(THUNK.setBestFaqt(faqt));
 	  };
 	  var style = isActive ? Object.assign({}, style0A, BEIGE) : style0A;
 	  var onEditClick = function onEditClick(e) {
@@ -72597,11 +72619,11 @@
 	    { style: S0 },
 	    _react2.default.createElement(
 	      'div',
-	      { /* ref='container'*/style: style0 },
+	      { style: style0 },
 	      _react2.default.createElement(
 	        'div',
 	        { style: style, onFocus: onFocus },
-	        _react2.default.createElement(_Editor2.default /* ref={node => this.refEdit = node}*/, { text: text, isActive: isActive, draftjs: draftjs, onSave: onSave, onClick: onEditClick })
+	        _react2.default.createElement(_Editor2.default, { text: text, isActive: isActive, draftjs: draftjs, onSave: onSave, onClick: onEditClick })
 	      ),
 	      _react2.default.createElement(
 	        'div',
@@ -72625,7 +72647,7 @@
 
 	  var isActive = faqt.id === SELECT.getActiveFaqtId(state);
 	  var search = SELECT.getActiveSearch(state);
-	  var score = search ? SELECT.findScore(state, search, faqt) : null;
+	  var score = search ? SELECT.findScore(state, faqt, search) : null;
 	  return { faqt: faqt, isActive: isActive, score: score };
 	}
 
@@ -91763,7 +91785,7 @@
 
 	var THUNK = _interopRequireWildcard(_thunks);
 
-	var _reducer = __webpack_require__(330);
+	var _reducer = __webpack_require__(331);
 
 	function _interopRequireWildcard(obj) { if (obj && obj.__esModule) { return obj; } else { var newObj = {}; if (obj != null) { for (var key in obj) { if (Object.prototype.hasOwnProperty.call(obj, key)) newObj[key] = obj[key]; } } newObj.default = obj; return newObj; } }
 
@@ -91781,7 +91803,7 @@
 
 	  if (!isActive) return null;
 	  var onFocus = function onFocus(e) {
-	    return dispatch(THUNK.setActiveField({ fldName: 'fldTags', objectId: faqt.id }));
+	    return dispatch(THUNK.setActiveField({ fldName: 'fldTags', objectId: faqt }));
 	  };
 	  var handleChange = function handleChange(e) {
 	    e.preventDefault();
@@ -91820,7 +91842,7 @@
 	  var activeField = _state$ui.activeField;
 
 	  var isActive = faqtId === faqt.id;
-	  var isHot = isActive && activeField.fldName === 'fldTags' && activeField.objectId === faqtId;
+	  var isHot = isActive && activeField.fldName === 'fldTags' && activeField.objectId === faqt;
 	  var value = isHot ? activeField.tmpValue : faqt.tags;
 	  return { isActive: isActive, faqt: faqt, value: value };
 	};
@@ -91890,6 +91912,10 @@
 
 	var _Editor2 = _interopRequireDefault(_Editor);
 
+	var _ScoreButton = __webpack_require__(613);
+
+	var _ScoreButton2 = _interopRequireDefault(_ScoreButton);
+
 	var _select = __webpack_require__(325);
 
 	var SELECT = _interopRequireWildcard(_select);
@@ -91934,6 +91960,9 @@
 	  var tags = faqt.tags;
 
 	  var style = isActive ? Object.assign({}, style0A, BEIGE) : style0A;
+	  var onSetBest = function onSetBest() {
+	    return dispatch(THUNK.setBestFaqt(faqt));
+	  };
 	  return _react2.default.createElement(
 	    'div',
 	    { style: S0 },
@@ -91944,6 +91973,18 @@
 	        'div',
 	        { style: style },
 	        _react2.default.createElement(_Editor2.default, { text: text, draftjs: draftjs })
+	      ),
+	      _react2.default.createElement(
+	        'div',
+	        { style: { display: 'flex', flexDirection: 'column' } },
+	        _react2.default.createElement(
+	          'button',
+	          { onClick: function onClick(e) {
+	              return onSetBest(e);
+	            } },
+	          'best'
+	        ),
+	        _react2.default.createElement(_ScoreButton2.default, { score: score })
 	      )
 	    )
 	  );
@@ -91954,7 +91995,7 @@
 
 	  var isActive = faqt.id === SELECT.getActiveFaqtId(state);
 	  var search = SELECT.getActiveSearch(state);
-	  var score = search ? SELECT.findScore(state, search, faqt) : null;
+	  var score = search ? SELECT.findScore(state, faqt, search) : null;
 	  return { faqt: faqt, isActive: isActive, score: score };
 	}
 
@@ -92273,7 +92314,7 @@
 
 	var _reactRedux = __webpack_require__(164);
 
-	var _reducer = __webpack_require__(330);
+	var _reducer = __webpack_require__(331);
 
 	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
@@ -92322,7 +92363,7 @@
 
 	var _reactRedux = __webpack_require__(164);
 
-	var _reducer = __webpack_require__(330);
+	var _reducer = __webpack_require__(331);
 
 	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
@@ -92400,10 +92441,39 @@
 	var S3A = { flex: 1, textAlign: 'left' };
 	var S3B = { flex: 1, textAlign: 'right' };
 
+	// what happens when the result of a user action is a faqt in a different faq
+	// we should jump to that faq; ok, but search results cross faqs
+	// to display them in a composite list, there would have to be multiple faqs participating in the list
+	// so has all of this been for nothing? -- no, user still gets to make their own decision
+	// the whole point of this was not to have to remember where a faqt was in order to search for it
+	// so the merged list is a requirement;
+	// adding items happens in the hot faqt;
+	// what does a link do? 
+	// open a whole faqt?
+	//
+	// it has to be possible to 'visit' a faq
+	//
+	// could a faqt simply be a link to faqt somewhere else?
+	// ... such a faqt would display the original;
+	// ... the faqt would be included in my own searchable faq content
+	// ... how would 
+	//
+	// the conflict....
+	// 
+	// a search should search everything; and allow the user to decide what to do with the results
+	// true to the google metaphor, the results have to be able to come from anywhere
+	// that means some of the results are editable, while others are not
+	// it also means that we have to decide where a new faqt should google
+	// which is wright back to where we are now....
+	// perhaps when there is no search, we fall back to only showing faqts from the main faqct system;
+	// not bad;
+	// but that really isn't the issue here
+	// still remains though, what does it mean to link to another faq?
+	// 
+
 	function ButtonBar(_ref) {
 	  var dispatch = _ref.dispatch;
 	  var faqref = _ref.faqref;
-	  var search = _ref.search;
 
 	  if (!faqref || faqref.isRO) return null;
 	  return _react2.default.createElement(
@@ -92411,15 +92481,8 @@
 	    { style: S3B },
 	    _react2.default.createElement(
 	      'button',
-	      { key: 'cleanUp', onClick: function onClick(e) {
-	          return dispatch(THUNK.cleanUp());
-	        } },
-	      'Clean Up'
-	    ),
-	    _react2.default.createElement(
-	      'button',
 	      { key: 'addFaqt', onClick: function onClick(e) {
-	          return dispatch(THUNK.addFaqt(search));
+	          return dispatch(THUNK.addFaqt());
 	        } },
 	      'Add Faqt'
 	    )
@@ -92475,6 +92538,8 @@
 
 	var _reactRedux = __webpack_require__(164);
 
+	var _lodash = __webpack_require__(195);
+
 	var _thunks = __webpack_require__(193);
 
 	var THUNK = _interopRequireWildcard(_thunks);
@@ -92484,30 +92549,38 @@
 	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 	var S1 = { flex: 1, textAlign: 'left' };
+	var S2 = { display: 'inline' };
 
 	function FaqBar(_ref) {
+	  var faqref = _ref.faqref;
 	  var faqs = _ref.faqs;
 	  var dispatch = _ref.dispatch;
 
+	  console.log(faqref);
 	  return _react2.default.createElement(
 	    'div',
 	    { style: S1 },
-	    faqs.map(function (faqref) {
+	    faqs.map(function (fr) {
+	      var key = fr.uid + '-' + fr.faqId;
+	      if ((0, _lodash.isEqual)(fr, faqref)) return _react2.default.createElement(
+	        'div',
+	        { key: key, style: S2 },
+	        fr.faqId
+	      );
 	      return _react2.default.createElement(
 	        'button',
-	        {
-	          key: faqref.uid + '-' + faqref.faqId,
-	          onClick: function onClick(e) {
-	            return dispatch(THUNK.setActiveFaq(faqref));
+	        { key: key, onClick: function onClick(e) {
+	            return dispatch(THUNK.setActiveFaq(fr));
 	          } },
-	        faqref.faqId
+	        fr.faqId
 	      );
 	    })
 	  );
 	}
 	exports.default = (0, _reactRedux.connect)(function (_ref2) {
+	  var faqref = _ref2.ui.faqref;
 	  var faqs = _ref2.faqs;
-	  return { faqs: faqs };
+	  return { faqref: faqref, faqs: faqs };
 	})(FaqBar);
 
 /***/ }

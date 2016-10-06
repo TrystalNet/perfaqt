@@ -1,16 +1,14 @@
 import React, { Component } from 'react';
 import { connect } from 'react-redux'
-import * as SELECT from '../../select'
 import * as THUNK from '../../thunks'
-import { updateUI } from '../../reducer'
 
 const S1 = { display:'flex', border:'black 0px solid', backgroundColor:'lightgrey', padding:5, paddingRight:6 }
-const S2 = {flex:0, margin:3, marginRight:8}
-const S3 = {flex:1, border: 'red 0px solid', paddingLeft:5}
+const S2 = { flex:0, margin:3, marginRight:8 }
+const S3 = { flex:1, border: 'red 0px solid', paddingLeft:5 }
 
-const TagsEditor = ({isActive, value, faqt, dispatch}) => {
+const TagsEditor = ({faqtKey, isActive, tags, dispatch}) => {
   if(!isActive) return null
-  const onFocus = e => dispatch(THUNK.setActiveField({fldName:'fldTags', objectId:faqt}))
+  const onFocus = e => dispatch(THUNK.setActiveField({fldName:'fldTags', objectId:faqtKey}))
   const handleChange = e => {
     e.preventDefault()
     dispatch(THUNK.updateActiveField(e.target.value))
@@ -24,18 +22,18 @@ const TagsEditor = ({isActive, value, faqt, dispatch}) => {
     <div style={S2}><b>Tags:</b></div>
     <input 
       type='text' 
-      value={value || ''} 
+      style={S3}
+      value={tags} 
       onChange={handleChange}
       onKeyDown={onKeyDown} 
-      onFocus={onFocus}
-      style={S3}/>
+      onFocus={onFocus} />
   </div>
 }
-const mapStateToProps = (state, {faqt}) => {
-  const {ui:{faqtId, activeField}} = state
-  const isActive = faqtId === faqt.id
-  const isHot = isActive && activeField.fldName === 'fldTags' && activeField.objectId === faqt 
-  const value = isHot ? activeField.tmpValue : faqt.tags
-  return {isActive, faqt, value}
+const mapStateToProps = (state, {faqtKey}) => {
+  const {faqts, ui, ui:{activeField:{fldName, objectId, tmpValue}}} = state
+  const isActive = faqtKey === ui.faqtKey
+  const isHot = isActive && fldName === 'fldTags' && objectId === faqtKey 
+  const tags = (isHot ? tmpValue : faqts.get(faqtKey).tags) || ''
+  return {isActive, tags}
 }
 export default connect(mapStateToProps)(TagsEditor)

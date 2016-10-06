@@ -5,17 +5,6 @@ import * as SELECT from '../select'
 import Autosuggest from 'react-autosuggest'
 import {updateUI} from '../reducer'
 
-function getSuggestions(value, searches) {
-  const inputValue = value.trim().toLowerCase()
-  const inputLength = inputValue.length
-  if(!inputLength) return []
-  let result = searches
-  .filter(search => inputValue === (search.text || '')
-  .slice(0, inputLength))
-  .map(search => search.text.toLowerCase())
-  return result
-}
-
 class SearchBox extends React.Component {
   onKeyDown = e => {
     switch(e.keyCode) {
@@ -32,9 +21,7 @@ class SearchBox extends React.Component {
     this.props.dispatch(THUNK.updateActiveField(newValue))
   }
   onSuggestionsUpdateRequested = ({value, reason}) => {
-    const {dispatch, searches} = this.props
-    const searchSuggestions = getSuggestions(value, searches)
-    dispatch(updateUI({searchSuggestions}))
+    this.props.dispatch(THUNK.getSuggestionsFromIDB(value))
   }
   onFocus= e => this.props.dispatch(THUNK.setActiveField({fldName:'fldSearch', objectId:null}))
 
