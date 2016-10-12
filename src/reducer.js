@@ -4,7 +4,6 @@ import FAQTS   from './faqts/faqts-reducer'
 const defaultUI = {
   broadcast: null,
   uid: null,
-  faqref: null, 
   faqtKey: null, 
   focused: null,
   search: {text:'', scores:[]},

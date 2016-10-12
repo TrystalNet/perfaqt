@@ -4,11 +4,12 @@ import * as THUNK  from '../thunks'
 import * as SELECT from '../select'
 import Autosuggest from 'react-autosuggest'
 import {updateUI} from '../reducer'
+import {setActiveField, updateActiveField, saveActiveField} from '../tmpField'
 
 class SearchBox extends React.Component {
   onKeyDown = e => {
     switch(e.keyCode) {
-      case 13: this.props.dispatch(THUNK.saveActiveField()); break
+      case 13: this.props.dispatch(saveActiveField()); break
       default: return      
     }
     e.preventDefault()
@@ -18,12 +19,15 @@ class SearchBox extends React.Component {
     const {newValue, method} = f
     //if(method !== 'type') return
     e.preventDefault()
-    this.props.dispatch(THUNK.updateActiveField(newValue))
+    this.props.dispatch(updateActiveField(newValue))
   }
-  onSuggestionsUpdateRequested = ({value, reason}) => {
+  onSuggestionsFetchRequested = ({value}) => {
     this.props.dispatch(THUNK.getSuggestionsFromIDB(value))
   }
-  onFocus= e => this.props.dispatch(THUNK.setActiveField({fldName:'fldSearch', objectId:null}))
+  onSuggestionsClearRequested = () => {
+    this.props.dispatch(updateUI({searchSuggestions:[]}))
+  }
+  onFocus= e => this.props.dispatch(setActiveField({fldName:'fldSearch', objectId:null}))
 
   componentDidUpdate(prevProps) {
     if(prevProps.isFocus || !this.props.isFocus || !this.fldSearch) return
@@ -44,7 +48,9 @@ class SearchBox extends React.Component {
     return <Autosuggest  
        ref={fld => this.fldSearch = fld}
        suggestions={suggestions} 
-       onSuggestionsUpdateRequested={this.onSuggestionsUpdateRequested}
+       alwaysRenderSuggestions={true}
+       onSuggestionsFetchRequested={this.onSuggestionsFetchRequested}
+       onSuggestionsClearRequested={this.onSuggestionsClearRequested}
        getSuggestionValue={text => text}
        renderSuggestion={text => <span>{text}</span>}
        inputProps={inputProps}

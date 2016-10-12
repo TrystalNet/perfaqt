@@ -2,8 +2,11 @@ import React, { Component } from 'react';
 import { connect } from 'react-redux'
 import MyEditor from './Editor'
 import TagsEditor from './TagsEditor'
+import EditToolbar from './EditToolbar'
 import * as SELECT from '../../select'
 import * as THUNK from '../../thunks'
+import {updateUI} from '../../reducer'
+import {addLinkToEditorState} from '../../draftjs-utils'
 
 // VERSIONS OF FAQTS TO POSSIBLY SHOW
 // 1. READONLY, NOTACTIVE
@@ -43,14 +46,20 @@ const ScoreButton = ({isLinked, onDeleteScore}) => {
 
 const Faqt = ({
   faqtKey, 
-  isRO, text, draftjs, isLinked, isActive,
-  onFocus, onSave, onSetBest, onEditClick, onDeleteScore
-  })  => {
+  isRO, editorState, isLinked, isActive,
+  onFocus, onSaveLink, onSetBest, onEditClick, onDeleteScore
+})  => {
   const style = isActive ? Object.assign({},style0A,BEIGE) : style0A
+  const editorContainerStyle = {}
   return <div style={S0}>
     <div style={style0}>
       <div style={style} onFocus={e => onFocus(isRO)}>
-        <MyEditor {...{text, isActive, draftjs, onSave, onClick:onEditClick}} />
+        <div>
+          <EditToolbar active={isActive} faqtKey={faqtKey} onSaveLink={onSaveLink} />
+          <div style={editorContainerStyle} onClick={onEditClick}>
+            <MyEditor {...{faqtKey, editorState, isActive}} />
+          </div>
+        </div>
       </div>
       <div style={{display:'flex', flexDirection:'column'}}>
         <button onClick={onSetBest}>best</button>
@@ -61,32 +70,29 @@ const Faqt = ({
   </div>
 }
 
-
-
 function mapDispatchToProps(dispatch, {faqtKey}) {
-  const onSave = (text, draftjs, nextFocus) => dispatch(THUNK.updateFaqt(faqtKey, text, draftjs, nextFocus))
   const onSetBest = () => dispatch(THUNK.setBestFaqtByKey(faqtKey))
   const onDeleteScore = () => dispatch(THUNK.deleteScore(faqtKey))
-
-  const onEditClick = () => {
-    console.log('using onEditClick to actiate the faqt')
-    return dispatch(THUNK.activateFaqt(faqtKey))
+  const onEditClick = () => dispatch(THUNK.activateFaqt(faqtKey))
+  const onFocus = () => dispatch(THUNK.activateFaqt(faqtKey))
+  // editor handlers
+  //------- toolbar handlers -------------- //
+  const onSaveLink = (editorState, href) => {
+    const newEditorState = addLinkToEditorState(editorState)
+    if(newEditorState) dispatch(updateUI({editorState:newEditorState}))
   }
-  const onFocus = () => {
-    console.log('using onFocus to activate the faqt')
-    dispatch(THUNK.activateFaqt(faqtKey))
-  }
-  return { onFocus, onEditClick, onSave, onSetBest, onDeleteScore }  
+  // -------
+  return { onFocus, onEditClick, onSaveLink, onSetBest, onDeleteScore }  
 }
 
 function mapStateToProps(state, ownProps) {
   const { faqtKey } = ownProps
   const { ui, faqts } = state
-  const { faqref:{isRO}, text, draftjs } = faqts.get(faqtKey)
+  const { faqref:{isRO}, editorState } = faqts.get(faqtKey)
   const isActive = faqtKey === ui.faqtKey
   const search = ui.search || {}
   const isLinked = search.scores ? search.scores.includes(faqtKey) : false
-  return { isRO, text, draftjs, isLinked, isActive }
+  return { isRO, editorState, isLinked, isActive }
 }
 
 export default connect(mapStateToProps, mapDispatchToProps)(Faqt)

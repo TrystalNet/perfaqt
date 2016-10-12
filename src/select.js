@@ -94,3 +94,8 @@ export const getFaqtKeyScore = (faqt, search={}) => search.scores ? search.score
 export const getFaqtScore = (faqt, search={}) => getFaqtKeyScore(faqtToKey(faqt), search)
 
 
+export function editorStateForFaqtKey(state, faqtKey) {
+  // this was originally in the constructor
+
+}
+

@@ -12,7 +12,6 @@ function removeFaqFaqts(faqts, {uid, faqId}) {
   return new Map([...faqts])
 }
 
-
 function reducer(faqts=new Map(), action) {
   switch(action.type) {  
     case 'ADD_FAQT': return addFaqt(faqts, action)

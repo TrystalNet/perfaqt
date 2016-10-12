@@ -5,7 +5,7 @@ import * as THUNKS from '../thunks'
 const S1 = {marginRight:15, color:'red', fontSize:'small'}
 
 const BroadcastView = ({broadcast,dispatch}) => {
-  const onClick = e => dispatch(THUNKS.logState())
+  const onClick = e => console.log('clicked') // dispatch(THUNKS.logState())
   return <div style={S1} onClick={onClick}>{broadcast}</div>
 }
 

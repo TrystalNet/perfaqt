@@ -10,7 +10,7 @@ function LinkForm({value, active, onSaveLink, dispatch}) {
   const onSubmit = e => {
     e.preventDefault()
     e.stopPropagation()
-    dispatch(THUNK.setActiveField({fldName:null}))
+    dispatch(THUNK.setActiveField({fldName:null, objectId:null}))
     onSaveLink(value)
   }
   const onChange = e => {

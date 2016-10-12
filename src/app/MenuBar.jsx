@@ -3,6 +3,7 @@ import { connect } from 'react-redux'
 import { COL0WIDTH} from '../constants'
 import * as THUNK  from '../thunks'
 import FaqBar from './FaqBar'
+import { Button } from 'react-bootstrap'
 
 const S0 = { paddingLeft: COL0WIDTH }
 const S1 = {
@@ -51,8 +52,8 @@ const S3B = { flex:1, textAlign:'right'}
 
 function ButtonBar({dispatch, faqref}) {
   if(!faqref || faqref.isRO) return null
+//    <Button bsStyle='danger' key={'addFaqt'} onClick={e=>dispatch(THUNK.addFaqt())}>Add Faqt</Button>
   return <div style={S3B}>
-    <button key={'addFaqt'} onClick={e=>dispatch(THUNK.addFaqt())}>Add Faqt</button>
   </div>
 }
 

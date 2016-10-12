@@ -9,12 +9,12 @@ import * as THUNK from '../../thunks'
 
 const S1 = { marginBottom:20 }
 
-function EditToolbar({active, onSaveLink, dispatch}) {
+function EditToolbar({active, faqtKey, onSaveLink, dispatch}) {
   if(!active) return null
   return <div style={S1}>
     <ButtonToolbar>
       <ButtonGroup> 
-        <Button onClick={e => dispatch(THUNK.toggleActiveField('fldLink'))}>
+        <Button onClick={e => dispatch(THUNK.toggleActiveField({fldName:'fldLink',objectId:faqtKey}))}>
           <Glyphicon glyph="link" />
         </Button>
       </ButtonGroup>

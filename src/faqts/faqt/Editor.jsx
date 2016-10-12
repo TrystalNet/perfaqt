@@ -1,14 +1,9 @@
 import React, { Component } from 'react';
 import { connect } from 'react-redux'
-import {
-  Editor, EditorState, 
-  convertFromRaw, convertToRaw,
-  getDefaultKeyBinding, KeyBindingUtil,
-  RichUtils, Entity, Modifier,
-  CompositeDecorator
-} from 'draft-js'
-import EditToolbar from './EditToolbar'
+import { Editor, getDefaultKeyBinding, KeyBindingUtil, RichUtils } from 'draft-js'
 import * as THUNK from '../../thunks'
+import {updateUI} from '../../reducer'
+import * as EDIT from '../../tmpField'
 
 const {hasCommandModifier} = KeyBindingUtil
 const s1a = {padding:10, backgroundColor:'whitesmoke'}
@@ -20,141 +15,72 @@ function myKeyBindingFn(e) {
     e.stopPropagation()
     return 'save-and-exit'
   }
-  return getDefaultKeyBinding(e)
+  const binding = getDefaultKeyBinding(e)
+  return binding
 }
-
-function buildBlock(text) {
-  return {
-    type:'unstyled',
-    text:text
-  }
-}
-function buildRawDraftContentState(text) {
-  const block = buildBlock(text)
-  return {
-    blocks:[block],
-    entityMap:{}
-  }
-}
-function buildContentState(text) {
-  const rawState = buildRawDraftContentState(text)
-  return convertFromRaw(rawState)
-}
-function convertToText(rawDraftContentState) {
-  return rawDraftContentState.blocks.map(block => block.text).join('\n')
-}
-
-function findLinkEntities(contentBlock, callback) {
-  contentBlock.findEntityRanges(
-    character => {
-      const entityKey = character.getEntity();
-      return entityKey !== null && Entity.get(entityKey).getType() === 'LINK'
-    },
-    callback
-  );
-}
-
-const styles = {
-  link: {
-    color: '#3b5998',
-    textDecoration: 'underline'
-  }
-}
-
 function navigate(url) {
+  console.log(url)
   window.open(url, '_blank')
 }
-
-const Link = props => {
-  const {href} = Entity.get(props.entityKey).getData();
-  return <a href={href} style={styles.link} onClick={()=>navigate(href)}>{props.children}</a>
-}
-//  
-
-class MyEditor extends Component {
-  constructor(props) {
-    super(props)
-
-    let contentState = buildContentState(props.text)
-
-    if(props.draftjs) {
-      const draftjs = props.draftjs;
-      if(!draftjs.blocks) draftjs.blocks = [{type:'unstyled',text:props.text}];
-      if(!draftjs.entityMap) draftjs.entityMap = {}
-      contentState = convertFromRaw(draftjs)
+const MyEditor = ({ 
+  editorState, isActive, 
+  onFocus, onChange, onSave, onSaveAndExit 
+}) => {
+  const handleKeyCommand = command => {
+    console.log(command)
+    const newEditorState = RichUtils.handleKeyCommand(editorState, command)
+    if(newEditorState && newEditorState !== editorState) onChange(newEditorState)
+    else switch(command) {
+      case 'save-and-exit': onSaveAndExit(); break  
+      default: return false      
     }
-
-    const decorator = new CompositeDecorator([{strategy:findLinkEntities, component:Link}])
-    const editorState = EditorState.createWithContent(contentState, decorator)
-    this.state = {editorState}
-    this.onChange = editorState => {
-      this.setState({editorState})
-      props.dispatch(THUNK.setDraftjs(editorState))
-    }
-  }
-  saveChangesAndExit() {
-    const editorState = this.state.editorState
-    const contentState = editorState.getCurrentContent()
-    const draftjs = convertToRaw(contentState)
-    const text = convertToText(draftjs)
-    this.props.onSave(text, draftjs,'SEARCH')
-  }
-  saveChanges() {
-    const editorState = this.state.editorState
-    const contentState = editorState.getCurrentContent()
-    const draftjs = convertToRaw(contentState)
-    const text = convertToText(draftjs)
-    this.props.onSave(text, draftjs)
-  }
-  handleKeyCommand(command) {
-    const newState = RichUtils.handleKeyCommand(this.state.editorState, command)
-    if(newState) {
-      this.onChange(newState)
-      return true
-    }
-    if(command === 'save-and-exit') {
-      this.saveChangesAndExit()
-      return true
-    }
-    return false
+    return true
   }  
-  onSaveLink(href) {
-    const oldEditorState = this.state.editorState
-    const selection = oldEditorState.getSelection()
-    if(selection.isCollapsed()) return
-    const key = Entity.create('LINK', 'MUTABLE', {href});
-    const editorState = RichUtils.toggleLink(oldEditorState, selection, key)
-    this.setState({editorState})
-  }
-
-  onClick(e) {
-    if(this.props.isActive) return
-    console.log('ok, good to here')
-  }
-
-  render() {
-    const {isActive} = this.props
-    const isHot = isActive
-    const style = isActive ? s1b : s1a
-    return <div>
-      <EditToolbar active={isActive} onSaveLink={href=> this.onSaveLink(href)} />
-      <div style={style} onClick={this.props.onClick}>
-        <Editor
-          style={style} 
-          placeHolder="...faqt..."
-          handleKeyCommand={this.handleKeyCommand.bind(this)}
-          keyBindingFn={myKeyBindingFn}
-          editorState={this.state.editorState} 
-          onEscape={this.saveChangesAndExit.bind(this)}
-          onBlur={this.saveChanges.bind(this)}
-          readOnly={!isHot}
-          onChange={this.onChange} />
-        </div>
-    </div>
-  }  
+  return <Editor placeHolder="...faqt..."
+    editorState={editorState} 
+    readOnly={!isActive}
+    style={isActive ? s1b: s1a} 
+    keyBindingFn={myKeyBindingFn}
+    handleKeyCommand={handleKeyCommand}
+    onChange={onChange}
+    onEscape={onSaveAndExit}
+    onFocus={onFocus}
+    onBlur={onSave} />
 }
 
-export default connect()(MyEditor)
+function mapDispatchToProps(dispatch,{faqtKey, editorState, isActive}) {
+  return {
+    onChange: editorState => {
+      dispatch(EDIT.updateActiveField(editorState))
+    },
+    onSave: e => dispatch(EDIT.saveActiveField()),
+    onFocus: e => {
+      const fldName = 'fldFaqt'
+      const objectId = faqtKey
+      const tmpValue = editorState
+      dispatch(EDIT.setActiveField({fldName, objectId, tmpValue})) 
+    },
+    onSaveAndExit: e => {
+      dispatch(EDIT.saveActiveField())
+      dispatch(THUNK.setNextFocus('SEARCH'))
+    }
+  }
+}
+
+// how to know whether to editorState the property or editorState from the tmpField
+// 1. is the faqt active ... maybe this is enough?!; maybe we want to know if it is focused, but maybe not needed
+// wait... the issue is first that setActiveField has to be called from someplace
+function mapStateToProps(state, {editorState, isActive, faqtKey}) {
+  const {fldName, objectId, tmpValue} = state.ui.activeField
+  if(fldName === 'fldFaqt' && faqtKey === objectId) editorState = tmpValue
+  return { editorState, isActive }
+}
+export default connect(mapStateToProps, mapDispatchToProps)(MyEditor)
 
 // onFocus={e => { console.log('focused on the editor'); e.preventDefault(); e.stopPropagation(); }}
 // working on getting links in, just about there.... looking to have them rendered
+
+
+
+
+

@@ -1,23 +1,32 @@
 import React, { Component } from 'react';
-// import { Button } from 'react-bootstrap'
 import { connect } from 'react-redux'
 import {isEqual} from 'lodash'
 import * as THUNK  from '../thunks'
 
-// console.log('button is ', Button)
+import { ButtonToolbar, DropdownButton, MenuItem } from 'react-bootstrap'
 
 const S1 = { flex:1, textAlign:'left' }
 const S2 = { display:'inline'}
 
-function FaqBar({faqref, faqs, dispatch}) {
-  return <div style={S1}>{
-    faqs.map(fr => {
-      const key = `${fr.uid}-${fr.faqId}` 
-      if(isEqual(fr,faqref)) return <div key={key} style={S2}>{fr.faqId}</div> 
-      return <button key={key} onClick={e => dispatch(THUNK.setActiveFaq(fr))}>{fr.faqId}</button>
+function AddFaqtMenuItem({isRO, faqref, dispatch}) {
+  if(isRO) return null
+  return <MenuItem eventKey="4" onClick={e => dispatch(THUNK.addFaqt(faqref))}>Add Faqt</MenuItem>
+}
+
+function FaqBar({faqs, dispatch}) {
+  return <ButtonToolbar style={S1}>{
+    faqs.map(faq => {
+      const {uid,faqId, isRO} = faq
+      const key = `${uid}-${faqId}`
+      const faqref = {uid, faqId}
+      const style = isRO ? 'default' : 'info'
+      return <DropdownButton bsStyle={style} id={key} key={key} title={faqId}>
+        <MenuItem eventKey="1" onClick={e => dispatch(THUNK.closeFaq(faqref))}>Close</MenuItem>
+        <AddFaqtMenuItem {...{isRO, faqref, dispatch}} />
+      </DropdownButton>
     })
   }
-  </div>
+  </ButtonToolbar>
 }
-export default connect(({ui:{faqref}, faqs}) => ({ faqref, faqs }))(FaqBar)
+export default connect(({faqs}) => ({ faqs }))(FaqBar)
 
