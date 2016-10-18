@@ -7,6 +7,9 @@ import * as SELECT from '../../select'
 import * as THUNK from '../../thunks'
 import {updateUI} from '../../reducer'
 import {addLinkToEditorState} from '../../draftjs-utils'
+import {DropdownButton, MenuItem} from 'react-bootstrap'
+console.log('DDB', DropdownButton)
+
 
 // VERSIONS OF FAQTS TO POSSIBLY SHOW
 // 1. READONLY, NOTACTIVE
@@ -35,18 +38,9 @@ const style0A = {
 const BEIGE = {
   maxHeight : '50vh'
 }
-const ScoreButton = ({isLinked, onDeleteScore}) => {
-  if(!isLinked) return null
-  const onClick = e => {
-    e.preventDefault()
-    onDeleteScore()
-  }
-  return <button onClick={onClick}>XXX</button>
-}
-
 const Faqt = ({
   faqtKey, 
-  isRO, editorState, isLinked, isActive,
+  editorState, isRO, isLinked, isActive, isHot, 
   onFocus, onSaveLink, onSetBest, onEditClick, onDeleteScore
 })  => {
   const style = isActive ? Object.assign({},style0A,BEIGE) : style0A
@@ -55,15 +49,17 @@ const Faqt = ({
     <div style={style0}>
       <div style={style} onFocus={e => onFocus(isRO)}>
         <div>
-          <EditToolbar active={isActive} faqtKey={faqtKey} onSaveLink={onSaveLink} />
+          <EditToolbar {...{isHot, faqtKey, onSaveLink}} />
           <div style={editorContainerStyle} onClick={onEditClick}>
             <MyEditor {...{faqtKey, editorState, isActive}} />
           </div>
         </div>
       </div>
       <div style={{display:'flex', flexDirection:'column'}}>
-        <button onClick={onSetBest}>best</button>
-        <ScoreButton {...{isLinked, onDeleteScore}} />
+        <DropdownButton id='rank' title='rank' bsStyle='default'>
+          <MenuItem eventKey="best" onClick={onSetBest}>Best</MenuItem>
+          <MenuItem eventKey="none" disabled={!isLinked} onClick={onDeleteScore}>Clear</MenuItem>
+        </DropdownButton>
       </div>
     </div>
     <TagsEditor {...{faqtKey}} />
@@ -73,7 +69,11 @@ const Faqt = ({
 function mapDispatchToProps(dispatch, {faqtKey}) {
   const onSetBest = () => dispatch(THUNK.setBestFaqtByKey(faqtKey))
   const onDeleteScore = () => dispatch(THUNK.deleteScore(faqtKey))
-  const onEditClick = () => dispatch(THUNK.activateFaqt(faqtKey))
+  const onEditClick = e => {
+    e.preventDefault()
+    e.stopPropagation()
+    return dispatch(THUNK.activateFaqt(faqtKey))
+  }
   const onFocus = () => dispatch(THUNK.activateFaqt(faqtKey))
   // editor handlers
   //------- toolbar handlers -------------- //
@@ -85,6 +85,15 @@ function mapDispatchToProps(dispatch, {faqtKey}) {
   return { onFocus, onEditClick, onSaveLink, onSetBest, onDeleteScore }  
 }
 
+function amIHot(isActive, fldName) {
+  if(!isActive) return false
+  switch(fldName) {
+    case 'fldFaqt': return true
+    case 'fldLink': return true
+    default: return false    
+  }
+}
+
 function mapStateToProps(state, ownProps) {
   const { faqtKey } = ownProps
   const { ui, faqts } = state
@@ -92,7 +101,10 @@ function mapStateToProps(state, ownProps) {
   const isActive = faqtKey === ui.faqtKey
   const search = ui.search || {}
   const isLinked = search.scores ? search.scores.includes(faqtKey) : false
-  return { isRO, editorState, isLinked, isActive }
+
+  const isHot = amIHot(isActive, state.ui.activeField.fldName)
+
+  return { isRO, editorState, isLinked, isActive, isHot }
 }
 
 export default connect(mapStateToProps, mapDispatchToProps)(Faqt)

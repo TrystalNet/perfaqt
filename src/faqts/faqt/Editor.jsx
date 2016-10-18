@@ -18,16 +18,11 @@ function myKeyBindingFn(e) {
   const binding = getDefaultKeyBinding(e)
   return binding
 }
-function navigate(url) {
-  console.log(url)
-  window.open(url, '_blank')
-}
 const MyEditor = ({ 
   editorState, isActive, 
   onFocus, onChange, onSave, onSaveAndExit 
 }) => {
   const handleKeyCommand = command => {
-    console.log(command)
     const newEditorState = RichUtils.handleKeyCommand(editorState, command)
     if(newEditorState && newEditorState !== editorState) onChange(newEditorState)
     else switch(command) {
@@ -45,7 +40,8 @@ const MyEditor = ({
     onChange={onChange}
     onEscape={onSaveAndExit}
     onFocus={onFocus}
-    onBlur={onSave} />
+    onBlur={onSave} 
+    />
 }
 
 function mapDispatchToProps(dispatch,{faqtKey, editorState, isActive}) {
@@ -72,8 +68,9 @@ function mapDispatchToProps(dispatch,{faqtKey, editorState, isActive}) {
 // wait... the issue is first that setActiveField has to be called from someplace
 function mapStateToProps(state, {editorState, isActive, faqtKey}) {
   const {fldName, objectId, tmpValue} = state.ui.activeField
-  if(fldName === 'fldFaqt' && faqtKey === objectId) editorState = tmpValue
-  return { editorState, isActive }
+  const isHot = (fldName === 'fldFaqt' && faqtKey === objectId)
+  if(isHot) editorState = tmpValue
+  return { editorState, isActive, isHot }
 }
 export default connect(mapStateToProps, mapDispatchToProps)(MyEditor)
 

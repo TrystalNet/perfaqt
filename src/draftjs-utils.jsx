@@ -1,7 +1,7 @@
 import React from 'react';
 import { 
   EditorState, Entity, CompositeDecorator,
-  convertToRaw, convertFromRaw,
+  convertToRaw, convertFromRaw, getEntitySelectionState,
   RichUtils 
 } from 'draft-js'
 
@@ -39,12 +39,36 @@ export function faqtToEditorState(draftjs, text) {
 }
 
 export function addLinkToEditorState(editorState, href) {
-  return (dispatch, getState) => {
-    const selection = editorState.getSelection()
+  const selection = editorState.getSelection()
+  const {focusKey, focusOffset} = selection
+  const block = editorState.getCurrentContent().blockMap.get(focusKey)
+  const entityKey = block.getEntityAt(focusOffset)
+
+  function newEntity() {
+    if(!href) return null
     if(selection.isCollapsed()) return null
     const key = Entity.create('LINK', 'MUTABLE', {href});
     return RichUtils.toggleLink(editorState, selection, key)
   }
+  if(!entityKey) return newEntity()
+
+  const {type, mutability, data} = Entity.get(entityKey)
+  if(type !== 'LINK') return
+
+  if(!href) {
+    let newEditorState
+    block.findEntityRanges((value)=> value.entity === entityKey, (start, end ) => {
+      const updatedSelection = selection.merge({
+          anchorOffset: start,
+          focusOffset: end
+      });
+      newEditorState = RichUtils.toggleLink(editorState, updatedSelection, null)
+    })
+    return newEditorState 
+  }
+
+  Entity.mergeData(entityKey, {href})
+  return editorState
 }
 
 export function editorStateToSaveState(editorState) {

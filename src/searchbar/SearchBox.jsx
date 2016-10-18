@@ -3,7 +3,7 @@ import { connect } from 'react-redux'
 import * as THUNK  from '../thunks'
 import * as SELECT from '../select'
 import Autosuggest from 'react-autosuggest'
-import {updateUI} from '../reducer'
+import {updateUI} from '../reducer-ui'
 import {setActiveField, updateActiveField, saveActiveField} from '../tmpField'
 
 class SearchBox extends React.Component {
@@ -48,7 +48,7 @@ class SearchBox extends React.Component {
     return <Autosuggest  
        ref={fld => this.fldSearch = fld}
        suggestions={suggestions} 
-       alwaysRenderSuggestions={true}
+       alwaysRenderSuggestions={false}
        onSuggestionsFetchRequested={this.onSuggestionsFetchRequested}
        onSuggestionsClearRequested={this.onSuggestionsClearRequested}
        getSuggestionValue={text => text}

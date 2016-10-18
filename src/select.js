@@ -38,7 +38,7 @@ export const getBestFaqtByRank = (state, faqref)  => maxBy(getFaqts(state), 'ran
 
 function allFaqtsByDate(state) {
   const faqts = [...getFaqts(state).values()]
-  faqts.sort((a,b) => (a.created || 0) - (b.created || 0))
+  faqts.sort((a,b) => (b.created || 0) - (a.created || 0))
   return faqts// return faqts
 }
 

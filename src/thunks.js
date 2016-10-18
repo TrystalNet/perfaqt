@@ -10,8 +10,10 @@ import * as UNIQ from '@trystal/uniq-ish'
 import * as SELECT from './select'
 import * as FAQTS from './faqts/faqts-actions'
 import * as FULLTEXT from './fulltext'
-import {updateUI, addFaq as ADDFAQ, removeFaq as REMFAQ} from './reducer'
-import {faqtToEditorState, editorStateToSaveState} from './draftjs-utils'
+import {addFaq as ADDFAQ, removeFaq as REMFAQ} from './reducer'
+import {updateUI, popActiveField} from './reducer-ui'
+import {updateActiveField} from './tmpField'
+import {faqtToEditorState} from './draftjs-utils'
 
 // tomorrow --- finish putting editor state into the faqts as they are loaded and created
 // then detect when one of them is being edited.
@@ -55,7 +57,9 @@ export const deleteScore = faqtKey => (dispatch, getState) => {
 }
 const denit = (ref, ...handlers) => handlers.forEach(handler => ref.off(handler))
 
-const fbToFaqt = (faqref, snap, defaultTime) => {
+let defaultTime = new Date(2016,1,1).getTime()  // temporary solution to support legacy faqts
+
+const fbToFaqt = (faqref, snap) => {
   const {text, draftjs, tags, rank, created, updated} = snap.val()
   const editorState = faqtToEditorState(draftjs, text)
   const whenCreated = created || defaultTime++
@@ -72,14 +76,13 @@ const fbToFaqt = (faqref, snap, defaultTime) => {
 function initFaqts(faqref) {
   return (dispatch, getState) => {
     const fbref = faqtsRef(faqref)
-    let defaultTime = new Date(2016,1,1).getTime()  // temporary solution to support legacy faqts
     fbref.on('child_added', snap => {
-      const faqt = fbToFaqt(faqref, snap, defaultTime++) 
+      const faqt = fbToFaqt(faqref, snap) 
       dispatch(FAQTS.addFaqt(faqt))
       FULLTEXT.addFaqt(faqt)
     })
     fbref.on('child_changed', snap => {
-      const faqt = fbToFaqt(faqref, snap, defaultTime++)
+      const faqt = fbToFaqt(faqref, snap)
       // const uiFaqt = getState().ui.faqt
       dispatch(FAQTS.replaceFaqt(faqt))
       FULLTEXT.updateFaqt(faqt)
@@ -148,17 +151,22 @@ export function setNextFocus(nextFocus) {
     }
   }
 }
-export const saveTagsToFB = (faqt, tags) => faqt.tags === tags ? null : firebase.database().ref().update({[faqtTagsPath(faqt)]: tags})
+export const saveTagsToFB = (faqt, tags) => {
+  return dispatch => faqt.tags === tags ? null : firebase.database().ref().update({[faqtTagsPath(faqt)]: tags})
+}
 
 function buildNewFaqt(faqref) {
+  const now = Date.now()
   return {
     faqref, 
     id: UNIQ.randomId(4),
     text:'',
     draftjs: {},
-    created: Date.now()
+    created: now,
+    updated: now
   }
 }
+
 function faqtToFaqtFB(faqt) {
   var copy = Object.assign({}, faqt)
   delete copy.faqref
@@ -172,7 +180,7 @@ export function addFaqt({uid, faqId, isRO}) {
     const faqtKey = faqtToKey(faqt)
     firebase.database().ref(faqtPath(faqt)).set(faqtToFaqtFB(faqt))
     .then(() => {
-      dispatch(updateUI({focused:faqt.id, faqtId:faqt.id})) // get that out of the way
+      dispatch(updateUI({focused:faqt.id, faqtKey})) // get that out of the way
       dispatch(saveSearchWithScores({ text, scores:[faqtKey, ...scores] }))
     })
   }
