@@ -27,6 +27,7 @@ const faqtsRef = faqref => firebase.database().ref().child(faqtsPath(faqref))
 const faqtPath = ({faqref, id}) => `${faqtsPath(faqref)}/${id}`
 const faqtPropPath = (faqt, propname) => `${faqtPath(faqt)}/${propname}`
 const faqtTagsPath = faqt => faqtPropPath(faqt,'tags')
+const faqtUrlPath = faqt => faqtPropPath(faqt,'url')
 const faqtTextPath = faqt => faqtPropPath(faqt,'text')
 const faqtDraftjsPath = faqt => faqtPropPath(faqt,'draftjs')
 const faqtUpdatedPath = faqt => faqtPropPath(faqt,'updated')
@@ -60,11 +61,12 @@ const denit = (ref, ...handlers) => handlers.forEach(handler => ref.off(handler)
 let defaultTime = new Date(2016,1,1).getTime()  // temporary solution to support legacy faqts
 
 const fbToFaqt = (faqref, snap) => {
-  const {text, draftjs, tags, rank, created, updated} = snap.val()
+  const {title, url, text, draftjs, tags, rank, created, updated} = snap.val()
   const editorState = faqtToEditorState(draftjs, text)
   const whenCreated = created || defaultTime++
   const whenUpdated = updated || whenCreated
   return { 
+    url, 
     faqref, id:snap.key, 
     editorState, text, tags,
     rank,
@@ -83,10 +85,8 @@ function initFaqts(faqref) {
     })
     fbref.on('child_changed', snap => {
       const faqt = fbToFaqt(faqref, snap)
-      // const uiFaqt = getState().ui.faqt
       dispatch(FAQTS.replaceFaqt(faqt))
       FULLTEXT.updateFaqt(faqt)
-      // if(uiFaqt && uiFaqt.id === faqt.id) dispatch(updateUI({faqtId:faqt.id}))
     })
     fbref.on('child_removed', snap => {
       console.log('child removed happened')
@@ -185,16 +185,17 @@ export function addFaqt({uid, faqId, isRO}) {
     })
   }
 }
-export const signup = (email, password) => (dispatch, getState, {fbauth}) => {
-  fbauth.createUserWithEmailAndPassword(email, password).catch(e => alert(e.message))
+export const signup = (email, password) => (dispatch, getState) => {
+  firebase.auth().createUserWithEmailAndPassword(email, password).catch(e => alert(e.message))
 }
-export const login = (email, password) => (dispatch, getState, {fbauth}) => {
-  fbauth.signInWithEmailAndPassword(email, password)
+export const login = (email, password) => (dispatch, getState) => {
+  firebase.auth().signInWithEmailAndPassword(email, password)
   .catch(e => alert(e.message))
 }
 export const logout = () => dispatch => firebase.auth().signOut()
 export const focusSearch = () => dispatch => dispatch(updateUI({focused:'SEARCH'}))
 export const activateFaqt = faqtKey => dispatch => dispatch(updateUI({faqtKey,focused:faqtKey}))
+export const editFaqt = faqtKey => dispatch => dispatch(updateUI({faqtKey,focused:faqtKey}))
 
 function getActiveTags({faqts, ui}, faqtId) {
   if(!faqtId) return '';
@@ -243,4 +244,24 @@ export function getSuggestionsFromIDB(value) {
   }
 }
 
+export function addLink(faqtKey, href) {
+  return (dispatch, getState) => {
+    // CORS prevents this from working, at least from localhost
+    // var request = new XMLHttpRequest();
+    // request.open('GET', href, true);
+    // request.onreadystatechange = function() {
+    //   if (request.readyState == 4)
+    //     alert(request.responseText);
+    // }
+    // request.send()
+    const faqt = SELECT.getFaqtByKey(getState(), faqtKey)
+    firebase.database().ref().update({[faqtUrlPath(faqt)]: href})
+  }
+}
+
+export function hoverFaqt(faqtKey) {
+  return (dispatch, getState) => {
+    dispatch(updateUI({hoverFaqtKey:faqtKey}))
+  }
+}
 

@@ -44,6 +44,10 @@ const MyEditor = ({
     />
 }
 
+// if we don't use onblur to save the content, 
+// then how do we know to save the content if we move to a different field?
+// saving might be ok, but the save includes somehing more nefarious -- a move out of the field
+
 function mapDispatchToProps(dispatch,{faqtKey, editorState, isActive}) {
   return {
     onChange: editorState => {
@@ -63,20 +67,11 @@ function mapDispatchToProps(dispatch,{faqtKey, editorState, isActive}) {
   }
 }
 
-// how to know whether to editorState the property or editorState from the tmpField
-// 1. is the faqt active ... maybe this is enough?!; maybe we want to know if it is focused, but maybe not needed
-// wait... the issue is first that setActiveField has to be called from someplace
 function mapStateToProps(state, {editorState, isActive, faqtKey}) {
-  const {fldName, objectId, tmpValue} = state.ui.activeField
-  const isHot = (fldName === 'fldFaqt' && faqtKey === objectId)
-  if(isHot) editorState = tmpValue
-  return { editorState, isActive, isHot }
+  if(isActive) editorState = EDIT.getTmpvalueByFldname(state, 'fldFaqt') || editorState
+  return { editorState, isActive }
 }
 export default connect(mapStateToProps, mapDispatchToProps)(MyEditor)
-
-// onFocus={e => { console.log('focused on the editor'); e.preventDefault(); e.stopPropagation(); }}
-// working on getting links in, just about there.... looking to have them rendered
-
 
 
 

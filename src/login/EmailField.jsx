@@ -1,6 +1,6 @@
 import React, { Component } from 'react'
 import { connect } from 'react-redux'
-import { updateUI } from '../reducer'
+import { updateUI } from '../reducer-ui'
 
 
 const S1 = { display:'flex', padding:10, textAlign:'right' }

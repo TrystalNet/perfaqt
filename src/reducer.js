@@ -13,11 +13,23 @@ function FAQS(faqs=[], {type, payload}) {
 function showStatus(state) {
   console.log(`${state.faqts.length} faqts, ${state.scores.length} scores, ${state.searches.length} searches`)
 }
+
+function interesting(oldState, newState) {
+  if(!oldState || !oldState.ui || !oldState.ui.activeField) return false
+  if(oldState.ui.activeField.fldName !== 'fldFaqt') return false
+  if(newState.ui.activeField.fldName === 'fldFaqt') return false
+  return true
+}
+
+
 function reducer(state={}, action) {
   const newState = {
     faqts     : FAQTS(state.faqts, action),
     faqs      : FAQS(state.faqs, action),
     ui        : UI(state.ui, action)
+  }
+  if(interesting(state, newState)) {
+    console.log('interesting')
   }
   return newState
 }

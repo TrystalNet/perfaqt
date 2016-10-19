@@ -13,6 +13,15 @@ function AddFaqtMenuItem({isRO, faqref, dispatch}) {
   return <MenuItem eventKey="4" onClick={e => dispatch(THUNK.addFaqt(faqref))}>Add Faqt</MenuItem>
 }
 
+const onDrop = e => {
+  console.log(e)
+  const data = e.dataTransfer.getData('text');
+  console.log('text:',data)
+  e.preventDefault()
+  e.stopPropagation()
+}
+
+
 function FaqBar({faqs, dispatch}) {
   return <ButtonToolbar style={S1}>{
     faqs.map(faq => {
@@ -20,7 +29,7 @@ function FaqBar({faqs, dispatch}) {
       const key = `${uid}-${faqId}`
       const faqref = {uid, faqId}
       const style = isRO ? 'default' : 'info'
-      return <DropdownButton bsStyle={style} id={key} key={key} title={faqId}>
+      return <DropdownButton bsStyle={style} id={key} key={key} title={faqId} onDragOver={e => e.preventDefault()} onDrop={onDrop}>
         <MenuItem eventKey="1" onClick={e => dispatch(THUNK.closeFaq(faqref))}>Close</MenuItem>
         <AddFaqtMenuItem {...{isRO, faqref, dispatch}} />
       </DropdownButton>

@@ -9,6 +9,7 @@ function saveContent(tmpValue, objectId) {
     const {rawContentState, text} = editorStateToSaveState(tmpValue)
     const faqt = SELECT.getFaqtByKey(getState(), objectId)
     THUNK.updateOneFaqt(faqt, text, rawContentState)
+    // dispatch(THUNK.activateFaqt(null))
   }
 }
 function saveTags(tmpValue, objectId) {
@@ -37,10 +38,10 @@ export const saveActiveField = () => {
     const {fldName, objectId, tmpValue} = getState().ui.activeField
     if(!fldName) return
     switch(fldName) {
-      case 'fldFaqt': return dispatch(saveContent(tmpValue, objectId))
-      case 'fldTags': return dispatch(saveTags(tmpValue, objectId))
-      case 'fldSearch' : return dispatch(saveSearch(tmpValue))
-      case 'fldLink' : return dispatch(saveLinkToFaqt(tmpValue))
+      case 'fldFaqt'  : return dispatch(saveContent(tmpValue, objectId))
+      case 'fldTags'  : return dispatch(saveTags(tmpValue, objectId))
+      case 'fldSearch': return dispatch(saveSearch(tmpValue))
+      case 'fldLink'  : return dispatch(saveLinkToFaqt(tmpValue))
       default: throw `no luck saving ${tmpValue} into ${fldName}`
     }
   }
@@ -55,6 +56,14 @@ const getFocusedLink = state => {
   const editorState = state.ui.activeFieldStack[0].tmpValue
   return getActiveLink(editorState)
 } 
+
+export function getTmpvalueByFldname(state, fldName) {
+  const {activeField, activeFieldStack} = state.ui
+  if(activeField.fldName === fldName) return activeField.tmpValue
+  const stackField = activeFieldStack.find(item => item.fldName === fldName)
+  return stackField ? stackField.tmpValue : null
+}
+
 
 function getValue(state, {fldName,objectId}) {
   if(!fldName) return null

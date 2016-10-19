@@ -7,9 +7,7 @@ import * as SELECT from '../../select'
 import * as THUNK from '../../thunks'
 import {updateUI} from '../../reducer'
 import {addLinkToEditorState} from '../../draftjs-utils'
-import {DropdownButton, MenuItem} from 'react-bootstrap'
-console.log('DDB', DropdownButton)
-
+import {Button, DropdownButton, MenuItem} from 'react-bootstrap'
 
 // VERSIONS OF FAQTS TO POSSIBLY SHOW
 // 1. READONLY, NOTACTIVE
@@ -25,7 +23,7 @@ const style0 = {
   display:'flex',
   paddingTop: 5,
   paddingBottom: 5,
-  borderBottom: 'lightgrey 1px solid'
+  borderBottom: 'transparent 15px solid'
 }
 const style0A = {
   flex:1,
@@ -38,42 +36,70 @@ const style0A = {
 const BEIGE = {
   maxHeight : '50vh'
 }
+
 const Faqt = ({
   faqtKey, 
-  editorState, isRO, isLinked, isActive, isHot, 
-  onFocus, onSaveLink, onSetBest, onEditClick, onDeleteScore
+  url, editorState, isRO, isLinked, isActive, isHovering, 
+  onFocus, onSaveLink, onSetBest, onDeleteScore, onMouseEnter, onMouseLeave, onAddLink, onDropLink, onEditContent,
+  onDone
 })  => {
   const style = isActive ? Object.assign({},style0A,BEIGE) : style0A
   const editorContainerStyle = {}
-  return <div style={S0}>
+  const ddbStyle = isHovering ? {} : {visibility:'hidden'}
+  return <div style={S0} onMouseEnter={onMouseEnter} onMouseLeave={onMouseLeave} onDragOver={e => e.preventDefault()} onDrop={onDropLink}>
     <div style={style0}>
       <div style={style} onFocus={e => onFocus(isRO)}>
+        { url ? <a href={url} target='_blank'>{url}</a> : null }
         <div>
-          <EditToolbar {...{isHot, faqtKey, onSaveLink}} />
-          <div style={editorContainerStyle} onClick={onEditClick}>
+          <EditToolbar {...{isActive, faqtKey, onSaveLink}} />
+          <div style={editorContainerStyle}>
             <MyEditor {...{faqtKey, editorState, isActive}} />
           </div>
         </div>
       </div>
       <div style={{display:'flex', flexDirection:'column'}}>
-        <DropdownButton id='rank' title='rank' bsStyle='default'>
-          <MenuItem eventKey="best" onClick={onSetBest}>Best</MenuItem>
-          <MenuItem eventKey="none" disabled={!isLinked} onClick={onDeleteScore}>Clear</MenuItem>
-        </DropdownButton>
+          <DropdownButton id='rank' bsStyle='default' title='edit' style={ddbStyle}>
+            <MenuItem eventKey="edit" onClick={onEditContent}>Faqt</MenuItem>
+            <MenuItem eventKey='link' onClick={onAddLink}>Link</MenuItem>
+            <MenuItem divider />
+            <MenuItem eventKey="best" onClick={onSetBest}>Best</MenuItem>
+            <MenuItem eventKey="none" disabled={!isLinked} onClick={onDeleteScore}>Clear</MenuItem>
+          </DropdownButton>
+          <Button id='done' style={{visibility:isActive ? 'visible':'hidden'}} onClick={onDone}>done</Button>
       </div>
     </div>
-    <TagsEditor {...{faqtKey}} />
+    { false ? <TagsEditor {...{faqtKey}} /> : null }
   </div>
 }
 
 function mapDispatchToProps(dispatch, {faqtKey}) {
-  const onSetBest = () => dispatch(THUNK.setBestFaqtByKey(faqtKey))
-  const onDeleteScore = () => dispatch(THUNK.deleteScore(faqtKey))
-  const onEditClick = e => {
+  const onDropLink = e => {
     e.preventDefault()
     e.stopPropagation()
-    return dispatch(THUNK.activateFaqt(faqtKey))
+    const url = e.dataTransfer.getData('URL')
+    if(!url) return
+    dispatch(THUNK.addLink(faqtKey, url))
   }
+  const onAddLink = () => {
+    dispatch(THUNK.addLink(faqtKey, 'http://www.heinz.com/sustainability/nutrition.aspx'))
+  }
+  const onMouseEnter = () => {
+    dispatch(THUNK.hoverFaqt(faqtKey))
+  }
+  const onMouseLeave = () => {
+    dispatch(THUNK.hoverFaqt(null))
+  }
+  const onDone=() => {
+    console.log('fuckoff')
+    dispatch(THUNK.activateFaqt(null))
+  }
+  const onEditContent = e => {
+    e.preventDefault()
+    e.stopPropagation()
+    dispatch(THUNK.editFaqt(faqtKey))
+  }
+  const onSetBest = () => dispatch(THUNK.setBestFaqtByKey(faqtKey))
+  const onDeleteScore = () => dispatch(THUNK.deleteScore(faqtKey))
   const onFocus = () => dispatch(THUNK.activateFaqt(faqtKey))
   // editor handlers
   //------- toolbar handlers -------------- //
@@ -82,29 +108,18 @@ function mapDispatchToProps(dispatch, {faqtKey}) {
     if(newEditorState) dispatch(updateUI({editorState:newEditorState}))
   }
   // -------
-  return { onFocus, onEditClick, onSaveLink, onSetBest, onDeleteScore }  
-}
-
-function amIHot(isActive, fldName) {
-  if(!isActive) return false
-  switch(fldName) {
-    case 'fldFaqt': return true
-    case 'fldLink': return true
-    default: return false    
-  }
+  return { onFocus, onSaveLink, onSetBest, onDeleteScore, onMouseEnter, onMouseLeave, onAddLink, onDropLink, onEditContent, onDone }  
 }
 
 function mapStateToProps(state, ownProps) {
   const { faqtKey } = ownProps
   const { ui, faqts } = state
-  const { faqref:{isRO}, editorState } = faqts.get(faqtKey)
+  const { faqref:{isRO}, editorState, url } = faqts.get(faqtKey)
   const isActive = faqtKey === ui.faqtKey
+  const isHovering = faqtKey === ui.hoverFaqtKey
   const search = ui.search || {}
   const isLinked = search.scores ? search.scores.includes(faqtKey) : false
-
-  const isHot = amIHot(isActive, state.ui.activeField.fldName)
-
-  return { isRO, editorState, isLinked, isActive, isHot }
+  return { url, isRO, editorState, isLinked, isActive, isHovering }
 }
 
 export default connect(mapStateToProps, mapDispatchToProps)(Faqt)

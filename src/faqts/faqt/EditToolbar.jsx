@@ -6,16 +6,19 @@ import {
 } from 'react-bootstrap'
 import LinkForm from './LinkForm'
 import * as THUNK from '../../thunks'
-import {toggleActiveField} from '../../tmpField'
+import {setActiveField} from '../../tmpField'
 
 const S1 = { marginBottom:20 }
 
-function EditToolbar({isHot, faqtKey, onSaveLink, dispatch}) {
-  if(!isHot) return null
+function EditToolbar({isActive, faqtKey, onSaveLink, dispatch}) {
+  if(!isActive) {
+    console.log('returning null instead of showing EditToolbar')
+    return null
+  }
   return <div style={S1}>
     <ButtonToolbar>
       <ButtonGroup> 
-        <Button onClick={e => dispatch(toggleActiveField({fldName:'fldLink',objectId:faqtKey}))}>
+        <Button onClick={e => dispatch(setActiveField({fldName:'fldLink',objectId:faqtKey}))}>
           <Glyphicon glyph="link" />
         </Button>
       </ButtonGroup>

@@ -4,6 +4,7 @@ const defaultUI = {
   broadcast: null,
   uid: null,
   faqtKey: null,
+  hoverFaqtKey: null,
   focused: null,
   search: {text:'', scores:[]},
   searchSuggestions: [],
