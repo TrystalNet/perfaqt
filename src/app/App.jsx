@@ -1,20 +1,25 @@
 import React, { Component } from 'react';
 import { connect } from 'react-redux'
 
-import SearchBar from '../searchbar/SearchBar'
-import FaqtList from '../faqts/FaqtList'
 import LoginPage from '../login/LoginPage'
-import MenuBar   from './MenuBar'
+
+import SearchBar from '../searchbar/SearchBar'
+import {ButtonToolbar} from 'react-bootstrap'
+import FaqButton from './FaqButton'
+import FaqtList from '../faqts/FaqtList'
+
 import * as THUNK  from '../thunks'
 
-const App = ({uid}) => {
+const faqToKey = ({uid, faqId}) => `${uid}/${faqId}` 
+
+const App = ({uid, faqs}) => {
   if(!uid) return <LoginPage />
   return <div id='app'>
     <SearchBar />
-    <MenuBar />
+    <ButtonToolbar style={{padding:5}}>{faqs.map(faq => <FaqButton key={faqToKey(faq)} faq={faq} />)}</ButtonToolbar>
     <FaqtList />
   </div>
 }
 
-const mapStateToProps = ({ui:{uid}}) => ({uid}) 
+const mapStateToProps = ({ui:{uid}, faqs}) => ({uid, faqs}) 
 export default connect(mapStateToProps)(App)

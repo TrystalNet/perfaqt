@@ -9,6 +9,12 @@ function FAQS(faqs=[], {type, payload}) {
   }
   return faqs  
 }
+function CLOSEDFAQS(closedFaqs=[], {type, payload}) {
+  switch(type) {
+    case '': return []
+  }
+  return closedFaqs
+}
 
 function showStatus(state) {
   console.log(`${state.faqts.length} faqts, ${state.scores.length} scores, ${state.searches.length} searches`)
@@ -24,13 +30,12 @@ function interesting(oldState, newState) {
 
 function reducer(state={}, action) {
   const newState = {
-    faqts     : FAQTS(state.faqts, action),
-    faqs      : FAQS(state.faqs, action),
-    ui        : UI(state.ui, action)
+    ui         : UI(state.ui, action),
+    faqs       : FAQS(state.faqs, action),
+    closedFaqs : CLOSEDFAQS(state.faqsClosed, action),
+    faqts      : FAQTS(state.faqts, action)
   }
-  if(interesting(state, newState)) {
-    console.log('interesting')
-  }
+  // if(interesting(state, newState))  console.log('interesting')
   return newState
 }
 
