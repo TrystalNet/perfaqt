@@ -1,10 +1,9 @@
-import {maxBy, orderBy, isEqual} from 'lodash'
+import {maxBy, orderBy} from 'lodash'
 import {FULLTEXT} from './fulltext'
 
 export const faqToKey = ({uid,faqId}) => `${uid}/${faqId}`
 export const faqtToKey = ({faqref,id}) => `${faqToKey(faqref)}/${id}`
 
-export const faqrefIdMatch = (a,b) => a.id === b.id &&  isEqual(a.faqref,b.faqref)
 
 export const getFaqtKeysByFaqref = (state, faqref)  => {
   if(!faqref || !state.faqts) return [] 
@@ -24,6 +23,13 @@ export const getActiveFaqref = state => state.ui.faqref  // where new faqts will
 export const getActiveFaqtKey = state => state.ui.faqtKey // could be in any faq
 export const getActiveSearch = state => state.ui.search
 
+export const sameFaqref = (a,b) => {
+  if(!a || !b) return false
+  if(a.uid !== b.uid) return false
+  return (a.faqId === b.faqId)
+} 
+
+export const faqrefIdMatch = (a,b) => a.id === b.id &&  sameFaqref(a.faqref,b.faqref)
 
 // the question is, what it does it mean that there is one active faqref
 // from a search standpoint this is meaningless, since several faqs are searchable simultaneously
@@ -47,7 +53,7 @@ export const findBestScore = search => search && search.scores && search.scores[
 export function findScoreNOSEARCH(state, faqt) {
   if(!faqt) return null
   const result = getScores(state)
-  .filter(score => !score.searchId && isEqual(score.faqref, faqt.faqref))
+  .filter(score => !score.searchId && sameFaqref(score.faqref, faqt.faqref))
   .find(score => score.faqtId === faqt.id) // max 1 match for faqt+search combo
   return result;
 }
@@ -57,7 +63,7 @@ export function findScore(state, faqt, search) {
   if(!faqt) return null
   if(!search || !search.id) return findScoreNOSEARCH(state, faqt)
   const result = getScores(state)
-  .filter(score => score.searchId === search.id && isEqual(score.faqref, faqt.faqref))
+  .filter(score => score.searchId === search.id && sameFaqref(score.faqref, faqt.faqref))
   .find(score => score.faqtId === faqt.id) // max 1 match for faqt+search combo
   return result;
 }

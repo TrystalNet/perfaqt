@@ -2,7 +2,7 @@ import React, { Component } from 'react';
 import { connect } from 'react-redux'
 import { Editor, getDefaultKeyBinding, KeyBindingUtil, RichUtils } from 'draft-js'
 import * as THUNK from '../../thunks'
-import {updateUI} from '../../reducer'
+import {updateUI} from '../../reducers/reducer'
 import * as EDIT from '../../tmpField'
 
 const {hasCommandModifier} = KeyBindingUtil

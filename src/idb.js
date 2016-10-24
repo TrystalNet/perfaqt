@@ -1,5 +1,4 @@
 export function openIDB(callback) {
-  console.log('here we go...')
   const req = window.indexedDB.open('perfaqt', 17)
   req.onsuccess = event => callback(event.target.result)
   req.onupgradeneeded = function(e) {

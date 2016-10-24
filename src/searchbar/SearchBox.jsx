@@ -3,7 +3,7 @@ import { connect } from 'react-redux'
 import * as THUNK  from '../thunks'
 import * as SELECT from '../select'
 import Autosuggest from 'react-autosuggest'
-import {updateUI} from '../reducer-ui'
+import {updateUI} from '../reducers/reducer-ui'
 import {setActiveField, updateActiveField, saveActiveField} from '../tmpField'
 
 class SearchBox extends React.Component {

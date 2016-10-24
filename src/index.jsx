@@ -10,7 +10,7 @@ import {openIDB} from './idb'
 
 import * as THUNK from './thunks'
 import App from './app/App'
-import reducer from './reducer'
+import reducer from './reducers/reducer'
 
 const config = {
   apiKey: 'AIzaSyCJxPq5CbWbMN14yMmI7lIt0_HNEFf1sdw',

@@ -1,5 +1,5 @@
 import {isEqual} from 'lodash'
-import {updateUI, pushActiveField, popActiveField} from './reducer-ui'
+import {updateUI, pushActiveField, popActiveField} from './reducers/reducer-ui'
 import {editorStateToSaveState, getActiveLink, addLinkToEditorState} from './draftjs-utils'
 import * as SELECT from './select'
 import * as THUNK from './thunks'

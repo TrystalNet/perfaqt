@@ -11,10 +11,7 @@ import {setActiveField} from '../../tmpField'
 const S1 = { marginBottom:20 }
 
 function EditToolbar({isActive, faqtKey, onSaveLink, dispatch}) {
-  if(!isActive) {
-    console.log('returning null instead of showing EditToolbar')
-    return null
-  }
+  if(!isActive) return null
   return <div style={S1}>
     <ButtonToolbar>
       <ButtonGroup> 

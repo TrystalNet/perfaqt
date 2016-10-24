@@ -10,18 +10,20 @@ import * as UNIQ from '@trystal/uniq-ish'
 import * as SELECT from './select'
 import * as FAQTS from './faqts/faqts-actions'
 import * as FULLTEXT from './fulltext'
-import {addFaq as ADDFAQ, removeFaq as REMFAQ} from './reducer'
-import {updateUI, popActiveField} from './reducer-ui'
+import {addFaq as ADDFAQ, removeFaq as REMFAQ} from './reducers/reducer-faqs'
+import {addCFaq as ADDCFAQ, removeCFaq as REMCFAQ} from './reducers/reducer-cfaqs'
+import {updateUI, popActiveField} from './reducers/reducer-ui'
 import {updateActiveField} from './tmpField'
 import {faqtToEditorState} from './draftjs-utils'
 
-// tomorrow --- finish putting editor state into the faqts as they are loaded and created
-// then detect when one of them is being edited.
+const UID = () => firebase.auth().currentUser.uid 
 
 const faqtToKey = SELECT.faqtToKey
 
 const faqPath = ({uid, faqId}) => `${uid}/${faqId}`
 
+const userPath = uid => `users/${uid}`
+const faqrefPath = faqref => `faqs/${faqPath(faqref)}`
 const faqtsPath = faqref => `faqts/${faqPath(faqref)}`
 const faqtsRef = faqref => firebase.database().ref().child(faqtsPath(faqref))
 const faqtPath = ({faqref, id}) => `${faqtsPath(faqref)}/${id}`
@@ -100,15 +102,35 @@ export function updateOneFaqt(faqt, text, draftjs) {
     [faqtUpdatedPath(faqt)]: Date.now()
   })
 }
+
+function getPermission(getState, uid, faqref, fbfaqref) {
+  if(uid === faqref.uid) return 'RW'
+  if(getState().ui.isAdmin) {
+    console.log('rw because admin')
+    return 'RW'
+  }
+  if(fbfaqref && fbfaqref.isPublic) return 'RO'
+  return null
+}
+
+
 export function openFaq(faqref) {
   return function(dispatch, getState) {
-    const {faqs} = getState()
-    const faq = faqs.find(faq => _.isEqual(faq, faqref))
-    if(!faq) {
+    const {faqs, cfaqs} = getState()
+    const cfaq = cfaqs.find(cf => SELECT.sameFaqref(cf, faqref))
+    const faq = faqs.find(f => SELECT.sameFaqref(f, faqref))
+    if(faq) return
+    firebase.database()
+    .ref(faqrefPath(faqref)).once('value')
+    .then(snap => {
+      const fbfaqref = snap.val()
+      const permission = getPermission(getState, UID(), faqref, fbfaqref)
+      if(!permission) return
       dispatch(initFaqts(faqref))  // load the faq and its faqts from firebase
       dispatch(ADDFAQ(faqref))   // add the faq to the store
-    }
-    return faqref
+      if(cfaq) dispatch(REMCFAQ(faqref))
+      return faqref
+    })
   }
 }
 export function closeFaq(faqref) {
@@ -118,6 +140,7 @@ export function closeFaq(faqref) {
     denit(faqtsRef(faqref),'child_added','child_changed')
     SELECT.getFaqtKeysByFaqref(state, faqref).forEach(key => FULLTEXT.removeFaqtByKey(key))
     dispatch(REMFAQ(faqref))  // purges all affected faqts and scores
+    dispatch(ADDCFAQ(faqref))
   }
 }
 
@@ -125,19 +148,34 @@ function closeOne() {
 
 }
 
+const faqrefsToOpenAtStart = uid => [
+  {uid:'perfaqt', faqId: 'PERFAQT', isRO: true},
+  {uid,           faqId: 'work'   , isRO: false},
+  {uid,           faqId: 'default', isRO: false},
+  {uid:'perfaqt', faqId: 'help'   , isRO: true},
+  {uid:'perfaqt', faqId: 'ketchup'   , isRO: true}
+]  
+const cfaqsAtStart = () => []
+
+// nownow
 export function initFirebase() {
   return function(dispatch, getState) {
-    console.log('initing firebase')
     dispatch(handleSearchRequest(''))
     firebase.auth().onAuthStateChanged(user => {
       if(user) {
         const {uid} = user
-        dispatch(updateUI({uid, index:FULLTEXT.FULLTEXT}))
-        const faqrefTest = dispatch(openFaq({uid, faqId:'work'}))
-        const faqrefDefault = dispatch(openFaq({uid, faqId: 'default'}))
-        const perfaqtHelp = dispatch(openFaq({uid:'perfaqt', faqId: 'help', isRO:true}))
+        firebase.database().ref(userPath(uid)).once('value').then(snap => {
+          console.log(snap.val())
+          const {isAdmin, username} = snap.val()
+          dispatch(updateUI({uid, isAdmin, username, index:FULLTEXT.FULLTEXT}))
+          faqrefsToOpenAtStart(uid).forEach(f => dispatch(openFaq(f)))
+          cfaqsAtStart().forEach(f => dispatch(ADDCFAQ(f)))
+        })
       }
-      else getState().faqs.forEach(faqref => dispatch(closeFaq(faqref)))
+      else {
+        dispatch(updateUI({uid:null, isAdmin:false, username:null}))
+        getState().faqs.forEach(faqref => dispatch(closeFaq(faqref)))
+      }
     })
     const dbRefBroadcast = firebase.database().ref().child('broadcast')
     dbRefBroadcast.on('value', snap => dispatch(updateUI({broadcast:snap.val()})))

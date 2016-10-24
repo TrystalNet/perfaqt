@@ -5,7 +5,7 @@ import TagsEditor from './TagsEditor'
 import EditToolbar from './EditToolbar'
 import * as SELECT from '../../select'
 import * as THUNK from '../../thunks'
-import {updateUI} from '../../reducer'
+import {updateUI} from '../../reducers/reducer'
 import {addLinkToEditorState} from '../../draftjs-utils'
 import {Button, DropdownButton, MenuItem} from 'react-bootstrap'
 
