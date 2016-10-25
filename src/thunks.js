@@ -102,7 +102,6 @@ export function updateOneFaqt(faqt, text, draftjs) {
     [faqtUpdatedPath(faqt)]: Date.now()
   })
 }
-
 function getPermission(getState, uid, faqref, fbfaqref) {
   if(uid === faqref.uid) return 'RW'
   if(getState().ui.isAdmin) {
@@ -112,8 +111,6 @@ function getPermission(getState, uid, faqref, fbfaqref) {
   if(fbfaqref && fbfaqref.isPublic) return 'RO'
   return null
 }
-
-
 export function openFaq(faqref) {
   return function(dispatch, getState) {
     const {faqs, cfaqs} = getState()
@@ -126,6 +123,7 @@ export function openFaq(faqref) {
       const fbfaqref = snap.val()
       const permission = getPermission(getState, UID(), faqref, fbfaqref)
       if(!permission) return
+      faqref.isRO = permission !== 'RW'
       dispatch(initFaqts(faqref))  // load the faq and its faqts from firebase
       dispatch(ADDFAQ(faqref))   // add the faq to the store
       if(cfaq) dispatch(REMCFAQ(faqref))

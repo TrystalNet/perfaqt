@@ -18,8 +18,8 @@ const App = ({uid, faqs, cfaqs}) => {
   if(!uid) return <LoginPage />
   return <div id='app'>
     <SearchBar />
-    <ButtonToolbar style={s1}>{faqs.map(faq => <FaqButton key={faqToKey(faq)} faq={faq} />)}</ButtonToolbar>
-    <ButtonToolbar style={s1}>{cfaqs.map(cfaq => <CFaqButton key={faqToKey(cfaq)} faq={cfaq} />)}</ButtonToolbar>
+    <ButtonToolbar style={s1}>{ faqs.map( faq => <FaqButton  key={faqToKey(faq)} faq={faq} />)}</ButtonToolbar>
+    <ButtonToolbar style={s1}>{cfaqs.map(cfaq => <CFaqButton key={faqToKey(cfaq)} faqref={cfaq} />)}</ButtonToolbar>
     <FaqtList />
   </div>
 }
