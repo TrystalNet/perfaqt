@@ -11,6 +11,10 @@ const defaultUI = {
   fldEmail:'',
   fldPassword:'',
   activeFieldStack:[],
+  page:'',
+  editFaq: {
+    faqId: ''
+  },
   activeField: {
     objectId: null,
     fldName:null,

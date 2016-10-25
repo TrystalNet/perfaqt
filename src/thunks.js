@@ -102,12 +102,42 @@ export function updateOneFaqt(faqt, text, draftjs) {
     [faqtUpdatedPath(faqt)]: Date.now()
   })
 }
+export function showFaqDialog(faqref) {
+  return (dispatch, getState) => {
+    if(faqref) console.log(faqref)
+    dispatch(updateUI({page:'faq'}))
+  }
+}
+// nownow
+export function closeFaqPage() {
+  return (dispatch, getState) => {
+    const uid = UID()
+    if(!uid) return
+    const {faqId} = getState().ui.editFaq
+    const faqref = {uid, faqId, isRO:false}
+    dispatch(cancelFaqPage())
+    const path = faqrefPath(faqref)
+    firebase.database().ref(path).set({
+      isPublic:false
+    })
+    .then(x => dispatch(openFaq(faqref)))
+  }
+}
+// export function deleteFaq(faqref) {
+//   return (dispatch, getState) => {
+//     firebase.database().ref(faqtsPath(faqref)).remove()
+//     firebase.database().ref(faqrefPath(faqref)).remove()
+//   }
+// }
+export const cancelFaqPage = () => dispatch => dispatch( updateUI( { page:'', editFaq:{faqId:''} } ) )
+export function hola() {
+  return () => {
+    alert('hola')
+  }
+}
 function getPermission(getState, uid, faqref, fbfaqref) {
   if(uid === faqref.uid) return 'RW'
-  if(getState().ui.isAdmin) {
-    console.log('rw because admin')
-    return 'RW'
-  }
+  if(getState().ui.isAdmin) return 'RW'
   if(fbfaqref && fbfaqref.isPublic) return 'RO'
   return null
 }
@@ -163,7 +193,6 @@ export function initFirebase() {
       if(user) {
         const {uid} = user
         firebase.database().ref(userPath(uid)).once('value').then(snap => {
-          console.log(snap.val())
           const {isAdmin, username} = snap.val()
           dispatch(updateUI({uid, isAdmin, username, index:FULLTEXT.FULLTEXT}))
           faqrefsToOpenAtStart(uid).forEach(f => dispatch(openFaq(f)))
