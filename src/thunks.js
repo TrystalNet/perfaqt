@@ -147,11 +147,11 @@ function closeOne() {
 }
 
 const faqrefsToOpenAtStart = uid => [
-  {uid:'perfaqt', faqId: 'PERFAQT', isRO: true},
-  {uid,           faqId: 'work'   , isRO: false},
-  {uid,           faqId: 'default', isRO: false},
-  {uid:'perfaqt', faqId: 'help'   , isRO: true},
-  {uid:'perfaqt', faqId: 'ketchup'   , isRO: true}
+  {uid:'perfaqt', faqId: 'PERFAQT'},
+  {uid,           faqId: 'work'   },
+  {uid,           faqId: 'default'},
+  {uid:'perfaqt', faqId: 'help'   },
+  {uid,           faqId: 'betacity'}
 ]  
 const cfaqsAtStart = () => []
 
