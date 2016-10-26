@@ -8,7 +8,7 @@ import LinkForm from './LinkForm'
 import * as THUNK from '../../thunks'
 import {setActiveField} from '../../tmpField'
 
-const S1 = { marginBottom:20 }
+const S1 = { marginBottom:5 }
 
 function EditToolbar({isActive, faqtKey, onSaveLink, dispatch}) {
   if(!isActive) return null

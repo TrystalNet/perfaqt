@@ -9,21 +9,13 @@ import {updateUI} from '../../reducers/reducer'
 import {addLinkToEditorState} from '../../draftjs-utils'
 import {Button, DropdownButton, MenuItem} from 'react-bootstrap'
 
-// VERSIONS OF FAQTS TO POSSIBLY SHOW
-// 1. READONLY, NOTACTIVE
-// 2. READONLY, ACTIVE
-// 3. READWRITE, NOTACTIVE
-// 4. READWRITE, ACTIVE, NOT EDITING
-// 5. READWRITE, ACTIVE, EDITING
-
-
 const S0 = {backgroundColor:'paleblue',marginBottom:5, padding:1}
 const style0 = {
-  backgroundColor:'white',
+  borderTop:'lightgray 1px solid',
+  backgroundColor:'beige',
   display:'flex',
-  paddingTop: 5,
-  paddingBottom: 5,
-  borderBottom: 'transparent 15px solid'
+  padding: 5,
+  borderBottom: 'transparent 5px solid'
 }
 const style0A = {
   flex:1,
@@ -50,14 +42,14 @@ const Faqt = ({
     <div style={style0}>
       <div style={style} onFocus={e => onFocus(isRO)}>
         { url ? <a href={url} target='_blank'>{url}</a> : null }
-        <div>
+        <div style={{backgroundColor:'green 10px solid'}}>
           <EditToolbar {...{isActive, faqtKey, onSaveLink}} />
           <div style={editorContainerStyle}>
             <MyEditor {...{faqtKey, editorState, isActive}} />
           </div>
         </div>
       </div>
-      <div style={{display:'flex', flexDirection:'column'}}>
+      <div style={{display:'flex', flexDirection:'column', height:30}}>
           <DropdownButton id='rank' bsStyle='default' title='edit' style={ddbStyle}>
             <MenuItem eventKey="edit" onClick={onEditContent}>Faqt</MenuItem>
             <MenuItem eventKey='link' onClick={onAddLink}>Link</MenuItem>
@@ -65,12 +57,12 @@ const Faqt = ({
             <MenuItem eventKey="best" onClick={onSetBest}>Best</MenuItem>
             <MenuItem eventKey="none" disabled={!isLinked} onClick={onDeleteScore}>Clear</MenuItem>
           </DropdownButton>
-          <Button id='done' style={{visibility:isActive ? 'visible':'hidden'}} onClick={onDone}>done</Button>
       </div>
     </div>
     { false ? <TagsEditor {...{faqtKey}} /> : null }
   </div>
 }
+          //<Button id='done' style={{visibility:isActive ? 'visible':'hidden'}} onClick={onDone}>done</Button>
 
 function mapDispatchToProps(dispatch, {faqtKey}) {
   const onDropLink = e => {
