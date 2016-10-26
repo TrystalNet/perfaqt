@@ -84,14 +84,15 @@
 
 	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
+	console.log('Starting version 161025b');
+	// import {openIDB} from './idb'
+
 	var config = {
 	  apiKey: 'AIzaSyCJxPq5CbWbMN14yMmI7lIt0_HNEFf1sdw',
 	  authDomain: 'perfaqt-141604.firebaseapp.com',
 	  databaseURL: 'https://perfaqt-141604.firebaseio.com',
 	  storageBucket: 'perfaqt-141604.appspot.com'
 	};
-	// import {openIDB} from './idb'
-
 	_app2.default.initializeApp(config); // this just injects the config stuff into firebase
 
 	function startup(idb) {
@@ -104,8 +105,6 @@
 	  store.dispatch(THUNK.initFirebase());
 	}
 
-	console.log('version 161025a');
-
 	var req = window.indexedDB.open('perfaqt', 17);
 	req.onsuccess = function (event) {
 	  return startup(event.target.result);
@@ -116,7 +115,6 @@
 	  if (db.objectStoreNames.contains('answers')) db.deleteObjectStore('answers');
 	  if (db.objectStoreNames.contains('questions')) db.deleteObjectStore('questions');
 	  if (!db.objectStoreNames.contains('searches')) db.createObjectStore('searches', { keyPath: 'text' });
-
 	  var transaction = event.target.transaction;
 	  transaction.oncomplete = function (e) {
 	    return startup(db);
@@ -22940,11 +22938,6 @@
 	  };
 	}
 
-	function closeOne() {}
-
-	var faqrefsToOpenAtStart = function faqrefsToOpenAtStart(uid) {
-	  return [{ uid: 'perfaqt', faqId: 'PERFAQT' }, { uid: uid, faqId: 'work' }, { uid: uid, faqId: 'default' }, { uid: 'perfaqt', faqId: 'help' }, { uid: uid, faqId: 'betacity' }];
-	};
 	var cfaqsAtStart = function cfaqsAtStart() {
 	  return [];
 	};
@@ -22965,15 +22958,30 @@
 	            var username = _snap$val2.username;
 
 	            dispatch((0, _reducerUi.updateUI)({ uid: uid, isAdmin: isAdmin, username: username, index: FULLTEXT.FULLTEXT }));
-	            faqrefsToOpenAtStart(uid).forEach(function (f) {
+	            return _app2.default.database().ref('/faqs/' + uid).once('value');
+	          }).then(function (snap) {
+	            var fbresult = snap.val() || {};
+	            fbresult['default'] = { isPublic: false };
+	            var faqrefs = Object.keys(fbresult).map(function (faqId) {
+	              return { uid: uid, faqId: faqId };
+	            });
+	            faqrefs.forEach(function (f) {
 	              return dispatch(openFaq(f));
 	            });
-	            cfaqsAtStart().forEach(function (f) {
+	            return _app2.default.database().ref('/faqs/perfaqt').once('value');
+	          }).then(function (snap) {
+	            var fbresult = snap.val() || {};
+	            var cfaqrefs = Object.keys(fbresult).map(function (faqId) {
+	              return { uid: uid, faqId: faqId };
+	            });
+	            cfaqrefs.forEach(function (f) {
 	              return dispatch((0, _reducerCfaqs.addCFaq)(f));
 	            });
+	            return null;
 	          });
 	        })();
 	      } else {
+	        console.log('not logged in');
 	        dispatch((0, _reducerUi.updateUI)({ uid: null, isAdmin: false, username: null }));
 	        getState().faqs.forEach(function (faqref) {
 	          return dispatch(closeFaq(faqref));
@@ -92357,7 +92365,6 @@
 	    dispatch(THUNK.hoverFaqt(null));
 	  };
 	  var onDone = function onDone() {
-	    console.log('fuckoff');
 	    dispatch(THUNK.activateFaqt(null));
 	  };
 	  var onEditContent = function onEditContent(e) {
@@ -92505,6 +92512,7 @@
 	    },
 	    onSaveAndExit: function onSaveAndExit(e) {
 	      dispatch(EDIT.saveActiveField());
+	      dispatch(THUNK.activateFaqt(null));
 	      dispatch(THUNK.setNextFocus('SEARCH'));
 	    }
 	  };
@@ -93211,14 +93219,15 @@
 	    { bsStyle: style, id: key, title: faqId, onDragOver: function onDragOver(e) {
 	        return e.preventDefault();
 	      }, onDrop: onDrop },
+	    _react2.default.createElement(AddFaqtMenuItem, { isRO: isRO, faqref: faqref, dispatch: dispatch }),
+	    _react2.default.createElement(_reactBootstrap.MenuItem, { divider: true }),
 	    _react2.default.createElement(
 	      _reactBootstrap.MenuItem,
 	      { eventKey: '1', onClick: function onClick(e) {
 	          return dispatch(THUNK.closeFaq(faqref));
 	        } },
 	      'Close'
-	    ),
-	    _react2.default.createElement(AddFaqtMenuItem, { isRO: isRO, faqref: faqref, dispatch: dispatch })
+	    )
 	  );
 	}
 

@@ -1,6 +1,36 @@
 {
   "rules": {
-    ".read": "auth != null",
-    ".write": "auth != null"
+    "users": {
+      "$uid": {
+        ".read": "auth !== null && $uid === auth.uid",
+        ".write": "auth !== null && $uid === auth.uid"
+      }
+    },
+    "faqs": {
+      "perfaqt":{
+        ".read":  "true",
+        ".write": "root.child('users').child(auth.uid).child('isAdmin').val() === true"
+      },
+      "$uid": {
+        "$faqId": {
+          ".read":  "(data.child('isPublic').val() === true) || (auth.uid === $uid) || root.child('users').child(auth.uid).child('isAdmin').val() === true",
+          ".write": "($uid === auth.uid) || root.child('users').child(auth.uid).child('isAdmin').val() === true"
+        },
+        ".read":  "(auth.uid === $uid) || root.child('users').child(auth.uid).child('isAdmin').val() === true",
+        ".write": "($uid === auth.uid) || root.child('users').child(auth.uid).child('isAdmin').val() === true"
+      }         
+    },
+    "faqts": {
+      "perfaqt":{
+        ".read":  "true",
+        ".write": "root.child('users').child(auth.uid).child('isAdmin').val() === true"
+      },
+      "$uid": {
+        "$faqId": {
+          ".read": "($uid === auth.uid) || root.child('faqs').child($uid).child($faqId).child('isPublic').val() === true || root.child('users').child(auth.uid).child('isAdmin').val() === true",
+          ".write": "($uid === auth.uid)  || root.child('users').child(auth.uid).child('isAdmin').val() === true"
+        }
+      }
+    }
   }
 }

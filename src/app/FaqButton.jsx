@@ -21,8 +21,9 @@ function FaqButton({faq, dispatch}) {
   const faqref = {uid, faqId}
   const style = isRO ? 'default' : 'info'
   return <DropdownButton bsStyle={style} id={key} title={faqId} onDragOver={e => e.preventDefault()} onDrop={onDrop}>
-    <MenuItem eventKey="1" onClick={e => dispatch(THUNK.closeFaq(faqref))}>Close</MenuItem>
     <AddFaqtMenuItem {...{isRO, faqref, dispatch}} />
+    <MenuItem divider />
+    <MenuItem eventKey="1" onClick={e => dispatch(THUNK.closeFaq(faqref))}>Close</MenuItem>
   </DropdownButton>
 }
 

@@ -90,7 +90,6 @@ function mapDispatchToProps(dispatch, {faqtKey}) {
     dispatch(THUNK.hoverFaqt(null))
   }
   const onDone=() => {
-    console.log('fuckoff')
     dispatch(THUNK.activateFaqt(null))
   }
   const onEditContent = e => {

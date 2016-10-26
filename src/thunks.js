@@ -172,17 +172,6 @@ export function closeFaq(faqref) {
   }
 }
 
-function closeOne() {
-
-}
-
-const faqrefsToOpenAtStart = uid => [
-  {uid:'perfaqt', faqId: 'PERFAQT'},
-  {uid,           faqId: 'work'   },
-  {uid,           faqId: 'default'},
-  {uid:'perfaqt', faqId: 'help'   },
-  {uid,           faqId: 'betacity'}
-]  
 const cfaqsAtStart = () => []
 
 // nownow
@@ -192,14 +181,28 @@ export function initFirebase() {
     firebase.auth().onAuthStateChanged(user => {
       if(user) {
         const {uid} = user
-        firebase.database().ref(userPath(uid)).once('value').then(snap => {
+        firebase.database().ref(userPath(uid)).once('value')
+        .then(snap => {
           const {isAdmin, username} = snap.val()
           dispatch(updateUI({uid, isAdmin, username, index:FULLTEXT.FULLTEXT}))
-          faqrefsToOpenAtStart(uid).forEach(f => dispatch(openFaq(f)))
-          cfaqsAtStart().forEach(f => dispatch(ADDCFAQ(f)))
+          return firebase.database().ref(`/faqs/${uid}`).once('value')
+        })
+        .then(snap => {
+          const fbresult = snap.val() || {}
+          fbresult['default'] = {isPublic:false}
+          const faqrefs = Object.keys(fbresult).map(faqId => ({uid, faqId}))
+          faqrefs.forEach(f => dispatch(openFaq(f)))
+          return firebase.database().ref('/faqs/perfaqt').once('value')
+        }) 
+        .then(snap => {
+          const fbresult = snap.val() || {}
+          const cfaqrefs = Object.keys(fbresult).map(faqId => ({uid, faqId}))
+          cfaqrefs.forEach(f => dispatch(ADDCFAQ(f)))
+          return null
         })
       }
       else {
+        console.log('not logged in')
         dispatch(updateUI({uid:null, isAdmin:false, username:null}))
         getState().faqs.forEach(faqref => dispatch(closeFaq(faqref)))
       }

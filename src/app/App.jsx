@@ -24,7 +24,6 @@ const PageContainer = ({which, dispatch}) => {
   }
 }
 
-
 const App = ({uid, page, faqs, cfaqs, dispatch}) => {
   if(!uid) return <LoginPage />
   return <div id='app'>

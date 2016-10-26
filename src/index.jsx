@@ -12,6 +12,8 @@ import * as THUNK from './thunks'
 import App from './app/App'
 import reducer from './reducers/reducer'
 
+console.log('Starting version 161025b')
+
 const config = {
   apiKey: 'AIzaSyCJxPq5CbWbMN14yMmI7lIt0_HNEFf1sdw',
   authDomain: 'perfaqt-141604.firebaseapp.com',
@@ -21,15 +23,10 @@ const config = {
 firebase.initializeApp(config) // this just injects the config stuff into firebase
 
 function startup(idb) {
-  const store = createStore(
-    reducer, 
-    applyMiddleware(Thunk.withExtraArgument({idb}))
-  )
+  const store = createStore(reducer, applyMiddleware(Thunk.withExtraArgument({idb})))
   render(<Provider store={store}><App /></Provider>, document.getElementById('root'))
   store.dispatch(THUNK.initFirebase())
 }
-
-console.log('version 161025a')
 
 const req = window.indexedDB.open('perfaqt', 17)
 req.onsuccess = event => startup(event.target.result)
@@ -39,11 +36,6 @@ req.onupgradeneeded = function(event) {
   if(db.objectStoreNames.contains('answers')) db.deleteObjectStore('answers')
   if(db.objectStoreNames.contains('questions')) db.deleteObjectStore('questions')
   if(!db.objectStoreNames.contains('searches')) db.createObjectStore('searches', {keyPath:'text'})
-
   const transaction = event.target.transaction
   transaction.oncomplete = e => startup(db)
 }
-
-
-
-

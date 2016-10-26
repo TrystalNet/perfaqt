@@ -62,6 +62,7 @@ function mapDispatchToProps(dispatch,{faqtKey, editorState, isActive}) {
     },
     onSaveAndExit: e => {
       dispatch(EDIT.saveActiveField())
+      dispatch(THUNK.activateFaqt(null))
       dispatch(THUNK.setNextFocus('SEARCH'))
     }
   }
