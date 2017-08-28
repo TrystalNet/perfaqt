@@ -6,6 +6,7 @@ import { createStore, applyMiddleware } from 'redux'
 import firebase from 'firebase/app'
 import 'firebase/auth'
 import 'firebase/database'
+import './config.js'
 // import {openIDB} from './idb'
 
 import * as THUNK from './thunks'
@@ -13,14 +14,6 @@ import App from './app/App'
 import reducer from './reducers/reducer'
 
 console.log('Starting version 161025b')
-
-const config = {
-  apiKey: 'AIzaSyCJxPq5CbWbMN14yMmI7lIt0_HNEFf1sdw',
-  authDomain: 'perfaqt-141604.firebaseapp.com',
-  databaseURL: 'https://perfaqt-141604.firebaseio.com',
-  storageBucket: 'perfaqt-141604.appspot.com'
-}
-firebase.initializeApp(config) // this just injects the config stuff into firebase
 
 function startup(idb) {
   const store = createStore(reducer, applyMiddleware(Thunk.withExtraArgument({idb})))
